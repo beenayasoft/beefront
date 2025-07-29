@@ -20,6 +20,10 @@ export interface Material {
   supplier?: string;
   vatRate: number; // Taux de TVA en pourcentage
   category?: string;
+  categoryId?: string;
+  code?: string;
+  wasteFactor?: number;
+  isRecyclable?: boolean;
 }
 
 // Type de main d'œuvre
@@ -30,6 +34,10 @@ export interface Labor {
   unit: string; // Généralement en heures
   unitPrice: number;
   category?: string;
+  categoryId?: string;
+  code?: string;
+  skillLevel?: 'apprentice' | 'skilled' | 'expert' | 'specialist';
+  productivityFactor?: number;
 }
 
 // Composant d'un ouvrage (matériau ou main d'œuvre)
@@ -42,6 +50,8 @@ export interface WorkComponent {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  wasteAllowance?: number; // Majoration pour pertes en pourcentage
+  notes?: string;
 }
 
 // Ouvrage complet
@@ -52,6 +62,7 @@ export interface Work {
   description?: string;
   categoryId: string;
   unit: string;
+  code?: string;
   // Composants
   components: WorkComponent[];
   // Prix calculés
@@ -60,7 +71,11 @@ export interface Work {
   totalCost: number;
   recommendedPrice: number;
   margin: number; // Marge en pourcentage
-  // Métadonnées
+  // Métadonnées additionnelles
+  complexity?: 'low' | 'medium' | 'high';
+  efficiency?: number;
+  durationEstimate?: number; // en heures
+  requiresCertification?: boolean;
   createdAt: string;
   updatedAt: string;
   isCustom: boolean; // Si l'ouvrage est personnalisé ou standard

@@ -123,6 +123,10 @@ const transformMaterial = (backendMaterial: BackendMaterial): Material => ({
   vatRate: Number(backendMaterial.vatRate || backendMaterial.vat_rate),
   supplier: backendMaterial.supplier,
   category: backendMaterial.categorie_nom || '',
+  categoryId: backendMaterial.categorie?.toString(),
+  code: backendMaterial.reference || '',
+  wasteFactor: Number(backendMaterial.wasteFactor || backendMaterial.waste_factor || 0),
+  isRecyclable: backendMaterial.is_recyclable || false,
 });
 
 const transformLabor = (backendLabor: BackendLabor): Labor => ({
@@ -132,6 +136,10 @@ const transformLabor = (backendLabor: BackendLabor): Labor => ({
   unit: backendLabor.unite,
   unitPrice: Number(backendLabor.unitPrice || backendLabor.cout_horaire),
   category: backendLabor.categorie_nom || '',
+  categoryId: backendLabor.categorie?.toString(),
+  code: backendLabor.nom || '',
+  skillLevel: backendLabor.skill_level || 'skilled',
+  productivityFactor: Number(backendLabor.productivity_factor || 1.0),
 });
 
 // Transformation d'un ingrédient backend en composant frontend
@@ -148,22 +156,29 @@ const transformIngredient = (ingredient: BackendIngredient): WorkComponent => {
     quantity: Number(ingredient.quantite),
     unitPrice: Number(element.prix_achat_ht || element.cout_horaire || 0),
     totalPrice: ingredient.cout_total || 0,
+    wasteAllowance: Number(ingredient.waste_allowance || 0),
+    notes: ingredient.notes || undefined,
   };
 };
 
 const transformWork = (backendWork: BackendWork): Work => ({
   id: backendWork.id.toString(),
-  reference: backendWork.nom, // Backend n'a pas de code séparé
+  reference: backendWork.code || backendWork.nom,
   name: backendWork.nom,
   description: backendWork.description || '',
   categoryId: backendWork.categorie.toString(),
   unit: backendWork.unite,
+  code: backendWork.code || '',
   components: (backendWork.ingredients || []).map(transformIngredient),
   laborCost: backendWork.laborCost || 0,
   materialCost: backendWork.materialCost || 0,
   totalCost: backendWork.debourse_sec || 0,
   recommendedPrice: backendWork.recommendedPrice || Number(backendWork.prix_recommande),
   margin: Number(backendWork.marge),
+  complexity: backendWork.complexity || 'medium',
+  efficiency: Number(backendWork.efficiency || 1.0),
+  durationEstimate: backendWork.duration_estimate ? Number(backendWork.duration_estimate) : undefined,
+  requiresCertification: backendWork.requires_certification || false,
   createdAt: backendWork.created_at,
   updatedAt: backendWork.updated_at,
   isCustom: backendWork.is_custom || false,
@@ -178,9 +193,11 @@ const transformMaterialToBackend = (material: Partial<Material>) => ({
   description: material.description || '',
   reference: material.reference || '',
   supplier: material.supplier || '',
+  categorie: material.categoryId ? Number(material.categoryId) : null,
   type: 'material',
-  waste_factor: '0.0',
-  is_recyclable: false,
+  code: material.code || material.reference || '',
+  waste_factor: (material.wasteFactor || 0).toString(),
+  is_recyclable: material.isRecyclable || false,
 });
 
 const transformLaborToBackend = (labor: Partial<Labor>) => ({
@@ -188,20 +205,24 @@ const transformLaborToBackend = (labor: Partial<Labor>) => ({
   cout_horaire: labor.unitPrice?.toString(),
   unite: labor.unit || 'h',
   description: labor.description || '',
+  categorie: labor.categoryId ? Number(labor.categoryId) : null,
   type: 'labor',
-  skill_level: 'skilled',
-  productivity_factor: '1.0',
+  code: labor.code || labor.name || '',
+  skill_level: labor.skillLevel || 'skilled',
+  productivity_factor: (labor.productivityFactor || 1.0).toString(),
 });
 
 const transformWorkToBackend = (work: Partial<Work>) => ({
   nom: work.name,
   unite: work.unit,
   description: work.description || '',
-  categorie: work.categoryId ? Number(work.categoryId) : undefined,
+  categorie: work.categoryId ? Number(work.categoryId) : null,
+  code: work.reference || '',
   prix_recommande: work.recommendedPrice?.toString() || '0.0',
   marge: work.margin?.toString() || '20.0',
   complexity: 'medium',
   efficiency: '1.0',
+  duration_estimate: null,
   requires_certification: false,
   type: 'work',
   is_custom: work.isCustom || true,
@@ -221,7 +242,7 @@ export const libraryApi = {
         });
       }
       
-      const response = await apiClient.get(`/categories/?${params.toString()}`);
+      const response = await apiClient.get(`/api/categories/?${params.toString()}`);
       
       // Django REST retourne {count, next, previous, results}
       const categories = response.data.results || response.data;
@@ -235,7 +256,7 @@ export const libraryApi = {
   // Récupérer les catégories racines
   getRootCategories: async (): Promise<WorkCategory[]> => {
     try {
-      const response = await apiClient.get('/categories/racines/');
+      const response = await apiClient.get('/api/categories/racines/');
       return response.data.map(transformCategory);
     } catch (error) {
       console.error("Erreur lors du chargement des catégories racines:", error);
@@ -246,7 +267,7 @@ export const libraryApi = {
   // Statistiques des catégories
   getCategoryStats: async (): Promise<any> => {
     try {
-      const response = await apiClient.get('/categories/stats/');
+      const response = await apiClient.get('/api/categories/stats/');
       return response.data;
     } catch (error) {
       console.error("Erreur lors du chargement des statistiques des catégories:", error);
@@ -266,7 +287,7 @@ export const libraryApi = {
         });
       }
       
-      const response = await apiClient.get(`/fournitures/?${params.toString()}`);
+      const response = await apiClient.get(`/api/fournitures/?${params.toString()}`);
       
       // Django REST pagination: {count, next, previous, results}
       const materials = response.data.results || response.data;
@@ -280,7 +301,7 @@ export const libraryApi = {
   // Récupérer un matériau par ID
   getMaterial: async (id: string): Promise<Material> => {
     try {
-      const response = await apiClient.get(`/fournitures/${id}/`);
+      const response = await apiClient.get(`/api/fournitures/${id}/`);
       return transformMaterial(response.data);
     } catch (error) {
       console.error(`Erreur lors du chargement du matériau ${id}:`, error);
@@ -292,7 +313,7 @@ export const libraryApi = {
   createMaterial: async (material: Partial<Material>): Promise<Material> => {
     try {
       const backendData = transformMaterialToBackend(material);
-      const response = await apiClient.post('/fournitures/', backendData);
+      const response = await apiClient.post('/api/fournitures/', backendData);
       return transformMaterial(response.data);
     } catch (error) {
       console.error("Erreur lors de la création du matériau:", error);
@@ -304,7 +325,7 @@ export const libraryApi = {
   updateMaterial: async (id: string, material: Partial<Material>): Promise<Material> => {
     try {
       const backendData = transformMaterialToBackend(material);
-      const response = await apiClient.patch(`/fournitures/${id}/`, backendData);
+      const response = await apiClient.patch(`/api/fournitures/${id}/`, backendData);
       return transformMaterial(response.data);
     } catch (error) {
       console.error(`Erreur lors de la mise à jour du matériau ${id}:`, error);
@@ -315,7 +336,7 @@ export const libraryApi = {
   // Supprimer un matériau
   deleteMaterial: async (id: string): Promise<void> => {
     try {
-      await apiClient.delete(`/fournitures/${id}/`);
+      await apiClient.delete(`/api/fournitures/${id}/`);
     } catch (error) {
       console.error(`Erreur lors de la suppression du matériau ${id}:`, error);
       throw error;
@@ -334,7 +355,7 @@ export const libraryApi = {
         });
       }
       
-      const response = await apiClient.get(`/main-oeuvre/?${params.toString()}`);
+      const response = await apiClient.get(`/api/main-oeuvre/?${params.toString()}`);
       
       // Django REST pagination: {count, next, previous, results}
       const labor = response.data.results || response.data;
@@ -348,7 +369,7 @@ export const libraryApi = {
   // Récupérer un type de main d'œuvre par ID
   getLaborItem: async (id: string): Promise<Labor> => {
     try {
-      const response = await apiClient.get(`/main-oeuvre/${id}/`);
+      const response = await apiClient.get(`/api/main-oeuvre/${id}/`);
       return transformLabor(response.data);
     } catch (error) {
       console.error(`Erreur lors du chargement de la main d'œuvre ${id}:`, error);
@@ -360,7 +381,7 @@ export const libraryApi = {
   createLabor: async (labor: Partial<Labor>): Promise<Labor> => {
     try {
       const backendData = transformLaborToBackend(labor);
-      const response = await apiClient.post('/main-oeuvre/', backendData);
+      const response = await apiClient.post('/api/main-oeuvre/', backendData);
       return transformLabor(response.data);
     } catch (error) {
       console.error("Erreur lors de la création de la main d'œuvre:", error);
@@ -372,7 +393,7 @@ export const libraryApi = {
   updateLabor: async (id: string, labor: Partial<Labor>): Promise<Labor> => {
     try {
       const backendData = transformLaborToBackend(labor);
-      const response = await apiClient.patch(`/main-oeuvre/${id}/`, backendData);
+      const response = await apiClient.patch(`/api/main-oeuvre/${id}/`, backendData);
       return transformLabor(response.data);
     } catch (error) {
       console.error(`Erreur lors de la mise à jour de la main d'œuvre ${id}:`, error);
@@ -383,9 +404,73 @@ export const libraryApi = {
   // Supprimer un type de main d'œuvre
   deleteLabor: async (id: string): Promise<void> => {
     try {
-      await apiClient.delete(`/main-oeuvre/${id}/`);
+      await apiClient.delete(`/api/main-oeuvre/${id}/`);
     } catch (error) {
       console.error(`Erreur lors de la suppression de la main d'œuvre ${id}:`, error);
+      throw error;
+    }
+  },
+
+  // ==================== INGRÉDIENTS D'OUVRAGES ====================
+  
+  // Créer un ingrédient pour un ouvrage
+  createIngredient: async (ouvrageId: string, ingredient: {
+    elementType: 'fourniture' | 'mainoeuvre';
+    elementId: string;
+    quantity: number;
+    wasteAllowance?: number;
+    notes?: string;
+  }): Promise<WorkComponent> => {
+    try {
+      const backendData = {
+        ouvrage: Number(ouvrageId),
+        element_type_nom: ingredient.elementType,
+        element_id: Number(ingredient.elementId),
+        quantite: ingredient.quantity.toString(),
+        waste_allowance: (ingredient.wasteAllowance || 0).toString(),
+        notes: ingredient.notes || '',
+      };
+      
+      const response = await apiClient.post('/api/ingredients/', backendData);
+      return transformIngredient(response.data);
+    } catch (error) {
+      console.error("Erreur lors de la création de l'ingrédient:", error);
+      throw error;
+    }
+  },
+
+  // Mettre à jour un ingrédient
+  updateIngredient: async (id: string, updates: {
+    quantity?: number;
+    wasteAllowance?: number;
+    notes?: string;
+  }): Promise<WorkComponent> => {
+    try {
+      const backendData: any = {};
+      if (updates.quantity !== undefined) {
+        backendData.quantite = updates.quantity.toString();
+      }
+      if (updates.wasteAllowance !== undefined) {
+        backendData.waste_allowance = updates.wasteAllowance.toString();
+      }
+      if (updates.notes !== undefined) {
+        backendData.notes = updates.notes;
+      }
+      
+      const response = await apiClient.patch(`/api/ingredients/${id}/`, backendData);
+      return transformIngredient(response.data);
+    } catch (error) {
+      console.error(`Erreur lors de la mise à jour de l'ingrédient ${id}:`, error);
+      throw error;
+    }
+  },
+
+  // Supprimer un ingrédient
+  deleteIngredient: async (id: string): Promise<void> => {
+    try {
+      await apiClient.delete(`/api/ingredients/${id}/`);
+    } catch (error) {
+      console.error(`Erreur lors de la suppression de l'ingrédient ${id}:`, error);
       throw error;
     }
   },
@@ -402,7 +487,7 @@ export const libraryApi = {
         });
       }
       
-      const response = await apiClient.get(`/ouvrages/?${params.toString()}`);
+      const response = await apiClient.get(`/api/ouvrages/?${params.toString()}`);
       
       // Django REST pagination: {count, next, previous, results}
       const works = response.data.results || response.data;
@@ -416,7 +501,7 @@ export const libraryApi = {
   // Récupérer un ouvrage par ID avec détails
   getWork: async (id: string): Promise<Work> => {
     try {
-      const response = await apiClient.get(`/ouvrages/${id}/`);
+      const response = await apiClient.get(`/api/ouvrages/${id}/`);
       return transformWork(response.data);
     } catch (error) {
       console.error(`Erreur lors du chargement de l'ouvrage ${id}:`, error);
@@ -428,7 +513,7 @@ export const libraryApi = {
   createWork: async (work: Partial<Work>): Promise<Work> => {
     try {
       const backendData = transformWorkToBackend(work);
-      const response = await apiClient.post('/ouvrages/', backendData);
+      const response = await apiClient.post('/api/ouvrages/', backendData);
       return transformWork(response.data);
     } catch (error) {
       console.error("Erreur lors de la création de l'ouvrage:", error);
@@ -440,7 +525,7 @@ export const libraryApi = {
   updateWork: async (id: string, work: Partial<Work>): Promise<Work> => {
     try {
       const backendData = transformWorkToBackend(work);
-      const response = await apiClient.patch(`/ouvrages/${id}/`, backendData);
+      const response = await apiClient.patch(`/api/ouvrages/${id}/`, backendData);
       return transformWork(response.data);
     } catch (error) {
       console.error(`Erreur lors de la mise à jour de l'ouvrage ${id}:`, error);
@@ -451,7 +536,7 @@ export const libraryApi = {
   // Supprimer un ouvrage
   deleteWork: async (id: string): Promise<void> => {
     try {
-      await apiClient.delete(`/ouvrages/${id}/`);
+      await apiClient.delete(`/api/ouvrages/${id}/`);
     } catch (error) {
       console.error(`Erreur lors de la suppression de l'ouvrage ${id}:`, error);
       throw error;
@@ -487,7 +572,7 @@ export const libraryApi = {
     total_results: number;
   }> => {
     try {
-      const response = await apiClient.get(`/search/search/?q=${encodeURIComponent(query)}`);
+      const response = await apiClient.get(`/api/search/?q=${encodeURIComponent(query)}`);
       
       return {
         categories: (response.data.categories || []).map(transformCategory),
@@ -530,9 +615,9 @@ export const libraryApi = {
   getStats: async (): Promise<any> => {
     try {
       const [materialsStats, laborStats, worksStats] = await Promise.all([
-        apiClient.get('/fournitures/stats/'),
-        apiClient.get('/main-oeuvre/stats/'),
-        apiClient.get('/ouvrages/stats/'),
+        apiClient.get('/api/fournitures/stats/'),
+        apiClient.get('/api/main-oeuvre/stats/'),
+        apiClient.get('/api/ouvrages/stats/'),
       ]);
       
       return {
@@ -551,7 +636,7 @@ export const libraryApi = {
   // Matériaux groupés par catégorie
   getMaterialsByCategory: async (): Promise<any> => {
     try {
-      const response = await apiClient.get('/fournitures/par_categorie/');
+      const response = await apiClient.get('/api/fournitures/par_categorie/');
       return response.data;
     } catch (error) {
       console.error("Erreur lors du chargement des matériaux par catégorie:", error);
@@ -562,7 +647,7 @@ export const libraryApi = {
   // Main d'œuvre groupée par catégorie
   getLaborByCategory: async (): Promise<any> => {
     try {
-      const response = await apiClient.get('/main-oeuvre/par_categorie/');
+      const response = await apiClient.get('/api/main-oeuvre/par_categorie/');
       return response.data;
     } catch (error) {
       console.error("Erreur lors du chargement de la main d'œuvre par catégorie:", error);
@@ -573,7 +658,7 @@ export const libraryApi = {
   // Ouvrages groupés par catégorie
   getWorksByCategory: async (): Promise<any> => {
     try {
-      const response = await apiClient.get('/ouvrages/par_categorie/');
+      const response = await apiClient.get('/api/ouvrages/par_categorie/');
       return response.data;
     } catch (error) {
       console.error("Erreur lors du chargement des ouvrages par catégorie:", error);
@@ -592,7 +677,7 @@ export const libraryApi = {
         });
       }
       
-      const response = await apiClient.get(`/fournitures/?${searchParams.toString()}`);
+      const response = await apiClient.get(`/api/fournitures/?${searchParams.toString()}`);
       
       // Si la réponse a la structure de pagination Django
       if (response.data.results !== undefined) {
@@ -626,7 +711,7 @@ export const libraryApi = {
         });
       }
       
-      const response = await apiClient.get(`/main-oeuvre/?${searchParams.toString()}`);
+      const response = await apiClient.get(`/api/main-oeuvre/?${searchParams.toString()}`);
       
       // Si la réponse a la structure de pagination Django
       if (response.data.results !== undefined) {
@@ -660,7 +745,7 @@ export const libraryApi = {
         });
       }
       
-      const response = await apiClient.get(`/ouvrages/?${searchParams.toString()}`);
+      const response = await apiClient.get(`/api/ouvrages/?${searchParams.toString()}`);
       
       // Si la réponse a la structure de pagination Django
       if (response.data.results !== undefined) {

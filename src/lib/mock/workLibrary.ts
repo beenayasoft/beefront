@@ -134,7 +134,7 @@ export const mockWorkSubCategories: WorkCategory[] = [
   },
 ];
 
-// Matériaux
+// Matériaux - DONNÉES SUPPRIMÉES
 export const mockMaterials: Material[] = [
   {
     id: '1',

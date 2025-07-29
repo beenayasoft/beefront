@@ -51,26 +51,7 @@ function removeDuplicatesById<T extends { id: string; name: string }>(items: T[]
   return unique;
 }
 
-// Cache global pour éviter les duplications entre composants
-let mockDataCache: { materials: Material[], labor: Labor[], works: Work[] } | null = null;
-
-async function getMockDataOnce(): Promise<{ materials: Material[], labor: Labor[], works: Work[] }> {
-  if (mockDataCache) {
-    console.log("📦 Utilisation du cache mock existant");
-    return mockDataCache;
-  }
-  
-  console.log("📦 Chargement initial des données mock");
-  const { mockMaterials, mockLabor, mockWorks } = await import("@/lib/mock/workLibrary");
-  
-  mockDataCache = {
-    materials: removeDuplicatesById([...mockMaterials], "matériaux mock"),
-    labor: removeDuplicatesById([...mockLabor], "main d'œuvre mock"),
-    works: removeDuplicatesById([...mockWorks], "ouvrages mock")
-  };
-  
-  return mockDataCache;
-}
+// Cache supprimé - utilisation uniquement de l'API
 
 // Fonction pour valider et nettoyer les collections par type
 function validateAndCleanCollections(
@@ -155,15 +136,20 @@ export default function WorkLibrary() {
       setLabor(cleanLabor);
       setWorks(cleanWorks);
       
-    } catch (err) {
-      console.error("❌ Erreur lors du chargement de la bibliothèque:", err);
-      setError("Impossible de charger les données de la bibliothèque. Utilisation des données de test.");
+    } catch (err: any) {
+      console.error("❌ [LIBRARY PAGE] Erreur lors du chargement de la bibliothèque:", err);
       
-      // Fallback vers les données mock en cas d'erreur
-      const mockData = await getMockDataOnce();
-      setMaterials(mockData.materials);
-      setLabor(mockData.labor);
-      setWorks(mockData.works);
+      let errorMessage = "Impossible de charger les données de la bibliothèque.";
+      
+      if (err.response) {
+        errorMessage += ` Erreur ${err.response.status}: ${err.response.data?.detail || err.response.statusText}`;
+      } else if (err.request) {
+        errorMessage += " Problème de connexion au serveur.";
+      } else {
+        errorMessage += ` ${err.message}`;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -400,7 +386,7 @@ export default function WorkLibrary() {
         // C'est un ouvrage
         const workItem = item as Work;
         const existingIndex = works.findIndex(w => w.id === workItem.id);
-        const isNew = !workItem.id || workItem.id.startsWith('work-') || existingIndex === -1;
+        const isNew = !workItem.id || existingIndex === -1;
         
         let savedWork: Work;
         if (isNew) {
@@ -427,7 +413,7 @@ export default function WorkLibrary() {
         // C'est un matériau
         const materialItem = item as Material;
         const existingIndex = materials.findIndex(m => m.id === materialItem.id);
-        const isNew = !materialItem.id || materialItem.id.startsWith('material-') || existingIndex === -1;
+        const isNew = !materialItem.id || existingIndex === -1;
         
         let savedMaterial: Material;
         if (isNew) {
@@ -454,7 +440,7 @@ export default function WorkLibrary() {
         // C'est de la main d'œuvre
         const laborItem = item as Labor;
         const existingIndex = labor.findIndex(l => l.id === laborItem.id);
-        const isNew = !laborItem.id || laborItem.id.startsWith('labor-') || existingIndex === -1;
+        const isNew = !laborItem.id || existingIndex === -1;
         
         let savedLabor: Labor;
         if (isNew) {
@@ -501,9 +487,34 @@ export default function WorkLibrary() {
   };
 
   const getRecentlyUpdated = () => {
-    // Dans un cas réel, on utiliserait une date pour trier
-    // Ici on retourne simplement un nombre fixe pour la maquette
-    return 3;
+    // Calcul réel basé sur les dates de mise à jour des éléments
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    let recentCount = 0;
+    
+    // Compter les matériaux récemment mis à jour
+    materials.forEach(item => {
+      if ('updatedAt' in item && item.updatedAt && new Date(item.updatedAt) > oneWeekAgo) {
+        recentCount++;
+      }
+    });
+    
+    // Compter la main d'œuvre récemment mise à jour
+    labor.forEach(item => {
+      if ('updatedAt' in item && item.updatedAt && new Date(item.updatedAt) > oneWeekAgo) {
+        recentCount++;
+      }
+    });
+    
+    // Compter les ouvrages récemment mis à jour
+    works.forEach(item => {
+      if ('updatedAt' in item && item.updatedAt && new Date(item.updatedAt) > oneWeekAgo) {
+        recentCount++;
+      }
+    });
+    
+    return recentCount;
   };
 
   // Affichage pendant le chargement initial

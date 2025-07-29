@@ -46,6 +46,18 @@ export function LibraryItemForm({
       description: "",
       unit: type === "material" ? "unité" : "h",
       unitPrice: 0,
+      categoryId: "",
+      code: "",
+      ...(type === "material" ? {
+        vatRate: 20,
+        supplier: "",
+        reference: "",
+        wasteFactor: 0,
+        isRecyclable: false,
+      } : {
+        skillLevel: "skilled" as const,
+        productivityFactor: 1.0,
+      }),
     }
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -60,6 +72,18 @@ export function LibraryItemForm({
         description: "",
         unit: type === "material" ? "unité" : "h",
         unitPrice: 0,
+        categoryId: "",
+        code: "",
+        ...(type === "material" ? {
+          vatRate: 20,
+          supplier: "",
+          reference: "",
+          wasteFactor: 0,
+          isRecyclable: false,
+        } : {
+          skillLevel: "skilled" as const,
+          productivityFactor: 1.0,
+        }),
       });
     }
   }, [item, type]);
@@ -68,9 +92,16 @@ export function LibraryItemForm({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+    let processedValue: any = value;
+    
+    // Handle numeric fields
+    if (['unitPrice', 'vatRate', 'wasteFactor', 'productivityFactor'].includes(name)) {
+      processedValue = parseFloat(value) || 0;
+    }
+    
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "unitPrice" ? parseFloat(value) || 0 : value,
+      [name]: processedValue,
     }));
 
     // Clear error when field is edited
@@ -84,9 +115,16 @@ export function LibraryItemForm({
   };
 
   const handleSelectChange = (name: string, value: string) => {
+    let processedValue: any = value;
+    
+    // Handle numeric fields that come from selects
+    if (name === 'vatRate') {
+      processedValue = parseFloat(value) || 0;
+    }
+    
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: processedValue,
     }));
   };
 
@@ -123,14 +161,14 @@ export function LibraryItemForm({
       if (type === "material") {
         const materialData = {
           ...formData,
-          id: formData.id || `material-${Date.now()}`,
+          id: formData.id || "", // L'ID sera généré par l'API
           vatRate: (formData as Partial<Material>).vatRate || 20,
         } as Material;
         onSave(materialData);
       } else {
         const laborData = {
           ...formData,
-          id: formData.id || `labor-${Date.now()}`,
+          id: formData.id || "", // L'ID sera généré par l'API
         } as Labor;
         onSave(laborData);
       }
@@ -342,6 +380,89 @@ export function LibraryItemForm({
                     value={(formData as Partial<Material>).supplier || ""}
                     onChange={handleChange}
                     placeholder="Nom du fournisseur"
+                    className="benaya-input"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reference" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    Référence
+                  </Label>
+                  <Input
+                    id="reference"
+                    name="reference"
+                    value={(formData as Partial<Material>).reference || ""}
+                    onChange={handleChange}
+                    placeholder="Référence produit"
+                    className="benaya-input"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="wasteFactor" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    Facteur de perte (%)
+                  </Label>
+                  <Input
+                    id="wasteFactor"
+                    name="wasteFactor"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={(formData as Partial<Material>).wasteFactor || ""}
+                    onChange={handleChange}
+                    placeholder="0.0"
+                    className="benaya-input"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Informations spécifiques à la main d'œuvre */}
+          {type === "labor" && (
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 border-b border-neutral-200 dark:border-neutral-700 pb-2">
+                Informations professionnelles
+              </h3>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="skillLevel" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    Niveau de qualification
+                  </Label>
+                  <Select
+                    value={(formData as Partial<Labor>).skillLevel || "skilled"}
+                    onValueChange={(value) => handleSelectChange("skillLevel", value)}
+                  >
+                    <SelectTrigger className="benaya-input">
+                      <SelectValue placeholder="Sélectionner un niveau" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="apprentice">Apprenti</SelectItem>
+                      <SelectItem value="skilled">Qualifié</SelectItem>
+                      <SelectItem value="expert">Expert</SelectItem>
+                      <SelectItem value="specialist">Spécialiste</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="productivityFactor" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    Facteur de productivité
+                  </Label>
+                  <Input
+                    id="productivityFactor"
+                    name="productivityFactor"
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    max="3.0"
+                    value={(formData as Partial<Labor>).productivityFactor || 1.0}
+                    onChange={handleChange}
+                    placeholder="1.0"
                     className="benaya-input"
                   />
                 </div>

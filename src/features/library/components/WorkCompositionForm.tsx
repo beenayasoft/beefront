@@ -263,7 +263,7 @@ export function WorkCompositionForm({
     if (validate()) {
       const workData: Work = {
         ...formData,
-        id: formData.id || `work-${Date.now()}`,
+        id: formData.id || "", // L'ID sera généré par l'API
         components: components.map(({ componentType, ...rest }) => rest),
         recommendedPrice: calculations.recommendedPrice,
       } as Work;
