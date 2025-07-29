@@ -1,5 +1,6 @@
 import { apiClient } from './client';
 import { TenantInfo, VatRate, PaymentTerm, DocumentNumbering, DocumentAppearance } from '../types/tenant';
+import { transformBackendToFrontend, transformFrontendToBackend } from '@/features/settings/utils/tenantTransformers';
 
 // Type pour les mises à jour partielles du tenant
 export interface TenantUpdateData {
@@ -49,7 +50,7 @@ export const tenantApi = {
   getCurrentTenantInfo: async (): Promise<TenantInfo> => {
     try {
       const response = await apiClient.get('/tenants/current_tenant_info/');
-      return response.data;
+      return transformBackendToFrontend(response.data);
     } catch (error) {
       console.error('Erreur lors de la récupération des informations du tenant actuel:', error);
       throw error;
@@ -60,7 +61,7 @@ export const tenantApi = {
   updateCurrentTenant: async (data: TenantUpdateData): Promise<TenantInfo> => {
     try {
       const response = await apiClient.patch('/tenants/current_tenant_info/', data);
-      return response.data;
+      return transformBackendToFrontend(response.data);
     } catch (error) {
       console.error('Erreur lors de la mise à jour du tenant:', error);
       throw error;

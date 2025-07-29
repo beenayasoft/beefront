@@ -28,6 +28,7 @@ import { DocumentAppearanceForm } from "@/components/settings/DocumentAppearance
 // Import tenant API and types
 import { tenantApi } from "@/lib/api/tenant";
 import { TenantInfo, VatRate, PaymentTerm, DocumentNumbering } from "@/lib/types/tenant";
+import { transformFrontendToBackend } from "@/features/settings/utils/tenantTransformers";
 
 // Define the settings sections
 const settingsSections = [
@@ -136,40 +137,12 @@ export default function Settings() {
       // Récupérer l'ID du tenant actuel
       const tenantId = tenantData.id;
 
-      // Mettre à jour les informations générales du tenant
-      // Vérifier que bank_info et document_appearance sont des objets et non des tableaux
-      const bankInfo = Array.isArray(tenantData.bank_info) 
-        ? (tenantData.bank_info.length > 0 ? tenantData.bank_info[0] : {}) 
-        : tenantData.bank_info || {};
-        
-      const documentAppearance = Array.isArray(tenantData.document_appearance)
-        ? (tenantData.document_appearance.length > 0 ? tenantData.document_appearance[0] : {})
-        : tenantData.document_appearance || {};
+      // Transformer les données du frontend vers le format backend
+      const backendData = transformFrontendToBackend(tenantData);
       
-      // Inclure document_numbering dans la mise à jour principale
-      console.log('Données envoyées au backend:', {
-        bankInfo,
-        documentAppearance,
-        document_numbering: tenantData.document_numbering
-      });
+      console.log('Données transformées pour le backend:', backendData);
       
-      await tenantApi.updateCurrentTenant({
-        name: tenantData.name,
-        email: tenantData.email,
-        phone: tenantData.phone,
-        website: tenantData.website,
-        address_line_1: tenantData.address?.line1,
-        address_line_2: tenantData.address?.line2,
-        city: tenantData.address?.city,
-        postal_code: tenantData.address?.postal_code,
-        country: tenantData.address?.country,
-        siret: tenantData.legal?.siret,
-        vat_number: tenantData.legal?.vat_number,
-        legal_form: tenantData.legal?.legal_form,
-        bank_info: bankInfo,
-        document_appearance: documentAppearance,
-        document_numbering: tenantData.document_numbering // Inclure document_numbering ici
-      });
+      await tenantApi.updateCurrentTenant(backendData);
 
       // Mettre à jour les taux de TVA
       if (tenantData.vat_rates && tenantData.vat_rates.length > 0) {

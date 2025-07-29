@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { DocumentNumbering } from '@/lib/types/tenant';
 import { toast } from '@/hooks/use-toast';
+import { apiClient } from '@/lib/api/client';
 
 interface NumberingPreview {
   preview: string;
@@ -25,40 +26,23 @@ export function useNumberingFormat(): UseNumberingFormatReturn {
     setError(null);
 
     try {
-      const tenantId = localStorage.getItem('tenantId');
-      if (!tenantId) {
-        throw new Error('Tenant ID non trouvé');
-      }
-
-      const response = await fetch(`${import.meta.env.VITE_TENANT_SERVICE_URL}/api/tenants/preview-numbering/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Tenant-ID': tenantId,
-        },
-        body: JSON.stringify({
-          document_type: config.document_type || 'quote',
-          prefix: config.prefix || '',
-          suffix: config.suffix || '',
-          padding: config.padding || 3,
-          next_number: config.next_number || 1,
-          include_year: config.include_year ?? true,
-          include_month: config.include_month ?? false,
-          include_day: config.include_day ?? false,
-          date_format: config.date_format || 'YYYY-MM-DD',
-          separator: config.separator || '-',
-          custom_format: config.custom_format || '',
-          reset_yearly: config.reset_yearly ?? true,
-          reset_monthly: config.reset_monthly ?? false,
-        }),
+      const response = await apiClient.post('/tenants/preview-numbering/', {
+        document_type: config.document_type || 'quote',
+        prefix: config.prefix || '',
+        suffix: config.suffix || '',
+        padding: config.padding || 3,
+        next_number: config.next_number || 1,
+        include_year: config.include_year ?? true,
+        include_month: config.include_month ?? false,
+        include_day: config.include_day ?? false,
+        date_format: config.date_format || 'YYYY-MM-DD',
+        separator: config.separator || '-',
+        custom_format: config.custom_format || '',
+        reset_yearly: config.reset_yearly ?? true,
+        reset_monthly: config.reset_monthly ?? false,
       });
 
-      if (!response.ok) {
-        throw new Error('Erreur lors de la génération de l\'aperçu');
-      }
-
-      const data: NumberingPreview = await response.json();
-      return data.preview;
+      return response.data.preview;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
       setError(errorMessage);
@@ -170,28 +154,12 @@ export function useNumberingFormat(): UseNumberingFormatReturn {
     setError(null);
 
     try {
-      const tenantId = localStorage.getItem('tenantId');
-      if (!tenantId) {
-        throw new Error('Tenant ID non trouvé');
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_TENANT_SERVICE_URL}/api/tenants/document_numbering/${numberingId}/reset/`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Tenant-ID': tenantId,
-          },
-          body: JSON.stringify({ new_value: newValue }),
-        }
+      const response = await apiClient.post(
+        `/tenants/document_numbering/${numberingId}/reset/`,
+        { new_value: newValue }
       );
 
-      if (!response.ok) {
-        throw new Error('Erreur lors de la réinitialisation du compteur');
-      }
-
-      const data = await response.json();
+      const data = response.data;
       
       toast({
         title: "Compteur réinitialisé",

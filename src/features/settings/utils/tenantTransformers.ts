@@ -2,8 +2,7 @@
  * Utilitaires pour transformer les données entre le format frontend et backend
  */
 
-import { TenantInfo } from '../types/tenant';
-import { TenantUpdateData } from '@/lib/api/tenant';
+import { TenantInfo, TenantUpdateData } from '@/lib/types/tenant';
 
 /**
  * Transforme les données du backend vers le format frontend
@@ -28,7 +27,7 @@ export function transformBackendToFrontend(backendData: any): TenantInfo {
     legal: {
       legal_form: backendData.legal_form || backendData.legal?.legal_form || '',
       siret: backendData.siret || backendData.legal?.siret || '',
-      ice: backendData.ice || backendData.legal?.ice || '',
+      vat_number: backendData.vat_number || backendData.legal?.vat_number || '',
     },
     
     bank_info: {
@@ -63,7 +62,31 @@ export function transformBackendToFrontend(backendData: any): TenantInfo {
     vat_rates: backendData.vat_rates || [],
     payment_terms: backendData.payment_terms || [],
     document_numbering: backendData.document_numbering || [],
-    document_appearance: backendData.document_appearance || null,
+    document_appearance: backendData.document_appearance || {
+      show_logo: true,
+      logo_position: 'left',
+      font_family: 'Arial',
+      font_size: 12,
+      line_spacing: 1.2,
+      margin_top: 20,
+      margin_right: 20,
+      margin_bottom: 20,
+      margin_left: 20,
+      show_payment_details: true,
+      show_legal_mentions: true,
+      table_header_color: '#f5f5f5',
+      table_alternate_color: '#ffffff'
+    },
+    
+    // Champs additionnels requis par TenantInfo
+    is_active: backendData.is_active || true,
+    is_trial: backendData.is_trial || false,
+    trial_end_date: backendData.trial_end_date,
+    subscription_plan: backendData.subscription_plan || 'trial',
+    max_users: backendData.max_users || 5,
+    max_storage_gb: backendData.max_storage_gb || 10,
+    created_at: backendData.created_at || new Date().toISOString(),
+    updated_at: backendData.updated_at,
   };
 }
 
@@ -92,7 +115,7 @@ export function transformFrontendToBackend(frontendData: Partial<TenantInfo>): T
   if (frontendData.legal) {
     if (frontendData.legal.legal_form !== undefined) backendData.legal_form = frontendData.legal.legal_form;
     if (frontendData.legal.siret !== undefined) backendData.siret = frontendData.legal.siret;
-    if (frontendData.legal.ice !== undefined) backendData.ice = frontendData.legal.ice;
+    if (frontendData.legal.vat_number !== undefined) backendData.vat_number = frontendData.legal.vat_number;
   }
   
   // Paramètres
