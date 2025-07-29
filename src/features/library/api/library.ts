@@ -1,70 +1,107 @@
 import { apiClient } from '@/lib/api/client';
-import { Work, Material, Labor, WorkCategory } from '../types/workLibrary';
+import { Work, Material, Labor, WorkCategory, WorkComponent } from '../types/workLibrary';
 
-// Types pour les réponses du backend
+// Types pour la pagination Django REST Framework
+interface DjangoPaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+// Type pour les paramètres de pagination
+interface PaginationParams {
+  page?: number;
+  page_size?: number;
+}
+
+// Type pour les réponses avec pagination optionnelle
+type ApiResponse<T> = T[] | DjangoPaginatedResponse<T>;
+
+// Types pour les réponses du backend Django
 interface BackendCategory {
   id: number;
   nom: string;
   parent?: number;
-  position?: number;
-  chemin_complet?: string;
+  position: number;
+  description?: string;
+  chemin_complet: string;
   sous_categories?: BackendCategory[];
+  created_at: string;
+  updated_at: string;
 }
 
 interface BackendMaterial {
   id: number;
   nom: string;
   unite: string;
-  prix_achat_ht: number;
-  vat_rate: number;
+  prix_achat_ht: string; // Decimal as string from Django
+  categorie: number;
+  reference: string;
+  supplier: string;
+  vat_rate: string; // Decimal as string from Django
+  type: string;
+  waste_factor: string; // Decimal as string from Django
+  is_recyclable: boolean;
+  categorie_nom?: string; // Computed field
+  unitPrice?: string; // Alias field
+  vatRate?: string; // Alias field
+  wasteFactor?: string; // Alias field
+  created_at: string;
+  updated_at: string;
   description?: string;
-  reference?: string;
-  supplier?: string;
-  categorie?: number;
-  categorie_nom?: string;
-  type?: string;
-  code?: string;
-  created_at?: string;
-  updated_at?: string;
 }
 
 interface BackendLabor {
   id: number;
   nom: string;
-  cout_horaire: number;
+  cout_horaire: string; // Decimal as string from Django
+  categorie: number;
   unite: string;
+  skill_level: 'apprentice' | 'skilled' | 'expert' | 'specialist';
+  productivity_factor: string; // Decimal as string from Django
+  type: string;
+  categorie_nom?: string; // Computed field
+  unitPrice?: string; // Alias field (= cout_horaire)
+  prix_achat_ht?: string; // Alias field (= cout_horaire)
+  created_at: string;
+  updated_at: string;
   description?: string;
-  categorie?: number;
-  categorie_nom?: string;
-  type?: string;
-  code?: string;
-  created_at?: string;
-  updated_at?: string;
+}
+
+interface BackendIngredient {
+  id: number;
+  ouvrage: number;
+  element_type: number;
+  element_id: number;
+  element: any; // Generic foreign key content
+  quantite: string; // Decimal as string from Django
+  waste_allowance: string; // Decimal as string from Django
+  cout_total: number; // Computed property
 }
 
 interface BackendWork {
   id: number;
   nom: string;
   unite: string;
+  categorie: number;
+  prix_recommande: string; // Decimal as string from Django
+  marge: string; // Decimal as string from Django
+  complexity: 'low' | 'medium' | 'high';
+  efficiency: string; // Decimal as string from Django
+  duration_estimate?: string; // Decimal as string from Django
+  requires_certification: boolean;
+  categorie_nom?: string; // Computed field
+  debourse_sec: number; // Computed property
+  recommendedPrice: number; // Computed property with applied margin
+  laborCost: number; // Computed property
+  materialCost: number; // Computed property
+  ingredients?: BackendIngredient[]; // Related ingredients
+  created_at: string;
+  updated_at: string;
   description?: string;
-  code?: string;
-  categorie?: number;
-  categorie_nom?: string;
-  prix_recommande: number;
-  marge: number;
-  is_custom: boolean;
   type?: string;
-  complexity?: string;
-  efficiency?: number;
-  debourse_sec: number;
-  totalCost?: number;
-  recommendedPrice?: number;
-  margin?: number;
-  laborCost?: number;
-  materialCost?: number;
-  created_at?: string;
-  updated_at?: string;
-  ingredients?: any[];
+  is_custom?: boolean;
 }
 
 // Fonctions de transformation Backend → Frontend
@@ -78,40 +115,57 @@ const transformCategory = (backendCategory: BackendCategory): WorkCategory => ({
 
 const transformMaterial = (backendMaterial: BackendMaterial): Material => ({
   id: backendMaterial.id.toString(),
-  reference: backendMaterial.reference || backendMaterial.code,
+  reference: backendMaterial.reference,
   name: backendMaterial.nom,
-  description: backendMaterial.description,
+  description: backendMaterial.description || '',
   unit: backendMaterial.unite,
-  unitPrice: Number(backendMaterial.prix_achat_ht),
-  vatRate: Number(backendMaterial.vat_rate),
+  unitPrice: Number(backendMaterial.unitPrice || backendMaterial.prix_achat_ht),
+  vatRate: Number(backendMaterial.vatRate || backendMaterial.vat_rate),
   supplier: backendMaterial.supplier,
-  category: backendMaterial.categorie_nom,
+  category: backendMaterial.categorie_nom || '',
 });
 
 const transformLabor = (backendLabor: BackendLabor): Labor => ({
   id: backendLabor.id.toString(),
   name: backendLabor.nom,
-  description: backendLabor.description,
-  unit: backendLabor.unite || 'h',
-  unitPrice: Number(backendLabor.cout_horaire),
-  category: backendLabor.categorie_nom,
+  description: backendLabor.description || '',
+  unit: backendLabor.unite,
+  unitPrice: Number(backendLabor.unitPrice || backendLabor.cout_horaire),
+  category: backendLabor.categorie_nom || '',
 });
+
+// Transformation d'un ingrédient backend en composant frontend
+const transformIngredient = (ingredient: BackendIngredient): WorkComponent => {
+  const element = ingredient.element || {};
+  const isLabor = element.cout_horaire !== undefined;
+  
+  return {
+    id: ingredient.id.toString(),
+    type: isLabor ? 'labor' : 'material',
+    referenceId: ingredient.element_id.toString(),
+    name: element.nom || 'Non renseigné',
+    unit: element.unite || (isLabor ? 'h' : 'unité'),
+    quantity: Number(ingredient.quantite),
+    unitPrice: Number(element.prix_achat_ht || element.cout_horaire || 0),
+    totalPrice: ingredient.cout_total || 0,
+  };
+};
 
 const transformWork = (backendWork: BackendWork): Work => ({
   id: backendWork.id.toString(),
-  reference: backendWork.code,
+  reference: backendWork.nom, // Backend n'a pas de code séparé
   name: backendWork.nom,
-  description: backendWork.description,
-  categoryId: backendWork.categorie?.toString() || '',
+  description: backendWork.description || '',
+  categoryId: backendWork.categorie.toString(),
   unit: backendWork.unite,
-  components: [], // TODO: Transformer les ingredients
-  laborCost: Number(backendWork.laborCost || 0),
-  materialCost: Number(backendWork.materialCost || 0),
-  totalCost: Number(backendWork.debourse_sec || backendWork.totalCost || 0),
-  recommendedPrice: Number(backendWork.prix_recommande || backendWork.recommendedPrice || 0),
-  margin: Number(backendWork.marge || backendWork.margin || 0),
-  createdAt: backendWork.created_at || new Date().toISOString(),
-  updatedAt: backendWork.updated_at || new Date().toISOString(),
+  components: (backendWork.ingredients || []).map(transformIngredient),
+  laborCost: backendWork.laborCost || 0,
+  materialCost: backendWork.materialCost || 0,
+  totalCost: backendWork.debourse_sec || 0,
+  recommendedPrice: backendWork.recommendedPrice || Number(backendWork.prix_recommande),
+  margin: Number(backendWork.marge),
+  createdAt: backendWork.created_at,
+  updatedAt: backendWork.updated_at,
   isCustom: backendWork.is_custom || false,
 });
 
@@ -119,42 +173,58 @@ const transformWork = (backendWork: BackendWork): Work => ({
 const transformMaterialToBackend = (material: Partial<Material>) => ({
   nom: material.name,
   unite: material.unit,
-  prix_achat_ht: material.unitPrice,
-  vat_rate: material.vatRate,
-  description: material.description,
-  reference: material.reference,
-  supplier: material.supplier,
+  prix_achat_ht: material.unitPrice?.toString(),
+  vat_rate: material.vatRate?.toString() || '20.0',
+  description: material.description || '',
+  reference: material.reference || '',
+  supplier: material.supplier || '',
+  type: 'material',
+  waste_factor: '0.0',
+  is_recyclable: false,
 });
 
 const transformLaborToBackend = (labor: Partial<Labor>) => ({
   nom: labor.name,
-  cout_horaire: labor.unitPrice,
+  cout_horaire: labor.unitPrice?.toString(),
   unite: labor.unit || 'h',
-  description: labor.description,
+  description: labor.description || '',
+  type: 'labor',
+  skill_level: 'skilled',
+  productivity_factor: '1.0',
 });
 
 const transformWorkToBackend = (work: Partial<Work>) => ({
   nom: work.name,
   unite: work.unit,
-  description: work.description,
-  code: work.reference,
-  prix_recommande: work.recommendedPrice,
-  marge: work.margin,
-  is_custom: work.isCustom,
+  description: work.description || '',
+  categorie: work.categoryId ? Number(work.categoryId) : undefined,
+  prix_recommande: work.recommendedPrice?.toString() || '0.0',
+  marge: work.margin?.toString() || '20.0',
+  complexity: 'medium',
+  efficiency: '1.0',
+  requires_certification: false,
+  type: 'work',
+  is_custom: work.isCustom || true,
 });
 
 // API Bibliothèque
 export const libraryApi = {
   // ==================== CATÉGORIES ====================
   
-  // Récupérer toutes les catégories
-  getCategories: async (): Promise<WorkCategory[]> => {
+  // Récupérer toutes les catégories (avec pagination Django)
+  getCategories: async (filters?: Record<string, string>): Promise<WorkCategory[]> => {
     try {
-      console.log("API: Récupération des catégories");
-      const response = await apiClient.get('/categories/');
-      console.log("Réponse catégories:", response.data);
+      const params = new URLSearchParams();
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          params.append(key, value);
+        });
+      }
       
-      const categories = Array.isArray(response.data) ? response.data : response.data.results || [];
+      const response = await apiClient.get(`/categories/?${params.toString()}`);
+      
+      // Django REST retourne {count, next, previous, results}
+      const categories = response.data.results || response.data;
       return categories.map(transformCategory);
     } catch (error) {
       console.error("Erreur lors du chargement des catégories:", error);
@@ -165,13 +235,21 @@ export const libraryApi = {
   // Récupérer les catégories racines
   getRootCategories: async (): Promise<WorkCategory[]> => {
     try {
-      console.log("API: Récupération des catégories racines");
       const response = await apiClient.get('/categories/racines/');
-      console.log("Réponse catégories racines:", response.data);
-      
       return response.data.map(transformCategory);
     } catch (error) {
       console.error("Erreur lors du chargement des catégories racines:", error);
+      throw error;
+    }
+  },
+
+  // Statistiques des catégories
+  getCategoryStats: async (): Promise<any> => {
+    try {
+      const response = await apiClient.get('/categories/stats/');
+      return response.data;
+    } catch (error) {
+      console.error("Erreur lors du chargement des statistiques des catégories:", error);
       throw error;
     }
   },
@@ -190,7 +268,8 @@ export const libraryApi = {
       
       const response = await apiClient.get(`/fournitures/?${params.toString()}`);
       
-      const materials = Array.isArray(response.data) ? response.data : response.data.results || [];
+      // Django REST pagination: {count, next, previous, results}
+      const materials = response.data.results || response.data;
       return materials.map(transformMaterial);
     } catch (error) {
       console.error("Erreur lors du chargement des matériaux:", error);
@@ -257,7 +336,8 @@ export const libraryApi = {
       
       const response = await apiClient.get(`/main-oeuvre/?${params.toString()}`);
       
-      const labor = Array.isArray(response.data) ? response.data : response.data.results || [];
+      // Django REST pagination: {count, next, previous, results}
+      const labor = response.data.results || response.data;
       return labor.map(transformLabor);
     } catch (error) {
       console.error("Erreur lors du chargement de la main d'œuvre:", error);
@@ -324,7 +404,8 @@ export const libraryApi = {
       
       const response = await apiClient.get(`/ouvrages/?${params.toString()}`);
       
-      const works = Array.isArray(response.data) ? response.data : response.data.results || [];
+      // Django REST pagination: {count, next, previous, results}
+      const works = response.data.results || response.data;
       return works.map(transformWork);
     } catch (error) {
       console.error("Erreur lors du chargement des ouvrages:", error);
@@ -397,21 +478,225 @@ export const libraryApi = {
     }
   },
 
-  // Rechercher dans la bibliothèque
-  searchLibrary: async (query: string): Promise<(Material | Labor | Work)[]> => {
+  // Rechercher dans la bibliothèque (endpoint dédié Django)
+  searchLibrary: async (query: string): Promise<{
+    categories: WorkCategory[];
+    fournitures: Material[];
+    main_oeuvre: Labor[];
+    ouvrages: Work[];
+    total_results: number;
+  }> => {
     try {
-      console.log("API: Recherche dans la bibliothèque:", query);
+      const response = await apiClient.get(`/search/search/?q=${encodeURIComponent(query)}`);
       
+      return {
+        categories: (response.data.categories || []).map(transformCategory),
+        fournitures: (response.data.fournitures || []).map(transformMaterial),
+        main_oeuvre: (response.data.main_oeuvre || []).map(transformLabor),
+        ouvrages: (response.data.ouvrages || []).map(transformWork),
+        total_results: response.data.total_results || 0,
+      };
+    } catch (error) {
+      console.error("Erreur lors de la recherche dans la bibliothèque:", error);
+      // Fallback vers recherche séparée si l'endpoint global n'existe pas
       const [materials, labor, works] = await Promise.all([
         libraryApi.getMaterials({ search: query }),
         libraryApi.getLabor({ search: query }),
         libraryApi.getWorks({ search: query }),
       ]);
       
-      return [...materials, ...labor, ...works];
+      return {
+        categories: [],
+        fournitures: materials,
+        main_oeuvre: labor,
+        ouvrages: works,
+        total_results: materials.length + labor.length + works.length,
+      };
+    }
+  },
+
+  // Version simple pour compatibilité (retourne tous les résultats dans un tableau)
+  searchLibrarySimple: async (query: string): Promise<(Material | Labor | Work)[]> => {
+    try {
+      const results = await libraryApi.searchLibrary(query);
+      return [...results.fournitures, ...results.main_oeuvre, ...results.ouvrages];
     } catch (error) {
-      console.error("Erreur lors de la recherche dans la bibliothèque:", error);
+      console.error("Erreur lors de la recherche simple dans la bibliothèque:", error);
       throw error;
     }
   },
-}; 
+
+  // Statistiques générales
+  getStats: async (): Promise<any> => {
+    try {
+      const [materialsStats, laborStats, worksStats] = await Promise.all([
+        apiClient.get('/fournitures/stats/'),
+        apiClient.get('/main-oeuvre/stats/'),
+        apiClient.get('/ouvrages/stats/'),
+      ]);
+      
+      return {
+        materials: materialsStats.data,
+        labor: laborStats.data,
+        works: worksStats.data,
+      };
+    } catch (error) {
+      console.error("Erreur lors du chargement des statistiques:", error);
+      throw error;
+    }
+  },
+
+  // Méthodes spécifiques avec pagination explicite
+  
+  // Matériaux groupés par catégorie
+  getMaterialsByCategory: async (): Promise<any> => {
+    try {
+      const response = await apiClient.get('/fournitures/par_categorie/');
+      return response.data;
+    } catch (error) {
+      console.error("Erreur lors du chargement des matériaux par catégorie:", error);
+      throw error;
+    }
+  },
+
+  // Main d'œuvre groupée par catégorie
+  getLaborByCategory: async (): Promise<any> => {
+    try {
+      const response = await apiClient.get('/main-oeuvre/par_categorie/');
+      return response.data;
+    } catch (error) {
+      console.error("Erreur lors du chargement de la main d'œuvre par catégorie:", error);
+      throw error;
+    }
+  },
+
+  // Ouvrages groupés par catégorie
+  getWorksByCategory: async (): Promise<any> => {
+    try {
+      const response = await apiClient.get('/ouvrages/par_categorie/');
+      return response.data;
+    } catch (error) {
+      console.error("Erreur lors du chargement des ouvrages par catégorie:", error);
+      throw error;
+    }
+  },
+
+  // Méthodes avec pagination explicite
+  
+  getMaterialsPaginated: async (params?: PaginationParams & Record<string, string>): Promise<DjangoPaginatedResponse<Material>> => {
+    try {
+      const searchParams = new URLSearchParams();
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          searchParams.append(key, value.toString());
+        });
+      }
+      
+      const response = await apiClient.get(`/fournitures/?${searchParams.toString()}`);
+      
+      // Si la réponse a la structure de pagination Django
+      if (response.data.results !== undefined) {
+        return {
+          count: response.data.count,
+          next: response.data.next,
+          previous: response.data.previous,
+          results: response.data.results.map(transformMaterial),
+        };
+      }
+      
+      // Fallback si pas de pagination
+      return {
+        count: response.data.length,
+        next: null,
+        previous: null,
+        results: response.data.map(transformMaterial),
+      };
+    } catch (error) {
+      console.error("Erreur lors du chargement paginaé des matériaux:", error);
+      throw error;
+    }
+  },
+
+  getLaborPaginated: async (params?: PaginationParams & Record<string, string>): Promise<DjangoPaginatedResponse<Labor>> => {
+    try {
+      const searchParams = new URLSearchParams();
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          searchParams.append(key, value.toString());
+        });
+      }
+      
+      const response = await apiClient.get(`/main-oeuvre/?${searchParams.toString()}`);
+      
+      // Si la réponse a la structure de pagination Django
+      if (response.data.results !== undefined) {
+        return {
+          count: response.data.count,
+          next: response.data.next,
+          previous: response.data.previous,
+          results: response.data.results.map(transformLabor),
+        };
+      }
+      
+      // Fallback si pas de pagination
+      return {
+        count: response.data.length,
+        next: null,
+        previous: null,
+        results: response.data.map(transformLabor),
+      };
+    } catch (error) {
+      console.error("Erreur lors du chargement paginaé de la main d'œuvre:", error);
+      throw error;
+    }
+  },
+
+  getWorksPaginated: async (params?: PaginationParams & Record<string, string>): Promise<DjangoPaginatedResponse<Work>> => {
+    try {
+      const searchParams = new URLSearchParams();
+      if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+          searchParams.append(key, value.toString());
+        });
+      }
+      
+      const response = await apiClient.get(`/ouvrages/?${searchParams.toString()}`);
+      
+      // Si la réponse a la structure de pagination Django
+      if (response.data.results !== undefined) {
+        return {
+          count: response.data.count,
+          next: response.data.next,
+          previous: response.data.previous,
+          results: response.data.results.map(transformWork),
+        };
+      }
+      
+      // Fallback si pas de pagination
+      return {
+        count: response.data.length,
+        next: null,
+        previous: null,
+        results: response.data.map(transformWork),
+      };
+    } catch (error) {
+      console.error("Erreur lors du chargement paginaé des ouvrages:", error);
+      throw error;
+    }
+  },
+};
+
+// Fonction utilitaire pour extraire les résultats d'une réponse paginaée ou non
+export const extractResults = <T>(response: ApiResponse<T>): T[] => {
+  if (Array.isArray(response)) {
+    return response;
+  }
+  return response.results || [];
+};
+
+// Fonction utilitaire pour vérifier si une réponse est paginaée
+export const isPaginatedResponse = <T>(response: ApiResponse<T>): response is DjangoPaginatedResponse<T> => {
+  return !Array.isArray(response) && 'results' in response;
+};
+
+export type { DjangoPaginatedResponse, PaginationParams, ApiResponse };

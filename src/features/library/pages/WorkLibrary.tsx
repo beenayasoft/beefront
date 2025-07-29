@@ -51,26 +51,7 @@ function removeDuplicatesById<T extends { id: string; name: string }>(items: T[]
   return unique;
 }
 
-// Cache global pour éviter les duplications entre composants
-let mockDataCache: { materials: Material[], labor: Labor[], works: Work[] } | null = null;
-
-async function getMockDataOnce(): Promise<{ materials: Material[], labor: Labor[], works: Work[] }> {
-  if (mockDataCache) {
-    console.log("📦 Utilisation du cache mock existant");
-    return mockDataCache;
-  }
-  
-  console.log("📦 Chargement initial des données mock");
-  const { mockMaterials, mockLabor, mockWorks } = await import("@/lib/mock/workLibrary");
-  
-  mockDataCache = {
-    materials: removeDuplicatesById([...mockMaterials], "matériaux mock"),
-    labor: removeDuplicatesById([...mockLabor], "main d'œuvre mock"),
-    works: removeDuplicatesById([...mockWorks], "ouvrages mock")
-  };
-  
-  return mockDataCache;
-}
+// Suppression du cache mock - utilisation uniquement de l'API
 
 // Fonction pour valider et nettoyer les collections par type
 function validateAndCleanCollections(
@@ -117,6 +98,7 @@ function validateAndCleanCollections(
 
 export default function WorkLibrary() {
   const navigate = useNavigate();
+  const { testResults, isTestingEndpoints, testEndpoints } = useLibraryApiTest();
   
   // État pour les données
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -124,6 +106,14 @@ export default function WorkLibrary() {
   const [works, setWorks] = useState<Work[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Test des endpoints avant le chargement des données
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🧪 [LIBRARY PAGE] Running API diagnosis on mount...');
+      testEndpoints();
+    }
+  }, [testEndpoints]);
 
   // Fonction pour charger les données depuis l'API
   const loadLibraryData = async () => {
@@ -155,15 +145,25 @@ export default function WorkLibrary() {
       setLabor(cleanLabor);
       setWorks(cleanWorks);
       
-    } catch (err) {
-      console.error("❌ Erreur lors du chargement de la bibliothèque:", err);
-      setError("Impossible de charger les données de la bibliothèque. Utilisation des données de test.");
+    } catch (err: any) {
+      console.error("❌ [LIBRARY PAGE] Erreur lors du chargement de la bibliothèque:", err);
       
-      // Fallback vers les données mock en cas d'erreur
-      const mockData = await getMockDataOnce();
-      setMaterials(mockData.materials);
-      setLabor(mockData.labor);
-      setWorks(mockData.works);
+      let errorMessage = "Impossible de charger les données de la bibliothèque.";
+      
+      if (err.response) {
+        errorMessage += ` Erreur ${err.response.status}: ${err.response.data?.detail || err.response.statusText}`;
+      } else if (err.request) {
+        errorMessage += " Problème de connexion au serveur.";
+      } else {
+        errorMessage += ` ${err.message}`;
+      }
+      
+      setError(errorMessage);
+      
+      // Affichage des résultats de test pour aider au debugging
+      if (Object.keys(testResults).length > 0) {
+        console.log('🔍 [LIBRARY PAGE] Test results for debugging:', testResults);
+      }
     } finally {
       setLoading(false);
     }
