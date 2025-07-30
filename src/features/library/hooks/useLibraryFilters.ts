@@ -46,85 +46,65 @@ export function useLibraryFilters(
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  // Filtrer et trier les éléments - VERSION OPTIMISÉE AVEC USEMEMO
-  const filteredItems = useMemo(() => {
-    // Étape 1: Créer la liste unifiée selon l'onglet sélectionné
-    let baseItems: (Work | Material | Labor)[] = [];
-    
+  // Base items optimisée avec dépendances allégées
+  const baseItems = useMemo(() => {
     switch (activeTab) {
-      case "all":
-        baseItems = [...materials, ...labor, ...works];
-        break;
-      case "material":
-        baseItems = [...materials];
-        break;
-      case "labor":
-        baseItems = [...labor];
-        break;
-      case "work":
-        baseItems = [...works];
-        break;
-      default:
-        baseItems = [...materials, ...labor, ...works];
+      case "material": return materials;
+      case "labor": return labor;
+      case "work": return works;
+      default: return [...materials, ...labor, ...works];
     }
+  }, [materials, labor, works, activeTab]);
 
-    // Étape 2: Appliquer la recherche textuelle
-    let searchFiltered = baseItems;
-    if (searchQuery && searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      searchFiltered = baseItems.filter(item => {
-        const name = (item.name || "").toLowerCase();
-        const description = (item.description || "").toLowerCase();
-        const reference = ("reference" in item && item.reference) ? item.reference.toLowerCase() : "";
-        
-        return name.includes(query) || 
-               description.includes(query) || 
-               reference.includes(query);
-      });
+  // Filtrage optimisé séparément
+  const searchFiltered = useMemo(() => {
+    if (!searchQuery?.trim()) return baseItems;
+    
+    const query = searchQuery.toLowerCase().trim();
+    return baseItems.filter(item => {
+      const name = item.name?.toLowerCase() || "";
+      const description = item.description?.toLowerCase() || "";
+      const reference = ("reference" in item && item.reference?.toLowerCase()) || "";
+      
+      return name.includes(query) || description.includes(query) || reference.includes(query);
+    });
+  }, [baseItems, searchQuery]);
+
+  // Tri optimisé séparément 
+  const filteredItems = useMemo(() => {
+    // Cas optimisé pour le tri le plus fréquent
+    if (sortField === "name" && sortDirection === "asc") {
+      return [...searchFiltered].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     }
-
-    // Étape 3: Appliquer le tri
-    const sortedItems = [...searchFiltered].sort((a, b) => {
+    
+    return [...searchFiltered].sort((a, b) => {
       let valueA: any, valueB: any;
 
       switch (sortField) {
         case "unitPrice":
-          // Utiliser 'recommendedPrice' pour les ouvrages, 'unitPrice' pour le reste
           valueA = "recommendedPrice" in a ? a.recommendedPrice : a.unitPrice;
           valueB = "recommendedPrice" in b ? b.recommendedPrice : b.unitPrice;
           break;
-          
         case "reference":
           valueA = 'reference' in a ? (a.reference || "") : "";
           valueB = 'reference' in b ? (b.reference || "") : "";
           break;
-          
-        case "name":
-          valueA = a.name || "";
-          valueB = b.name || "";
-          break;
-          
         case "unit":
           valueA = a.unit || "";
           valueB = b.unit || "";
           break;
-          
         default:
           valueA = (a as any)[sortField] || "";
           valueB = (b as any)[sortField] || "";
       }
 
-      // Comparaison selon le type
       if (typeof valueA === 'number' && typeof valueB === 'number') {
         return sortDirection === "asc" ? valueA - valueB : valueB - valueA;
-      } else {
-        const comparison = String(valueA).localeCompare(String(valueB));
-        return sortDirection === "asc" ? comparison : -comparison;
       }
+      const comparison = String(valueA).localeCompare(String(valueB));
+      return sortDirection === "asc" ? comparison : -comparison;
     });
-    
-    return sortedItems;
-  }, [materials, labor, works, activeTab, searchQuery, sortField, sortDirection]);
+  }, [searchFiltered, sortField, sortDirection]);
 
   const paginatedItems = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;

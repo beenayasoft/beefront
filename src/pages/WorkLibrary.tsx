@@ -181,85 +181,64 @@ export default function WorkLibrary() {
   const [currentItemType, setCurrentItemType] = useState<"material" | "labor" | "work">("material");
   const [selectedItem, setSelectedItem] = useState<Work | Material | Labor | null>(null);
 
-  // Filtrer et trier les éléments - VERSION OPTIMISÉE AVEC USEMEMO
-  const filteredItems = useMemo(() => {
-    // Étape 1: Créer la liste unifiée selon l'onglet sélectionné
-    let baseItems: (Work | Material | Labor)[] = [];
-    
+  // Base items optimisée avec dépendances allégées
+  const baseItems = useMemo(() => {
     switch (activeTab) {
-      case "all":
-        baseItems = [...materials, ...labor, ...works];
-        break;
-      case "material":
-        baseItems = [...materials];
-        break;
-      case "labor":
-        baseItems = [...labor];
-        break;
-      case "work":
-        baseItems = [...works];
-        break;
-      default:
-        baseItems = [...materials, ...labor, ...works];
+      case "material": return materials;
+      case "labor": return labor;
+      case "work": return works;
+      default: return [...materials, ...labor, ...works];
     }
+  }, [materials, labor, works, activeTab]);
 
-    // Étape 2: Appliquer la recherche textuelle
-    let searchFiltered = baseItems;
-    if (searchQuery && searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      searchFiltered = baseItems.filter(item => {
-        const name = (item.name || "").toLowerCase();
-        const description = (item.description || "").toLowerCase();
-        const reference = ("reference" in item && item.reference) ? item.reference.toLowerCase() : "";
-        
-        return name.includes(query) || 
-               description.includes(query) || 
-               reference.includes(query);
-      });
+  // Filtrage optimisé séparément
+  const searchFiltered = useMemo(() => {
+    if (!searchQuery?.trim()) return baseItems;
+    
+    const query = searchQuery.toLowerCase().trim();
+    return baseItems.filter(item => {
+      const name = item.name?.toLowerCase() || "";
+      const description = item.description?.toLowerCase() || "";
+      const reference = ("reference" in item && item.reference?.toLowerCase()) || "";
+      
+      return name.includes(query) || description.includes(query) || reference.includes(query);
+    });
+  }, [baseItems, searchQuery]);
+
+  // Tri optimisé séparément 
+  const filteredItems = useMemo(() => {
+    if (sortField === "name" && sortDirection === "asc") {
+      return [...searchFiltered].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     }
-
-    // Étape 3: Appliquer le tri
-    const sortedItems = [...searchFiltered].sort((a, b) => {
+    
+    return [...searchFiltered].sort((a, b) => {
       let valueA: any, valueB: any;
 
       switch (sortField) {
         case "unitPrice":
-          // Utiliser 'recommendedPrice' pour les ouvrages, 'unitPrice' pour le reste
           valueA = "recommendedPrice" in a ? a.recommendedPrice : a.unitPrice;
           valueB = "recommendedPrice" in b ? b.recommendedPrice : b.unitPrice;
           break;
-          
         case "reference":
           valueA = 'reference' in a ? (a.reference || "") : "";
           valueB = 'reference' in b ? (b.reference || "") : "";
           break;
-          
-        case "name":
-          valueA = a.name || "";
-          valueB = b.name || "";
-          break;
-          
         case "unit":
           valueA = a.unit || "";
           valueB = b.unit || "";
           break;
-          
         default:
           valueA = (a as any)[sortField] || "";
           valueB = (b as any)[sortField] || "";
       }
 
-      // Comparaison selon le type
       if (typeof valueA === 'number' && typeof valueB === 'number') {
         return sortDirection === "asc" ? valueA - valueB : valueB - valueA;
-      } else {
-        const comparison = String(valueA).localeCompare(String(valueB));
-        return sortDirection === "asc" ? comparison : -comparison;
       }
+      const comparison = String(valueA).localeCompare(String(valueB));
+      return sortDirection === "asc" ? comparison : -comparison;
     });
-    
-    return sortedItems;
-  }, [materials, labor, works, activeTab, searchQuery, sortField, sortDirection]);
+  }, [searchFiltered, sortField, sortDirection]);
 
   const paginatedItems = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -474,67 +453,25 @@ export default function WorkLibrary() {
     }
   };
 
-  // Fonctions pour les statistiques
-  const getTotalItems = () => {
-    return materials.length + labor.length + works.length;
-  };
-
-  const getTotalValue = () => {
-    const materialsValue = materials.reduce((sum, item) => sum + item.unitPrice, 0);
-    const laborValue = labor.reduce((sum, item) => sum + item.unitPrice, 0);
-    const worksValue = works.reduce((sum, item) => sum + item.recommendedPrice, 0);
-    return materialsValue + laborValue + worksValue;
-  };
-
-  const getRecentlyUpdated = () => {
-    // Calcul réel basé sur les dates de mise à jour des éléments
+  // Statistiques optimisées avec useMemo
+  const stats = useMemo(() => {
+    const totalItems = materials.length + labor.length + works.length;
+    
+    const totalValue = materials.reduce((sum, item) => sum + item.unitPrice, 0) +
+                      labor.reduce((sum, item) => sum + item.unitPrice, 0) +
+                      works.reduce((sum, item) => sum + item.recommendedPrice, 0);
+    
     const now = new Date();
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     
-    let recentCount = 0;
+    const recentlyUpdated = [...materials, ...labor, ...works].filter(item => 
+      'updatedAt' in item && item.updatedAt && new Date(item.updatedAt) > oneWeekAgo
+    ).length;
     
-    // Compter les matériaux récemment mis à jour
-    materials.forEach(item => {
-      if ('updatedAt' in item && item.updatedAt && new Date(item.updatedAt) > oneWeekAgo) {
-        recentCount++;
-      }
-    });
-    
-    // Compter la main d'œuvre récemment mise à jour
-    labor.forEach(item => {
-      if ('updatedAt' in item && item.updatedAt && new Date(item.updatedAt) > oneWeekAgo) {
-        recentCount++;
-      }
-    });
-    
-    // Compter les ouvrages récemment mis à jour
-    works.forEach(item => {
-      if ('updatedAt' in item && item.updatedAt && new Date(item.updatedAt) > oneWeekAgo) {
-        recentCount++;
-      }
-    });
-    
-    return recentCount;
-  };
+    return { totalItems, totalValue, recentlyUpdated };
+  }, [materials.length, labor.length, works.length]);
 
-  // Affichage pendant le chargement initial
-  if (loading && materials.length === 0 && labor.length === 0 && works.length === 0) {
-    return (
-      <div className="p-6 space-y-6">
-        <div className="benaya-card">
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center space-y-4">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto text-benaya-600" />
-              <div className="text-lg font-medium">Chargement de la bibliothèque...</div>
-              <div className="text-sm text-neutral-600">
-                Récupération des données depuis l'API
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Pas de fallback bloquant - rendu progressif
 
   return (
     <div className="p-6 space-y-6">
@@ -546,13 +483,17 @@ export default function WorkLibrary() {
         </Alert>
       )}
 
-      {/* Header */}
+      {/* Header avec indicateur de chargement non-bloquant */}
       <div className="benaya-card benaya-gradient text-white">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Bibliothèque d'ouvrages</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold">Bibliothèque d'ouvrages</h1>
+              {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+            </div>
             <p className="text-benaya-100 mt-1">
               Gérez vos ouvrages, matériaux et main d'œuvre
+              {loading && " - Chargement en cours..."}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -619,24 +560,24 @@ export default function WorkLibrary() {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats optimisées */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="benaya-card text-center">
           <div className="text-2xl font-bold text-benaya-900 dark:text-benaya-200">
             {filteredItems.length}
-            {filteredItems.length !== getTotalItems() && (
+            {filteredItems.length !== stats.totalItems && (
               <span className="text-sm text-neutral-500 ml-1">
-                / {getTotalItems()}
+                / {stats.totalItems}
               </span>
             )}
           </div>
           <div className="text-sm text-neutral-600 dark:text-neutral-400">
-            {filteredItems.length !== getTotalItems() ? "Éléments filtrés" : "Éléments total"}
+            {filteredItems.length !== stats.totalItems ? "Éléments filtrés" : "Éléments total"}
           </div>
         </div>
         <div className="benaya-card text-center">
           <div className="text-2xl font-bold text-green-600">
-            {getTotalValue().toLocaleString("fr-FR")} MAD
+            {stats.totalValue.toLocaleString("fr-FR")} MAD
           </div>
           <div className="text-sm text-neutral-600 dark:text-neutral-400">
             Valeur catalogue
@@ -644,7 +585,7 @@ export default function WorkLibrary() {
         </div>
         <div className="benaya-card text-center">
           <div className="text-2xl font-bold text-amber-600">
-            {getRecentlyUpdated()}
+            {stats.recentlyUpdated}
           </div>
           <div className="text-sm text-neutral-600 dark:text-neutral-400">
             Mis à jour récemment

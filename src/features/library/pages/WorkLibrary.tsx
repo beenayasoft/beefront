@@ -63,24 +63,7 @@ export default function WorkLibrary() {
     handleSaveItem,
   } = actions;
 
-  // Affichage pendant le chargement initial
-  if (loading && materials.length === 0 && labor.length === 0 && works.length === 0) {
-    return (
-      <div className="p-6 space-y-6">
-        <div className="benaya-card">
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center space-y-4">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto text-benaya-600" />
-              <div className="text-lg font-medium">Chargement de la bibliothèque...</div>
-              <div className="text-sm text-neutral-600">
-                Récupération des données depuis l'API
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Rendu progressif - pas de fallback bloquant
 
   return (
     <div className="p-6 space-y-6">

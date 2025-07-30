@@ -26,9 +26,13 @@ export function WorkLibraryHeader({
     <div className="benaya-card benaya-gradient text-white">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Bibliothèque d'ouvrages</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">Bibliothèque d'ouvrages</h1>
+            {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+          </div>
           <p className="text-benaya-100 mt-1">
             Gérez vos ouvrages, matériaux et main d'œuvre
+            {loading && " - Chargement en cours..."}
           </p>
         </div>
         <div className="flex items-center gap-2">
