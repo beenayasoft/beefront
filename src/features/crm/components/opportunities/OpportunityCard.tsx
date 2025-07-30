@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { 
   MoreHorizontal, 
   Edit, 
@@ -37,7 +37,7 @@ interface OpportunityCardProps {
   isDragging?: boolean;
 }
 
-export function OpportunityCard({
+const OpportunityCard = memo(function OpportunityCard({
   opportunity,
   onView,
   onEdit,
@@ -233,4 +233,6 @@ export function OpportunityCard({
       </div>
     </div>
   );
-}
+});
+
+export { OpportunityCard };

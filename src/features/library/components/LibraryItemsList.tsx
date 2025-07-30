@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Search, Filter, ChevronDown, ArrowUpDown, ChevronLeft, ChevronRight, Eye, Edit, Package, Hammer, Clock } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -34,7 +34,7 @@ import {
 } from "../../../components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
 import { cn } from "../../../lib/utils";
-import { Work, Material, Labor } from "../types";
+import { Work, Material, Labor } from "../types/workLibrary";
 
 type LibraryItemType = "all" | "work" | "material" | "labor";
 
@@ -95,28 +95,30 @@ export function LibraryItemsList({
     // Log supprimé - filtrage fonctionne correctement
   }, [items, totalItems, currentPage, activeTab]);
 
-  // Pagination
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startItem = (currentPage - 1) * itemsPerPage + 1;
-  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+  // Pagination mémoïsée
+  const paginationData = useMemo(() => ({
+    totalPages: Math.ceil(totalItems / itemsPerPage),
+    startItem: (currentPage - 1) * itemsPerPage + 1,
+    endItem: Math.min(currentPage * itemsPerPage, totalItems)
+  }), [totalItems, itemsPerPage, currentPage]);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-  };
+  }, []);
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     onSearch(searchQuery);
-  };
+  }, [onSearch, searchQuery]);
 
-  const handleSort = (field: string) => {
+  const handleSort = useCallback((field: string) => {
     const newDirection = field === sortField && sortDirection === "asc" ? "desc" : "asc";
     setSortField(field);
     setSortDirection(newDirection);
     onSort(field, newDirection);
-  };
+  }, [sortField, sortDirection, onSort]);
 
-  // Fonction pour créer une clé unique pour chaque élément
-  const getUniqueKey = (item: Work | Material | Labor): string => {
+  // Fonction pour créer une clé unique pour chaque élément (mémoïsée)
+  const getUniqueKey = useCallback((item: Work | Material | Labor): string => {
     // Déterminer le type d'élément pour créer une clé unique
     if ("components" in item) {
       return `work-${item.id}`;
@@ -125,10 +127,10 @@ export function LibraryItemsList({
     } else {
       return `labor-${item.id}`;
     }
-  };
+  }, []);
 
-  // Fonction améliorée pour détecter le type d'élément
-  const getItemType = (item: Work | Material | Labor): string => {
+  // Fonction améliorée pour détecter le type d'élément (mémoïsée)
+  const getItemType = useCallback((item: Work | Material | Labor): string => {
     // Détecter un ouvrage (a des composants)
     if ("components" in item) return "Ouvrage";
     
@@ -137,10 +139,10 @@ export function LibraryItemsList({
     
     // Par défaut, c'est de la main d'œuvre
     return "Main d'œuvre";
-  };
+  }, []);
 
-  // Fonction améliorée pour les badges avec meilleure détection
-  const getItemTypeBadge = (item: Work | Material | Labor) => {
+  // Fonction améliorée pour les badges avec meilleure détection (mémoïsée)
+  const getItemTypeBadge = useCallback((item: Work | Material | Labor) => {
     // Détecter un ouvrage (a des composants)
     if ("components" in item) {
       return (
@@ -168,30 +170,22 @@ export function LibraryItemsList({
         Main d'œuvre
       </Badge>
     );
-  };
+  }, []);
 
-  // Calculer les compteurs corrects basés sur les données complètes
-  const getTabCount = (tab: LibraryItemType) => {
-    switch (tab) {
-      case "all":
-        return allMaterials.length + allLabor.length + allWorks.length;
-      case "material":
-        return allMaterials.length;
-      case "labor":
-        return allLabor.length;
-      case "work":
-        return allWorks.length;
-      default:
-        return 0;
-    }
-  };
+  // Calculer les compteurs corrects basés sur les données complètes (mémoïsé)
+  const tabCounts = useMemo(() => ({
+    all: allMaterials.length + allLabor.length + allWorks.length,
+    material: allMaterials.length,
+    labor: allLabor.length,
+    work: allWorks.length,
+  }), [allMaterials.length, allLabor.length, allWorks.length]);
 
-  const categories = [
-    { id: "all", label: "Tous", count: getTabCount("all") },
-    { id: "material", label: "Matériaux", count: getTabCount("material") },
-    { id: "labor", label: "Main d'œuvre", count: getTabCount("labor") },
-    { id: "work", label: "Ouvrages", count: getTabCount("work") },
-  ];
+  const categories = useMemo(() => [
+    { id: "all", label: "Tous", count: tabCounts.all },
+    { id: "material", label: "Matériaux", count: tabCounts.material },
+    { id: "labor", label: "Main d'œuvre", count: tabCounts.labor },
+    { id: "work", label: "Ouvrages", count: tabCounts.work },
+  ], [tabCounts]);
 
   return (
     <div className="space-y-4">
@@ -306,7 +300,7 @@ export function LibraryItemsList({
       {/* Pagination */}
       <div className="flex items-center justify-between mt-4">
         <div className="text-sm text-neutral-500">
-          Affichage de {startItem} à {endItem} sur {totalItems} éléments
+          Affichage de {paginationData.startItem} à {paginationData.endItem} sur {totalItems} éléments
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -318,14 +312,14 @@ export function LibraryItemsList({
             <ChevronLeft className="w-4 h-4" />
           </Button>
           <div className="flex items-center gap-1">
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            {Array.from({ length: Math.min(5, paginationData.totalPages) }, (_, i) => {
               let pageNum;
-              if (totalPages <= 5) {
+              if (paginationData.totalPages <= 5) {
                 pageNum = i + 1;
               } else if (currentPage <= 3) {
                 pageNum = i + 1;
-              } else if (currentPage >= totalPages - 2) {
-                pageNum = totalPages - 4 + i;
+              } else if (currentPage >= paginationData.totalPages - 2) {
+                pageNum = paginationData.totalPages - 4 + i;
               } else {
                 pageNum = currentPage - 2 + i;
               }
@@ -346,7 +340,7 @@ export function LibraryItemsList({
             variant="outline"
             size="sm"
             onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
+            disabled={currentPage === paginationData.totalPages}
           >
             <ChevronRight className="w-4 h-4" />
           </Button>

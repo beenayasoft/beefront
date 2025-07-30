@@ -1,32 +1,37 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import { Suspense, lazy, ReactNode } from "react";
 import { MainLayout } from "@/layouts/MainLayout";
-import Auth from "@/pages/Auth";
-import Index from "@/pages/Dashboard";
-import Agenda from "@/pages/Agenda";
-import Chantiers from "@/pages/Chantiers";
-import DevisNew from "@/pages/DevisNew";
-import QuoteEditor from "@/pages/QuoteEditor";
-import QuoteDetail from "@/pages/QuoteDetail";
-import QuotePreview from "@/pages/QuotePreview";
-import Factures from "@/pages/Factures";
-import InvoiceDetail from "@/pages/InvoiceDetail";
-import InvoiceEditor from "@/pages/InvoiceEditor";
-import InvoicePreview from "@/pages/InvoicePreview";
-import Interventions from "@/pages/Interventions";
-import Stock from "@/pages/Stock";
-import Settings from "@/pages/Settings";
-import NotFound from "@/pages/NotFound";
-import Tiers from "@/pages/Tiers";
-import TierDetail from "@/pages/TierDetail";
-import WorkLibrary from "@/pages/WorkLibrary";
-import MaterialDetail from "@/features/library/pages/MaterialDetail";
-import LaborDetail from "@/features/library/pages/LaborDetail";
-import WorkDetail from "@/features/library/pages/WorkDetail";
-import Opportunities from "@/pages/Opportunities";
-import OpportunityDetail from "@/pages/OpportunityDetail";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
-import { ReactNode } from "react";
+import { PageLoader } from "@/components/ui/PageLoader";
+
+// Import statique uniquement pour Auth (nécessaire au démarrage)
+import Auth from "@/pages/Auth";
+
+// Lazy loading de toutes les autres pages
+const Index = lazy(() => import("@/pages/Dashboard"));
+const Agenda = lazy(() => import("@/pages/Agenda"));
+const Chantiers = lazy(() => import("@/pages/Chantiers"));
+const DevisNew = lazy(() => import("@/pages/DevisNew"));
+const QuoteEditor = lazy(() => import("@/pages/QuoteEditor"));
+const QuoteDetail = lazy(() => import("@/pages/QuoteDetail"));
+const QuotePreview = lazy(() => import("@/pages/QuotePreview"));
+const Factures = lazy(() => import("@/pages/Factures"));
+const InvoiceDetail = lazy(() => import("@/pages/InvoiceDetail"));
+const InvoiceEditor = lazy(() => import("@/pages/InvoiceEditor"));
+const InvoicePreview = lazy(() => import("@/pages/InvoicePreview"));
+const Interventions = lazy(() => import("@/pages/Interventions"));
+const Stock = lazy(() => import("@/pages/Stock"));
+const Settings = lazy(() => import("@/pages/Settings"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
+const Tiers = lazy(() => import("@/pages/Tiers"));
+const TierDetail = lazy(() => import("@/pages/TierDetail"));
+const WorkLibrary = lazy(() => import("@/features/library/pages/WorkLibrary"));
+const MaterialDetail = lazy(() => import("@/features/library/pages/MaterialDetail"));
+const LaborDetail = lazy(() => import("@/features/library/pages/LaborDetail"));
+const WorkDetail = lazy(() => import("@/features/library/pages/WorkDetail"));
+const Opportunities = lazy(() => import("@/pages/Opportunities"));
+const OpportunityDetail = lazy(() => import("@/pages/OpportunityDetail"));
 
 // Composant pour protéger les routes
 interface ProtectedRouteProps {
@@ -85,34 +90,130 @@ export default function App() {
                 <MainLayout />
               </ProtectedRoute>
             }>
-              <Route index element={<Index />} />
-              <Route path="agenda" element={<Agenda />} />
-              <Route path="opportunities" element={<Opportunities />} />
-              <Route path="opportunities/:id" element={<OpportunityDetail />} />
-              <Route path="chantiers" element={<Chantiers />} />
-              <Route path="devis" element={<DevisNew />} />
-              <Route path="devis/nouveau" element={<QuoteEditor />} />
-              <Route path="devis/edit/:id" element={<QuoteEditor />} />
-              <Route path="devis/preview/:id" element={<QuotePreview />} />
-              <Route path="devis/:id" element={<QuoteDetail />} />
+              <Route index element={
+                <Suspense fallback={<PageLoader />}>
+                  <Index />
+                </Suspense>
+              } />
+              <Route path="agenda" element={
+                <Suspense fallback={<PageLoader />}>
+                  <Agenda />
+                </Suspense>
+              } />
+              <Route path="opportunities" element={
+                <Suspense fallback={<PageLoader />}>
+                  <Opportunities />
+                </Suspense>
+              } />
+              <Route path="opportunities/:id" element={
+                <Suspense fallback={<PageLoader />}>
+                  <OpportunityDetail />
+                </Suspense>
+              } />
+              <Route path="chantiers" element={
+                <Suspense fallback={<PageLoader />}>
+                  <Chantiers />
+                </Suspense>
+              } />
+              <Route path="devis" element={
+                <Suspense fallback={<PageLoader />}>
+                  <DevisNew />
+                </Suspense>
+              } />
+              <Route path="devis/nouveau" element={
+                <Suspense fallback={<PageLoader />}>
+                  <QuoteEditor />
+                </Suspense>
+              } />
+              <Route path="devis/edit/:id" element={
+                <Suspense fallback={<PageLoader />}>
+                  <QuoteEditor />
+                </Suspense>
+              } />
+              <Route path="devis/preview/:id" element={
+                <Suspense fallback={<PageLoader />}>
+                  <QuotePreview />
+                </Suspense>
+              } />
+              <Route path="devis/:id" element={
+                <Suspense fallback={<PageLoader />}>
+                  <QuoteDetail />
+                </Suspense>
+              } />
 
-              <Route path="factures" element={<Factures />} />
-              <Route path="factures/:id" element={<InvoiceDetail />} />
-              <Route path="factures/edit/:id" element={<InvoiceEditor />} />
-              <Route path="factures/preview/:id" element={<InvoicePreview />} />
-              <Route path="interventions" element={<Interventions />} />
-              <Route path="stock" element={<Stock />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="tiers" element={<Tiers />} />
-              <Route path="tiers/:id" element={<TierDetail />} />
-              <Route path="bibliotheque" element={<WorkLibrary />} />
-              <Route path="bibliotheque/materiau/:id" element={<MaterialDetail />} />
-              <Route path="bibliotheque/main-oeuvre/:id" element={<LaborDetail />} />
-              <Route path="bibliotheque/ouvrage/:id" element={<WorkDetail />} />
+              <Route path="factures" element={
+                <Suspense fallback={<PageLoader />}>
+                  <Factures />
+                </Suspense>
+              } />
+              <Route path="factures/:id" element={
+                <Suspense fallback={<PageLoader />}>
+                  <InvoiceDetail />
+                </Suspense>
+              } />
+              <Route path="factures/edit/:id" element={
+                <Suspense fallback={<PageLoader />}>
+                  <InvoiceEditor />
+                </Suspense>
+              } />
+              <Route path="factures/preview/:id" element={
+                <Suspense fallback={<PageLoader />}>
+                  <InvoicePreview />
+                </Suspense>
+              } />
+              <Route path="interventions" element={
+                <Suspense fallback={<PageLoader />}>
+                  <Interventions />
+                </Suspense>
+              } />
+              <Route path="stock" element={
+                <Suspense fallback={<PageLoader />}>
+                  <Stock />
+                </Suspense>
+              } />
+              <Route path="settings" element={
+                <Suspense fallback={<PageLoader />}>
+                  <Settings />
+                </Suspense>
+              } />
+              <Route path="tiers" element={
+                <Suspense fallback={<PageLoader />}>
+                  <Tiers />
+                </Suspense>
+              } />
+              <Route path="tiers/:id" element={
+                <Suspense fallback={<PageLoader />}>
+                  <TierDetail />
+                </Suspense>
+              } />
+              <Route path="bibliotheque" element={
+                <Suspense fallback={<PageLoader />}>
+                  <WorkLibrary />
+                </Suspense>
+              } />
+              <Route path="bibliotheque/materiau/:id" element={
+                <Suspense fallback={<PageLoader />}>
+                  <MaterialDetail />
+                </Suspense>
+              } />
+              <Route path="bibliotheque/main-oeuvre/:id" element={
+                <Suspense fallback={<PageLoader />}>
+                  <LaborDetail />
+                </Suspense>
+              } />
+              <Route path="bibliotheque/ouvrage/:id" element={
+                <Suspense fallback={<PageLoader />}>
+                  <WorkDetail />
+                </Suspense>
+              } />
             </Route>
 
             {/* 404 route */}
-            <Route path="*" element={<NotFound />} />
+            <Route path="*" element={
+              <Suspense fallback={<PageLoader />}>
+                <NotFound />
+              </Suspense>
+            } />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

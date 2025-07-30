@@ -32,7 +32,7 @@ import {
   TooltipTrigger,
 } from "../../../components/ui/tooltip";
 import { Badge } from "../../../components/ui/badge";
-import { Work, WorkComponent, Material, Labor } from "../types";
+import { Work, WorkComponent, Material, Labor } from "../types/workLibrary";
 import { formatCurrency } from "../../../lib/utils";
 
 interface WorkCompositionFormProps {

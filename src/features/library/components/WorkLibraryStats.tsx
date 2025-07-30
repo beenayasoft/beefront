@@ -1,4 +1,4 @@
-import { Work, Material, Labor } from "../types";
+import { Work, Material, Labor } from "../types/workLibrary";
 
 interface WorkLibraryStatsProps {
   materials: Material[];

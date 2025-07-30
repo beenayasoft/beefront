@@ -14,7 +14,7 @@ export const materialsApi = {
         });
       }
       
-      const response = await apiClient.get(`/api/fournitures/?${params.toString()}`);
+      const response = await apiClient.get(`/api/library/fournitures/?${params.toString()}`);
       
       // Django REST pagination: {count, next, previous, results}
       const materials = response.data.results || response.data;
@@ -28,7 +28,7 @@ export const materialsApi = {
   // Récupérer un matériau par ID
   getMaterial: async (id: string): Promise<Material> => {
     try {
-      const response = await apiClient.get(`/api/fournitures/${id}/`);
+      const response = await apiClient.get(`/api/library/fournitures/${id}/`);
       return transformMaterial(response.data);
     } catch (error) {
       console.error(`Erreur lors du chargement du matériau ${id}:`, error);
@@ -40,7 +40,7 @@ export const materialsApi = {
   createMaterial: async (material: Partial<Material>): Promise<Material> => {
     try {
       const backendData = transformMaterialToBackend(material);
-      const response = await apiClient.post('/api/fournitures/', backendData);
+      const response = await apiClient.post('/api/library/fournitures/', backendData);
       return transformMaterial(response.data);
     } catch (error) {
       console.error("Erreur lors de la création du matériau:", error);
@@ -52,7 +52,7 @@ export const materialsApi = {
   updateMaterial: async (id: string, material: Partial<Material>): Promise<Material> => {
     try {
       const backendData = transformMaterialToBackend(material);
-      const response = await apiClient.patch(`/api/fournitures/${id}/`, backendData);
+      const response = await apiClient.patch(`/api/library/fournitures/${id}/`, backendData);
       return transformMaterial(response.data);
     } catch (error) {
       console.error(`Erreur lors de la mise à jour du matériau ${id}:`, error);
@@ -63,7 +63,7 @@ export const materialsApi = {
   // Supprimer un matériau
   deleteMaterial: async (id: string): Promise<void> => {
     try {
-      await apiClient.delete(`/api/fournitures/${id}/`);
+      await apiClient.delete(`/api/library/fournitures/${id}/`);
     } catch (error) {
       console.error(`Erreur lors de la suppression du matériau ${id}:`, error);
       throw error;
@@ -73,7 +73,7 @@ export const materialsApi = {
   // Matériaux groupés par catégorie
   getMaterialsByCategory: async (): Promise<any> => {
     try {
-      const response = await apiClient.get('/api/fournitures/par_categorie/');
+      const response = await apiClient.get('/api/library/fournitures/par_categorie/');
       return response.data;
     } catch (error) {
       console.error("Erreur lors du chargement des matériaux par catégorie:", error);
@@ -91,7 +91,7 @@ export const materialsApi = {
         });
       }
       
-      const response = await apiClient.get(`/api/fournitures/?${searchParams.toString()}`);
+      const response = await apiClient.get(`/api/library/fournitures/?${searchParams.toString()}`);
       
       // Si la réponse a la structure de pagination Django
       if (response.data.results !== undefined) {

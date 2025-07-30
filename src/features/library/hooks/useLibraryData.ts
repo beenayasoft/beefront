@@ -1,55 +1,17 @@
-import { useState, useEffect } from 'react';
-import { Work, Material, Labor } from '../types';
-import { libraryApi } from '../api';
+import { useState, useEffect, useCallback } from 'react';
+import { Work, Material, Labor } from '../types/workLibrary';
+import { libraryApi } from '../api/library';
 
-// Fonction pour supprimer les doublons par ID
-function removeDuplicatesById<T extends { id: string; name: string }>(items: T[]): T[] {
+// Fonction optimisée pour supprimer les doublons par ID
+function removeDuplicatesById<T extends { id: string }>(items: T[]): T[] {
+  if (items.length <= 1) return items;
+  
   const seen = new Set<string>();
-  const unique = items.filter(item => {
-    if (seen.has(item.id)) {
-      return false;
-    }
+  return items.filter(item => {
+    if (seen.has(item.id)) return false;
     seen.add(item.id);
     return true;
   });
-  
-  return unique;
-}
-
-// Fonction pour valider et nettoyer les collections par type
-function validateAndCleanCollections(
-  materials: Material[], 
-  labor: Labor[], 
-  works: Work[]
-): { cleanMaterials: Material[], cleanLabor: Labor[], cleanWorks: Work[] } {
-  
-  let allItems = [...materials, ...labor, ...works];
-  
-  let cleanMaterials: Material[] = [];
-  let cleanLabor: Labor[] = [];
-  let cleanWorks: Work[] = [];
-  
-  allItems.forEach(item => {
-    // Détecter un ouvrage (a des composants)
-    if ('components' in item) {
-      cleanWorks.push(item as Work);
-    }
-    // Détecter un matériau (a vatRate)
-    else if ('vatRate' in item) {
-      cleanMaterials.push(item as Material);
-    }
-    // Détecter de la main d'œuvre (ni components ni vatRate)
-    else if (!('vatRate' in item) && !('components' in item)) {
-      cleanLabor.push(item as Labor);
-    }
-  });
-
-  // Supprimer les doublons dans chaque collection nettoyée
-  cleanMaterials = removeDuplicatesById(cleanMaterials);
-  cleanLabor = removeDuplicatesById(cleanLabor);
-  cleanWorks = removeDuplicatesById(cleanWorks);
-
-  return { cleanMaterials, cleanLabor, cleanWorks };
 }
 
 export interface UseLibraryDataReturn {
@@ -72,9 +34,10 @@ export function useLibraryData(): UseLibraryDataReturn {
   const [works, setWorks] = useState<Work[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   // Fonction pour charger les données depuis l'API
-  const loadLibraryData = async () => {
+  const loadLibraryData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -86,22 +49,11 @@ export function useLibraryData(): UseLibraryDataReturn {
         libraryApi.getWorks(),
       ]);
       
-      // Supprimer les doublons
-      const dedupedMaterials = removeDuplicatesById(materialsData);
-      const dedupedLabor = removeDuplicatesById(laborData);
-      const dedupedWorks = removeDuplicatesById(worksData);
-      
-      // Valider et nettoyer les collections pour garantir que chaque type est dans la bonne collection
-      const { cleanMaterials, cleanLabor, cleanWorks } = validateAndCleanCollections(
-        dedupedMaterials, 
-        dedupedLabor, 
-        dedupedWorks
-      );
-      
-      // Sauvegarder les collections nettoyées
-      setMaterials(cleanMaterials);
-      setLabor(cleanLabor);
-      setWorks(cleanWorks);
+      // Supprimer les doublons simplement
+      setMaterials(removeDuplicatesById(materialsData));
+      setLabor(removeDuplicatesById(laborData));
+      setWorks(removeDuplicatesById(worksData));
+      setHasLoaded(true);
       
     } catch (err: any) {
       console.error("❌ [LIBRARY PAGE] Erreur lors du chargement de la bibliothèque:", err);
@@ -117,18 +69,19 @@ export function useLibraryData(): UseLibraryDataReturn {
       }
       
       setError(errorMessage);
+      setHasLoaded(true); // Marquer comme tenté même en cas d'erreur
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Pas de dépendances car on utilise seulement des setters
 
   // Charger les données au montage du composant
   useEffect(() => {
-    // Éviter le double chargement si les données sont déjà là
-    if (materials.length === 0 && labor.length === 0 && works.length === 0) {
+    // Charger seulement une fois au montage si pas encore chargé
+    if (!hasLoaded) {
       loadLibraryData();
     }
-  }, []); // Dépendances vides pour exécuter une seule fois
+  }, [hasLoaded, loadLibraryData]); // Dépendances complètes
 
   return {
     materials,

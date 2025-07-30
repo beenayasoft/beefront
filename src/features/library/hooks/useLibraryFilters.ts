@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Work, Material, Labor } from '../types';
+import { Work, Material, Labor } from '../types/workLibrary';
 
 const ITEMS_PER_PAGE = 10;
 

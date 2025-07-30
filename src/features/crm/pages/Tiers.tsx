@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -75,28 +75,28 @@ export default function Tiers() {
   // 🚀 Les tiers sont déjà filtrés côté backend - pas besoin de filtrage frontend
   const displayedTiers = tiers; // Directement les tiers reçus de l'API
 
-  // 🔄 Gestionnaires pour les changements qui nécessitent un rechargement
-  const handleTabChange = (newTab: string) => {
+  // 🔄 Gestionnaires pour les changements qui nécessitent un rechargement (optimisés)
+  const handleTabChange = useCallback((newTab: string) => {
     console.log("🔄 Changement d'onglet:", newTab);
     setActiveTab(newTab);
     setCurrentPage(1); // Remettre à la première page
     loadTiers(1, searchQuery, newTab); // Recharger avec le nouveau filtre
     // Note: Les stats ne changent pas selon l'onglet (elles montrent le total global)
-  };
+  }, [searchQuery]);
 
-  const handleSearchChange = (newSearch: string) => {
+  const handleSearchChange = useCallback((newSearch: string) => {
     console.log("🔍 Changement de recherche:", newSearch);
     setSearchQuery(newSearch);
     setCurrentPage(1); // Remettre à la première page
     // Le débounce est géré par useEffect, pas ici
-  };
+  }, []);
 
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = useCallback((newPage: number) => {
     console.log("📄 Changement de page:", newPage);
     setCurrentPage(newPage);
     loadTiers(newPage, searchQuery, activeTab);
     // Pas besoin de recharger les stats pour un changement de page
-  };
+  }, [searchQuery, activeTab]);
 
   // 🚀 FONCTION OPTIMISÉE pour charger les tiers avec pagination
   const loadTiers = async (page: number = currentPage, search: string = searchQuery, type: string = activeTab) => {
@@ -235,14 +235,14 @@ export default function Tiers() {
     }
   };
 
-  // Gérer la suppression d'un tiers
-  const handleDelete = (tier: Tier) => {
+  // Gérer la suppression d'un tiers (optimisé)
+  const handleDelete = useCallback((tier: Tier) => {
     setTierToDelete({...tier});
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  // Confirmer la suppression d'un tiers
-  const confirmDelete = async () => {
+  // Confirmer la suppression d'un tiers (optimisé)
+  const confirmDelete = useCallback(async () => {
     if (tierToDelete) {
       try {
         setLoading(true);
@@ -257,10 +257,10 @@ export default function Tiers() {
         setLoading(false);
       }
     }
-  };
+  }, [tierToDelete]);
 
-  // Gérer la fermeture de la modale de suppression
-  const handleDeleteDialogClose = (open: boolean) => {
+  // Gérer la fermeture de la modale de suppression (optimisé)
+  const handleDeleteDialogClose = useCallback((open: boolean) => {
     if (!open) {
       setDeleteDialogOpen(false);
       // Attendre que l'animation de fermeture soit terminée avant de réinitialiser
@@ -272,10 +272,10 @@ export default function Tiers() {
     } else {
       setDeleteDialogOpen(true);
     }
-  };
+  }, []);
 
-  // Gérer l'édition d'un tiers
-  const handleEdit = (tier: Tier) => {
+  // Gérer l'édition d'un tiers (optimisé)
+  const handleEdit = useCallback((tier: Tier) => {
     // Définir d'abord le tier à éditer avec une copie profonde
     setEditingTier({...tier});
     
@@ -288,22 +288,22 @@ export default function Tiers() {
         setEditParticulierOpen(true);
       }
     }, 50);
-  };
+  }, []);
 
-  // Gérer la vue détaillée d'un tiers
-  const handleView = (tier: Tier) => {
+  // Gérer la vue détaillée d'un tiers (optimisé)
+  const handleView = useCallback((tier: Tier) => {
     navigate(`/tiers/${tier.id}`);
-  };
+  }, [navigate]);
 
-  // Gérer l'appel téléphonique (conservé pour référence)
-  const handleCall = (tier: Tier) => {
+  // Gérer l'appel téléphonique (optimisé)
+  const handleCall = useCallback((tier: Tier) => {
     window.open(`tel:${tier.phone.replace(/\s/g, "")}`);
-  };
+  }, []);
 
-  // Gérer l'envoi d'email (conservé pour référence)
-  const handleEmail = (tier: Tier) => {
+  // Gérer l'envoi d'email (optimisé)
+  const handleEmail = useCallback((tier: Tier) => {
     window.open(`mailto:${tier.email}`);
-  };
+  }, []);
 
   return (
     <div className="p-6 space-y-6">

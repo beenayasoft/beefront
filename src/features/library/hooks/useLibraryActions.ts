@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Work, Material, Labor } from '../types';
-import { libraryApi } from '../api';
+import { Work, Material, Labor } from '../types/workLibrary';
+import { libraryApi } from '../api/library';
 import { UseLibraryDataReturn } from './useLibraryData';
 
 export interface UseLibraryActionsReturn {

@@ -14,7 +14,7 @@ export const worksApi = {
         });
       }
       
-      const response = await apiClient.get(`/api/ouvrages/?${params.toString()}`);
+      const response = await apiClient.get(`/api/library/ouvrages/?${params.toString()}`);
       
       // Django REST pagination: {count, next, previous, results}
       const works = response.data.results || response.data;
@@ -28,7 +28,7 @@ export const worksApi = {
   // Récupérer un ouvrage par ID avec détails
   getWork: async (id: string): Promise<Work> => {
     try {
-      const response = await apiClient.get(`/api/ouvrages/${id}/`);
+      const response = await apiClient.get(`/api/library/ouvrages/${id}/`);
       return transformWork(response.data);
     } catch (error) {
       console.error(`Erreur lors du chargement de l'ouvrage ${id}:`, error);
@@ -40,7 +40,7 @@ export const worksApi = {
   createWork: async (work: Partial<Work>): Promise<Work> => {
     try {
       const backendData = transformWorkToBackend(work);
-      const response = await apiClient.post('/api/ouvrages/', backendData);
+      const response = await apiClient.post('/api/library/ouvrages/', backendData);
       return transformWork(response.data);
     } catch (error) {
       console.error("Erreur lors de la création de l'ouvrage:", error);
@@ -52,7 +52,7 @@ export const worksApi = {
   updateWork: async (id: string, work: Partial<Work>): Promise<Work> => {
     try {
       const backendData = transformWorkToBackend(work);
-      const response = await apiClient.patch(`/api/ouvrages/${id}/`, backendData);
+      const response = await apiClient.patch(`/api/library/ouvrages/${id}/`, backendData);
       return transformWork(response.data);
     } catch (error) {
       console.error(`Erreur lors de la mise à jour de l'ouvrage ${id}:`, error);
@@ -63,7 +63,7 @@ export const worksApi = {
   // Supprimer un ouvrage
   deleteWork: async (id: string): Promise<void> => {
     try {
-      await apiClient.delete(`/api/ouvrages/${id}/`);
+      await apiClient.delete(`/api/library/ouvrages/${id}/`);
     } catch (error) {
       console.error(`Erreur lors de la suppression de l'ouvrage ${id}:`, error);
       throw error;
@@ -73,7 +73,7 @@ export const worksApi = {
   // Ouvrages groupés par catégorie
   getWorksByCategory: async (): Promise<any> => {
     try {
-      const response = await apiClient.get('/api/ouvrages/par_categorie/');
+      const response = await apiClient.get('/api/library/ouvrages/par_categorie/');
       return response.data;
     } catch (error) {
       console.error("Erreur lors du chargement des ouvrages par catégorie:", error);
@@ -91,7 +91,7 @@ export const worksApi = {
         });
       }
       
-      const response = await apiClient.get(`/api/ouvrages/?${searchParams.toString()}`);
+      const response = await apiClient.get(`/api/library/ouvrages/?${searchParams.toString()}`);
       
       // Si la réponse a la structure de pagination Django
       if (response.data.results !== undefined) {

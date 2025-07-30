@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "../../../components/ui/select";
 import { VatRateSelector } from "../../documents/components/VatRateSelector";
+import { useVatRates } from "../../documents/hooks/useVatRates";
 import {
   DialogHeader,
   DialogTitle,
@@ -20,7 +21,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
 import { Badge } from "../../../components/ui/badge";
 import { Package, Clock, AlertCircle, Loader2 } from "lucide-react";
-import { Material, Labor } from "../types";
+import { Material, Labor } from "../types/workLibrary";
 import { formatCurrency } from "../../../lib/utils";
 
 interface LibraryItemFormProps {
@@ -39,6 +40,7 @@ export function LibraryItemForm({
   isLoading = false,
 }: LibraryItemFormProps) {
   const isEditing = !!item;
+  const { getVatRateByCode, vatRates, defaultVatRate } = useVatRates();
   const [formData, setFormData] = useState<Partial<Material | Labor>>(
     item || {
       id: "",
@@ -119,7 +121,9 @@ export function LibraryItemForm({
     
     // Handle numeric fields that come from selects
     if (name === 'vatRate') {
-      processedValue = parseFloat(value) || 0;
+      // Le VatRateSelector retourne un code, on doit récupérer le taux numérique
+      const vatRate = getVatRateByCode(value);
+      processedValue = vatRate ? vatRate.rate : parseFloat(value) || 0;
     }
     
     setFormData((prev) => ({
@@ -357,8 +361,13 @@ export function LibraryItemForm({
                     Taux de TVA <span className="text-red-500">*</span>
                   </Label>
                   <VatRateSelector
-                    value={((formData as Partial<Material>).vatRate || 20).toString()}
-                    onChange={(value) => handleSelectChange("vatRate", value)}
+                    value={(() => {
+                      const currentVatRate = (formData as Partial<Material>).vatRate || 20;
+                      // Chercher le code correspondant au taux numérique
+                      const matchingRate = vatRates.find(rate => rate.rate === currentVatRate);
+                      return matchingRate?.code || defaultVatRate?.code || currentVatRate.toString();
+                    })()}
+                    onValueChange={(value) => handleSelectChange("vatRate", value)}
                     disabled={isLoading}
                     className={`${errors.vatRate ? "border-red-500" : ""}`}
                   />

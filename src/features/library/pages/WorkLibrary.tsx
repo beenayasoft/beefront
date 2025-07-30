@@ -8,9 +8,9 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 
-import { LibraryItemsList } from "@/features/documents/components/quotes/library/LibraryItemsList";
-import { LibraryItemForm } from "@/features/documents/components/quotes/library/LibraryItemForm";
-import { WorkCompositionForm } from "@/features/documents/components/quotes/library/WorkCompositionForm";
+import { LibraryItemsList } from "../components/LibraryItemsList";
+import { LibraryItemForm } from "../components/LibraryItemForm";
+import { WorkCompositionForm } from "../components/WorkCompositionForm";
 import { Work, Material, Labor } from "@/features/library/types";
 
 // Nouveaux imports pour les hooks et composants séparés
