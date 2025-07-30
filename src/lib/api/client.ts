@@ -46,12 +46,33 @@ const createApiClient = (): AxiosInstance => {
       }
     }
 
-    // SUPPRIMÉ : L'en-tête X-Tenant-ID est maintenant ajouté automatiquement 
-    // par l'API Gateway depuis le JWT pour éviter les doublons
-    // const tenantId = localStorage.getItem('tenantId');
-    // if (tenantId) {
-    //   config.headers['X-Tenant-ID'] = tenantId;
-    // }
+    // Ajouter l'en-tête X-Tenant-ID seulement pour les endpoints qui ne passent pas 
+    // par l'authentification JWT du gateway (ex: tenant-service direct)
+    const tenantId = localStorage.getItem('tenantId');
+    if (tenantId) {
+      const url = config.url || '';
+      
+      // Endpoints qui ont besoin de X-Tenant-ID mais ne passent pas par JWT
+      const needsTenantHeader = [
+        '/tenants/',
+        '/api/tenants/',
+        '/vat-rates/',
+        '/payment-terms/',
+        '/document_appearance/'
+      ].some(endpoint => url.includes(endpoint));
+      
+      // Pour les endpoints library, le gateway ajoute automatiquement X-Tenant-ID depuis JWT
+      const isLibraryEndpoint = url.includes('/api/library/') || 
+                               url.includes('/api/fournitures/') ||
+                               url.includes('/api/main-oeuvre/') ||
+                               url.includes('/api/ouvrages/') ||
+                               url.includes('/api/categories/') ||
+                               url.includes('/api/ingredients/');
+      
+      if (needsTenantHeader && !isLibraryEndpoint) {
+        config.headers['X-Tenant-ID'] = tenantId;
+      }
+    }
 
     return config;
   }, (error) => {
