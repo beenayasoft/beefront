@@ -13,6 +13,8 @@ export const laborApi = {
           params.append(key, value);
         });
       }
+
+      
       
       const response = await apiClient.get(`/api/main-oeuvre/?${params.toString()}`);
       

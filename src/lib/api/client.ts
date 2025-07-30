@@ -46,12 +46,12 @@ const createApiClient = (): AxiosInstance => {
       }
     }
 
-    // Ajouter l'en-tête tenant_id pour toutes les requêtes API
-    const tenantId = localStorage.getItem('tenantId');
-    if (tenantId) {
-      // Ajouter l'en-tête avec différentes variantes de casse pour assurer la compatibilité
-      config.headers['X-Tenant-ID'] = tenantId;
-    }
+    // SUPPRIMÉ : L'en-tête X-Tenant-ID est maintenant ajouté automatiquement 
+    // par l'API Gateway depuis le JWT pour éviter les doublons
+    // const tenantId = localStorage.getItem('tenantId');
+    // if (tenantId) {
+    //   config.headers['X-Tenant-ID'] = tenantId;
+    // }
 
     return config;
   }, (error) => {
