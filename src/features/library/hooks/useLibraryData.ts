@@ -36,23 +36,45 @@ export function useLibraryData(): UseLibraryDataReturn {
   const [error, setError] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
 
-  // Fonction pour charger les données depuis l'API
+  // Fonction pour charger les données depuis l'API - OPTIMISÉE
   const loadLibraryData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Charger toutes les données en parallèle
-      const [materialsData, laborData, worksData] = await Promise.all([
-        libraryApi.getMaterials(),
-        libraryApi.getLabor(),
-        libraryApi.getWorks(),
-      ]);
+      // OPTIMISATION: Utiliser l'endpoint unifié si disponible
+      try {
+        const allData = await libraryApi.getAllLibraryItems();
+        
+        // Trier par type
+        const materials: Material[] = [];
+        const labor: Labor[] = [];
+        const works: Work[] = [];
+        
+        allData.forEach(item => {
+          if ("vatRate" in item) materials.push(item as Material);
+          else if ("components" in item) works.push(item as Work);
+          else labor.push(item as Labor);
+        });
+        
+        setMaterials(materials);
+        setLabor(labor);
+        setWorks(works);
+        
+      } catch (unifiedError) {
+        // Fallback: 3 appels séparés
+        console.warn("Endpoint unifié indisponible, fallback vers appels séparés");
+        const [materialsData, laborData, worksData] = await Promise.all([
+          libraryApi.getMaterials(),
+          libraryApi.getLabor(),
+          libraryApi.getWorks(),
+        ]);
+        
+        setMaterials(removeDuplicatesById(materialsData));
+        setLabor(removeDuplicatesById(laborData));
+        setWorks(removeDuplicatesById(worksData));
+      }
       
-      // Supprimer les doublons simplement
-      setMaterials(removeDuplicatesById(materialsData));
-      setLabor(removeDuplicatesById(laborData));
-      setWorks(removeDuplicatesById(worksData));
       setHasLoaded(true);
       
     } catch (err: any) {

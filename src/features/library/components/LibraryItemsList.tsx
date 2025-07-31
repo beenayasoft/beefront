@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { Search, Filter, ChevronDown, ArrowUpDown, ChevronLeft, ChevronRight, Eye, Edit, Package, Hammer, Clock } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -67,7 +67,7 @@ export interface LibraryFilters {
   supplier?: string;
 }
 
-export function LibraryItemsList({
+const LibraryItemsList = memo(function LibraryItemsList({
   items,
   onSearch,
   activeTab,
@@ -102,7 +102,8 @@ export function LibraryItemsList({
     endItem: Math.min(currentPage * itemsPerPage, totalItems)
   }), [totalItems, itemsPerPage, currentPage]);
 
-  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  // OPTIMISATION: Callbacks mémorisés pour éviter re-renders
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputTarget>) => {
     setSearchQuery(e.target.value);
   }, []);
 
@@ -116,6 +117,15 @@ export function LibraryItemsList({
     setSortDirection(newDirection);
     onSort(field, newDirection);
   }, [sortField, sortDirection, onSort]);
+
+  // OPTIMISATION: Callbacks pour les actions d'éléments
+  const handleItemClick = useCallback((item: Work | Material | Labor) => {
+    onItemClick?.(item);
+  }, [onItemClick]);
+
+  const handleItemEdit = useCallback((item: Work | Material | Labor) => {
+    onItemEdit?.(item);
+  }, [onItemEdit]);
 
   // Fonction pour créer une clé unique pour chaque élément (mémoïsée)
   const getUniqueKey = useCallback((item: Work | Material | Labor): string => {
@@ -273,7 +283,7 @@ export function LibraryItemsList({
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8"
-                          onClick={() => onItemClick?.(item)}
+                          onClick={() => handleItemClick(item)}
                           title="Voir les détails"
                         >
                           <Eye className="w-4 h-4" />
@@ -282,7 +292,7 @@ export function LibraryItemsList({
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8"
-                          onClick={() => onItemEdit?.(item)}
+                          onClick={() => handleItemEdit(item)}
                           title="Modifier"
                         >
                           <Edit className="w-4 h-4" />
@@ -348,6 +358,7 @@ export function LibraryItemsList({
       </div>
     </div>
   );
-}
+});
 
+export { LibraryItemsList };
 export default LibraryItemsList;
