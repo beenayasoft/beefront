@@ -79,7 +79,13 @@ export function useLibraryActions(libraryData: UseLibraryDataReturn): UseLibrary
     setCurrentItemType(type);
     setShowTypeSelector(false); // Fermer la modale de sélection de type
     
+    // CORRECTION: Vérifier que les données sont chargées avant d'ouvrir le formulaire d'ouvrage
     if (type === "work") {
+      // Pour les ouvrages, s'assurer que les matériaux et main d'œuvre sont chargés
+      if (materials.length === 0 && labor.length === 0) {
+        setError("Veuillez d'abord ajouter des matériaux ou de la main d'œuvre avant de créer un ouvrage");
+        return;
+      }
       setShowWorkForm(true);
     } else {
       setShowItemForm(true);

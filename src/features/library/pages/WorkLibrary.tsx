@@ -10,7 +10,7 @@ import {
 
 import { LibraryItemsList } from "../components/LibraryItemsList";
 import { LibraryItemForm } from "../components/LibraryItemForm";
-import { WorkCompositionForm } from "../components/WorkCompositionForm";
+import { WorkCompositionFormRefactored as WorkCompositionForm } from "../components/WorkCompositionFormRefactored";
 import { Work, Material, Labor } from "@/features/library/types";
 
 // Nouveaux imports pour les hooks et composants séparés
@@ -155,14 +155,32 @@ export default function WorkLibrary() {
               Formulaire de création ou modification d'un ouvrage
             </DialogDescription>
           </DialogHeader>
-          <WorkCompositionForm
-            work={selectedItem as Work}
-            availableMaterials={materials}
-            availableLabor={labor}
-            availableWorks={works.filter(w => !selectedItem || w.id !== selectedItem.id)} // Éviter les références circulaires
-            onSave={handleSaveItem}
-            onCancel={handleCancelForm}
-          />
+          
+          {/* CORRECTION: Vérifier que les données sont chargées avant d'afficher le formulaire */}
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-benaya-600" />
+              <span className="ml-3 text-sm text-neutral-600">
+                Chargement des éléments de la bibliothèque...
+              </span>
+            </div>
+          ) : materials.length === 0 && labor.length === 0 && works.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <AlertCircle className="w-8 h-8 text-amber-500" />
+              <span className="ml-3 text-sm text-neutral-600">
+                Aucun élément disponible dans la bibliothèque
+              </span>
+            </div>
+          ) : (
+            <WorkCompositionForm
+              work={selectedItem as Work}
+              availableMaterials={materials}
+              availableLabor={labor}
+              availableWorks={works.filter(w => !selectedItem || w.id !== selectedItem.id)}
+              onSave={handleSaveItem}
+              onCancel={handleCancelForm}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
