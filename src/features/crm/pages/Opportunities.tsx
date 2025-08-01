@@ -490,14 +490,7 @@ export default function Opportunities() {
   // Obtenir l'opportunité active pour l'overlay de glisser-déposer
   const activeOpportunity = activeId ? opportunities.find(opp => opp.id === activeId) : null;
 
-  // Afficher le skeleton pendant le chargement
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        {viewType === 'kanban' ? <KanbanColumnSkeleton /> : <ListSkeleton items={8} variant="detailed" />}
-      </div>
-    );
-  }
+  // Skeleton loading supprimé - rendu direct du contenu
 
   return (
     <div className="p-6 space-y-6">
