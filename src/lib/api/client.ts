@@ -12,7 +12,7 @@ const createApiClient = (): AxiosInstance => {
   // Créer l'instance avec la configuration de base
   const client = axios.create({
     baseURL: config.API_BASE_URL,
-    timeout: 15000, // Réduit de 30s à 15s pour éviter les attentes trop longues
+    timeout: 3000000, // Réduit de 30s à 15s pour éviter les attentes trop longues
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -133,6 +133,7 @@ const createApiClient = (): AxiosInstance => {
         }
       } else if (error.request) {
         // La requête a été faite mais aucune réponse n'a été reçue
+        const url = error.config?.url || '';
         if (error.code === 'ECONNABORTED' && error.message.includes('timeout')) {
           console.error('⏰ Timeout de la requête après 15s:', url);
         } else {
