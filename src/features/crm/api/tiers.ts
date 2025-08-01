@@ -342,7 +342,7 @@ export const tiersApi = {
     }
 
     // Utiliser l'endpoint standard Django au lieu de frontend_format
-    const response = await apiClient.get<DRFPaginatedResponse<any>>('/tiers/', { params });
+    const response = await apiClient.get<DRFPaginatedResponse<any>>('/api/tiers/', { params });
     console.log('🔍 Réponse DRF reçue:', response.data);
     
     // Convertir les données des tiers
@@ -367,7 +367,7 @@ export const tiersApi = {
       console.log('🔍 API: Récupération détaillée du tier', id);
 
       try {
-        const response = await apiClient.get(`/tiers/${id}/vue_360/`);
+        const response = await apiClient.get(`/api/tiers/${id}/vue_360/`);
         console.log('✅ Détail du tier récupéré avec succès:', response.data);
         return response.data;
       } catch (error) {
@@ -380,7 +380,7 @@ export const tiersApi = {
   getStats: async (search?: string) => {
     console.log('📊 API: Récupération des statistiques globales des tiers');
     const params = search ? { search } : {};
-    const response = await apiClient.get('/tiers/stats/', { params });
+    const response = await apiClient.get('/api/tiers/stats/', { params });
     return response.data;
   },
   
@@ -389,7 +389,7 @@ export const tiersApi = {
     try {
       console.log(`Récupération des détails du tier ${id}...`);
       // URL corrigée sans duplication du terme 'tiers'
-      const response = await apiClient.get(`/tiers/${id}/vue_360/`);
+      const response = await apiClient.get(`/api/tiers/${id}/vue_360/`);
       console.log('Réponse API vue_360:', response.data);
       
       const tierData = response.data;
@@ -423,7 +423,7 @@ export const tiersApi = {
   createTier: async (tier: Tier): Promise<Tier> => {
     try {
       const tierData = adaptTierToApi(tier);
-      const response = await apiClient.post('/tiers/', tierData);
+      const response = await apiClient.post('/api/tiers/', tierData);
       return adaptTierFromApi(response.data);
     } catch (error: any) {
       console.error('Erreur lors de la création du tier:', error);
@@ -451,7 +451,7 @@ export const tiersApi = {
   updateTier: async (id: string, tier: Tier): Promise<Tier> => {
     try {
       const tierData = adaptTierToApi(tier);
-      const response = await apiClient.patch(`/tiers/${id}/`, tierData);
+      const response = await apiClient.patch(`/api/tiers/${id}/`, tierData);
       return adaptTierFromApi(response.data);
     } catch (error) {
       console.error(`Erreur lors de la mise à jour du tier ${id}:`, error);
@@ -462,7 +462,7 @@ export const tiersApi = {
   // Supprimer (archiver) un tier
   deleteTier: async (id: string): Promise<void> => {
     try {
-      await apiClient.delete(`/tiers/${id}/`);
+      await apiClient.delete(`/api/tiers/${id}/`);
     } catch (error) {
       console.error(`Erreur lors de la suppression du tier ${id}:`, error);
       throw error;
@@ -472,7 +472,7 @@ export const tiersApi = {
   // Restaurer un tier archivé
   restoreTier: async (id: string): Promise<Tier> => {
     try {
-      const response = await apiClient.post(`/tiers/${id}/restaurer/`);
+      const response = await apiClient.post(`/api/tiers/${id}/restaurer/`);
       return adaptTierFromApi(response.data);
     } catch (error) {
       console.error(`Erreur lors de la restauration du tier ${id}:`, error);
@@ -483,7 +483,7 @@ export const tiersApi = {
   // Méthode legacy pour la récupération simple (sans pagination) - maintenue pour compatibilité
   getTiersLegacy: async (): Promise<Tier[]> => {
     console.log('⚠️ Utilisation de la méthode legacy getTiersLegacy');
-    const response = await apiClient.get<DRFPaginatedResponse<any>>('/tiers/');
+    const response = await apiClient.get<DRFPaginatedResponse<any>>('/api/tiers/');
     return response.data.results.map(adaptTierFromApi);
   }
 };

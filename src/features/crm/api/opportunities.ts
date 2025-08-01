@@ -115,9 +115,9 @@ export const opportunitiesApi = {
   getOpportunities: async (filters?: OpportunityFilters): Promise<Opportunity[]> => {
     try {
       // Log pour déboguer les appels API
-      console.log('📞 Appel API: GET /opportunities/ avec filtres:', filters);
+      console.log('📞 Appel API: GET /api/opportunities/ avec filtres:', filters);
       
-      const response = await apiClient.get('/opportunities/', { params: filters });
+      const response = await apiClient.get('/api/opportunities/', { params: filters });
       console.log('📊 Réponse API opportunités:', {
         total: response.data.count || 'N/A',
         returned: response.data.results?.length || response.data.result?.length || response.data.length || 0,
@@ -135,8 +135,8 @@ export const opportunitiesApi = {
   // Récupérer une opportunité par ID
   getOpportunity: async (id: string): Promise<Opportunity> => {
     try {
-      console.log(`📞 Appel API: GET /opportunities/${id}/`);
-      const response = await apiClient.get(`/opportunities/${id}/`);
+      console.log(`📞 Appel API: GET /api/opportunities/${id}/`);
+      const response = await apiClient.get(`/api/opportunities/${id}/`);
       return adaptOpportunityFromApi(response.data);
     } catch (error) {
       console.error(`Error fetching opportunity ${id}:`, error);
@@ -150,7 +150,7 @@ export const opportunitiesApi = {
       const apiData = adaptOpportunityToApi(data);
       
       // Logs détaillés pour débogage
-      console.log('📞 Appel API: POST /opportunities/ avec données:', data);
+      console.log('📞 Appel API: POST /api/opportunities/ avec données:', data);
       console.log('📦 Données adaptées pour API:', apiData);
       console.log('🔍 Vérification des champs obligatoires:');
       console.log(' - name:', apiData.name ? '✅' : '❌', apiData.name);
@@ -160,7 +160,7 @@ export const opportunitiesApi = {
       console.log(' - expected_close_date:', apiData.expected_close_date ? '✅' : '❌', apiData.expected_close_date);
       console.log(' - source:', apiData.source ? '✅' : '❌', apiData.source);
       
-      const response = await apiClient.post('/opportunities/', apiData);
+      const response = await apiClient.post('/api/opportunities/', apiData);
       return adaptOpportunityFromApi(response.data);
     } catch (error) {
       console.error('Error creating opportunity:', error);
@@ -185,9 +185,9 @@ export const opportunitiesApi = {
   // Mettre à jour une opportunité existante
   updateOpportunity: async (id: string, data: Partial<Opportunity>): Promise<Opportunity> => {
     try {
-      console.log(`📞 Appel API: PATCH /opportunities/${id}/ avec données:`, data);
+      console.log(`📞 Appel API: PATCH /api/opportunities/${id}/ avec données:`, data);
       const apiData = adaptOpportunityToApi(data);
-      const response = await apiClient.patch(`/opportunities/${id}/`, apiData);
+      const response = await apiClient.patch(`/api/opportunities/${id}/`, apiData);
       return adaptOpportunityFromApi(response.data);
     } catch (error) {
       console.error(`Error updating opportunity ${id}:`, error);
@@ -198,8 +198,8 @@ export const opportunitiesApi = {
   // Supprimer une opportunité
   deleteOpportunity: async (id: string): Promise<void> => {
     try {
-      console.log(`📞 Appel API: DELETE /opportunities/${id}/`);
-      await apiClient.delete(`/opportunities/${id}/`);
+      console.log(`📞 Appel API: DELETE /api/opportunities/${id}/`);
+      await apiClient.delete(`/api/opportunities/${id}/`);
     } catch (error) {
       console.error(`Error deleting opportunity ${id}:`, error);
       throw error;
@@ -209,8 +209,8 @@ export const opportunitiesApi = {
   // Mettre à jour le statut d'une opportunité
   updateOpportunityStage: async (id: string, stage: string): Promise<Opportunity> => {
     try {
-      console.log(`📞 Appel API: PATCH /opportunities/${id}/update_stage/ avec stage:`, stage);
-      const response = await apiClient.patch(`/opportunities/${id}/update_stage/`, { stage });
+      console.log(`📞 Appel API: PATCH /api/opportunities/${id}/update_stage/ avec stage:`, stage);
+      const response = await apiClient.patch(`/api/opportunities/${id}/update_stage/`, { stage });
       return adaptOpportunityFromApi(response.data);
     } catch (error) {
       console.error(`Error updating opportunity ${id} stage:`, error);
@@ -221,8 +221,8 @@ export const opportunitiesApi = {
   // Marquer une opportunité comme gagnée
   markAsWon: async (id: string, data?: { project_id?: string }): Promise<Opportunity> => {
     try {
-      console.log(`📞 Appel API: POST /opportunities/${id}/mark_won/ avec données:`, data || {});
-      const response = await apiClient.post(`/opportunities/${id}/mark_won/`, data || {});
+      console.log(`📞 Appel API: POST /api/opportunities/${id}/mark_won/ avec données:`, data || {});
+      const response = await apiClient.post(`/api/opportunities/${id}/mark_won/`, data || {});
       return adaptOpportunityFromApi(response.data.opportunity || response.data);
     } catch (error) {
       console.error(`Error marking opportunity ${id} as won:`, error);
@@ -233,8 +233,8 @@ export const opportunitiesApi = {
   // Marquer une opportunité comme perdue
   markAsLost: async (id: string, data: { loss_reason: string; loss_description?: string }): Promise<Opportunity> => {
     try {
-      console.log(`📞 Appel API: POST /opportunities/${id}/mark_lost/ avec données:`, data);
-      const response = await apiClient.post(`/opportunities/${id}/mark_lost/`, data);
+      console.log(`📞 Appel API: POST /api/opportunities/${id}/mark_lost/ avec données:`, data);
+      const response = await apiClient.post(`/api/opportunities/${id}/mark_lost/`, data);
       return adaptOpportunityFromApi(response.data.opportunity || response.data);
     } catch (error) {
       console.error(`Error marking opportunity ${id} as lost:`, error);
@@ -245,8 +245,8 @@ export const opportunitiesApi = {
   // Obtenir les données Kanban
   getKanbanData: async (): Promise<any> => {
     try {
-      console.log('📞 Appel API: GET /opportunities/kanban/');
-      const response = await apiClient.get('/opportunities/kanban/');
+      console.log('📞 Appel API: GET /api/opportunities/kanban/');
+      const response = await apiClient.get('/api/opportunities/kanban/');
       return response.data;
     } catch (error) {
       console.error('Error fetching kanban data:', error);
@@ -257,8 +257,8 @@ export const opportunitiesApi = {
   // Obtenir les statistiques des opportunités
   getOpportunityStats: async (): Promise<any> => {
     try {
-      console.log('📞 Appel API: GET /opportunities/stats/');
-      const response = await apiClient.get('/opportunities/stats/');
+      console.log('📞 Appel API: GET /api/opportunities/stats/');
+      const response = await apiClient.get('/api/opportunities/stats/');
       return response.data;
     } catch (error) {
       console.error('Error fetching opportunity stats:', error);
