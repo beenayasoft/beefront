@@ -19,9 +19,21 @@ export function WorkLibraryStats({
   };
 
   const getTotalValue = () => {
-    const materialsValue = materials.reduce((sum, item) => sum + item.unitPrice, 0);
-    const laborValue = labor.reduce((sum, item) => sum + item.unitPrice, 0);
-    const worksValue = works.reduce((sum, item) => sum + item.recommendedPrice, 0);
+    const materialsValue = materials.reduce((sum, item) => {
+      const price = typeof item.unitPrice === 'number' && !isNaN(item.unitPrice) ? item.unitPrice : 0;
+      return sum + Math.max(0, price);
+    }, 0);
+    
+    const laborValue = labor.reduce((sum, item) => {
+      const price = typeof item.unitPrice === 'number' && !isNaN(item.unitPrice) ? item.unitPrice : 0;
+      return sum + Math.max(0, price);
+    }, 0);
+    
+    const worksValue = works.reduce((sum, item) => {
+      const price = typeof item.recommendedPrice === 'number' && !isNaN(item.recommendedPrice) ? item.recommendedPrice : 0;
+      return sum + Math.max(0, price);
+    }, 0);
+    
     return materialsValue + laborValue + worksValue;
   };
 
@@ -75,7 +87,27 @@ export function WorkLibraryStats({
       </div>
       <div className="benaya-card text-center">
         <div className="text-2xl font-bold text-green-600">
-          {getTotalValue().toLocaleString("fr-FR")} MAD
+          {(() => {
+            const totalValue = getTotalValue();
+            
+            // Détecter si la valeur semble aberrante (>1M MAD)
+            if (totalValue > 1000000) {
+              return (
+                <span className="text-red-600 text-lg" title={`Valeur détectée: ${totalValue.toLocaleString("fr-FR")} MAD`}>
+                  Valeur aberrante
+                </span>
+              );
+            }
+            
+            // Formatage normal
+            if (totalValue > 999999) {
+              return `${(totalValue / 1000000).toFixed(1)}M MAD`;
+            } else if (totalValue > 999) {
+              return `${(totalValue / 1000).toFixed(1)}K MAD`;
+            }
+            
+            return `${totalValue.toLocaleString("fr-FR")} MAD`;
+          })()}
         </div>
         <div className="text-sm text-neutral-600 dark:text-neutral-400">
           Valeur catalogue
