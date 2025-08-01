@@ -6,4 +6,4 @@ export { default as WorkLibraryList } from './WorkLibraryList';
 export { default as LibraryItemDetail } from './LibraryItemDetail';
 export { default as LibraryItemForm } from './LibraryItemForm';
 export { default as LibraryItemsList } from './LibraryItemsList';
-export { default as WorkCompositionForm } from './WorkCompositionForm'; 
+export { default as WorkCompositionFormRefactored } from './WorkCompositionFormRefactored'; 

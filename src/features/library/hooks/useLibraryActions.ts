@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Work, Material, Labor } from '../types/workLibrary';
 import { libraryApi } from '../api/library';
 import { UseLibraryDataReturn } from './useLibraryData';
+import { invalidateLibraryCache } from '../utils/cacheUtils';
 
 export interface UseLibraryActionsReturn {
   // État des dialogues
@@ -109,12 +110,15 @@ export function useLibraryActions(libraryData: UseLibraryDataReturn): UseLibrary
       if ("components" in selectedItem) {
         await libraryApi.deleteWork(selectedItem.id);
         setWorks(works.filter(w => w.id !== selectedItem.id));
+        invalidateLibraryCache('suppression ouvrage');
       } else if ("vatRate" in selectedItem) {
         await libraryApi.deleteMaterial(selectedItem.id);
         setMaterials(materials.filter(m => m.id !== selectedItem.id));
+        invalidateLibraryCache('suppression matériau');
       } else {
         await libraryApi.deleteLabor(selectedItem.id);
         setLabor(labor.filter(l => l.id !== selectedItem.id));
+        invalidateLibraryCache('suppression main d\'œuvre');
       }
       
       setSelectedItem(null);
@@ -141,6 +145,7 @@ export function useLibraryActions(libraryData: UseLibraryDataReturn): UseLibrary
           // Ajout d'un nouvel ouvrage
           savedWork = await libraryApi.createWork(workItem);
           setWorks([...works, savedWork]);
+          invalidateLibraryCache('création ouvrage');
           
           // Fermer toutes les modales et rediriger vers la page de détail
           setShowWorkForm(false);
@@ -154,6 +159,7 @@ export function useLibraryActions(libraryData: UseLibraryDataReturn): UseLibrary
           const updatedWorks = [...works];
           updatedWorks[existingIndex] = savedWork;
           setWorks(updatedWorks);
+          invalidateLibraryCache('modification ouvrage');
         }
         
         setShowWorkForm(false);
@@ -168,6 +174,7 @@ export function useLibraryActions(libraryData: UseLibraryDataReturn): UseLibrary
           // Ajout d'un nouveau matériau
           savedMaterial = await libraryApi.createMaterial(materialItem);
           setMaterials([...materials, savedMaterial]);
+          invalidateLibraryCache('création matériau');
           
           // Fermer toutes les modales et rediriger vers la page de détail
           setShowItemForm(false);
@@ -181,6 +188,7 @@ export function useLibraryActions(libraryData: UseLibraryDataReturn): UseLibrary
           const updatedMaterials = [...materials];
           updatedMaterials[existingIndex] = savedMaterial;
           setMaterials(updatedMaterials);
+          invalidateLibraryCache('modification matériau');
         }
         
         setShowItemForm(false);
@@ -195,6 +203,7 @@ export function useLibraryActions(libraryData: UseLibraryDataReturn): UseLibrary
           // Ajout d'une nouvelle main d'œuvre
           savedLabor = await libraryApi.createLabor(laborItem);
           setLabor([...labor, savedLabor]);
+          invalidateLibraryCache('création main d\'œuvre');
           
           // Fermer toutes les modales et rediriger vers la page de détail
           setShowItemForm(false);
@@ -208,6 +217,7 @@ export function useLibraryActions(libraryData: UseLibraryDataReturn): UseLibrary
           const updatedLabor = [...labor];
           updatedLabor[existingIndex] = savedLabor;
           setLabor(updatedLabor);
+          invalidateLibraryCache('modification main d\'œuvre');
         }
         
         setShowItemForm(false);

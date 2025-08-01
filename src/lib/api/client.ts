@@ -79,14 +79,13 @@ const createApiClient = (): AxiosInstance => {
     return Promise.reject(error);
   });
 
-  // OPTIMISATION: Logging conditionnel en développement
+  // Intercepteur pour le logging des requêtes en développement
   if (process.env.NODE_ENV === 'development') {
     client.interceptors.request.use((config) => {
-      // Logging simplifié pour éviter la sur-verbosité
-      const isLibraryCall = config.url?.includes('/library/') || config.url?.includes('/fournitures/') || config.url?.includes('/main-oeuvre/') || config.url?.includes('/ouvrages/');
-      if (!isLibraryCall) {
-        console.debug(`📤 API: ${config.method?.toUpperCase()} ${config.url}`);
-      }
+      console.debug(`📤 Requête API: ${config.method?.toUpperCase()} ${config.url}`, {
+        headers: config.headers,
+        params: config.params,
+      });
       return config;
     });
   }

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Material } from "@/features/library/types";
 import { libraryApi } from "@/features/library/api";
+import { invalidateLibraryCache } from "../utils/cacheUtils";
 
 export function useMaterialDetail(materialId: string | undefined) {
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ export function useMaterialDetail(materialId: string | undefined) {
       const saved = await libraryApi.updateMaterial(material.id, updatedMaterial);
       setMaterial(saved);
       setShowEditDialog(false);
+      invalidateLibraryCache('modification matériau depuis détail');
     } catch (err) {
       console.error("Erreur lors de la mise à jour:", err);
       setError("Erreur lors de la mise à jour du matériau");
@@ -48,6 +50,7 @@ export function useMaterialDetail(materialId: string | undefined) {
     
     try {
       await libraryApi.deleteMaterial(material.id);
+      invalidateLibraryCache('suppression matériau depuis détail');
       navigate("/bibliotheque", { replace: true });
     } catch (err) {
       console.error("Erreur lors de la suppression:", err);

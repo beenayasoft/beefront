@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Labor } from "@/features/library/types";
 import { libraryApi } from "@/features/library/api";
+import { invalidateLibraryCache } from "../utils/cacheUtils";
 
 export function useLaborDetail(laborId: string | undefined) {
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ export function useLaborDetail(laborId: string | undefined) {
       const saved = await libraryApi.updateLabor(labor.id, updatedLabor);
       setLabor(saved);
       setShowEditDialog(false);
+      invalidateLibraryCache('modification main d\'œuvre depuis détail');
     } catch (err) {
       console.error("Erreur lors de la mise à jour:", err);
       setError("Erreur lors de la mise à jour de la main d'œuvre");
@@ -48,6 +50,7 @@ export function useLaborDetail(laborId: string | undefined) {
     
     try {
       await libraryApi.deleteLabor(labor.id);
+      invalidateLibraryCache('suppression main d\'œuvre depuis détail');
       navigate("/bibliotheque", { replace: true });
     } catch (err) {
       console.error("Erreur lors de la suppression:", err);

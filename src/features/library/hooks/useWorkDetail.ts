@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Work } from "@/features/library/types";
 import { libraryApi } from "@/features/library/api";
+import { invalidateLibraryCache } from "../utils/cacheUtils";
 
 export function useWorkDetail(workId: string | undefined) {
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ export function useWorkDetail(workId: string | undefined) {
       const saved = await libraryApi.updateWork(work.id, updatedWork);
       setWork(saved);
       setShowEditDialog(false);
+      invalidateLibraryCache('modification ouvrage depuis détail');
     } catch (err) {
       console.error("Erreur lors de la mise à jour:", err);
       setError("Erreur lors de la mise à jour de l'ouvrage");
@@ -48,6 +50,7 @@ export function useWorkDetail(workId: string | undefined) {
     
     try {
       await libraryApi.deleteWork(work.id);
+      invalidateLibraryCache('suppression ouvrage depuis détail');
       navigate("/bibliotheque", { replace: true });
     } catch (err) {
       console.error("Erreur lors de la suppression:", err);
