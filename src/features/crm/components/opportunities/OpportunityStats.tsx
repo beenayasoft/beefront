@@ -30,8 +30,7 @@ export function OpportunityStats({ stats }: OpportunityStatsProps) {
             value="--"
             change="--"
             changeType="neutral"
-            icon={FileText}
-            trend="stable"
+            icon={<FileText className="h-5 w-5 text-benaya-600" />}
           />
         ))}
       </div>
@@ -71,32 +70,28 @@ export function OpportunityStats({ stats }: OpportunityStatsProps) {
         value={adaptedStats.total?.toString() || '0'}
         change={`${adaptedStats.byStage?.new || 0} nouvelles`}
         changeType="neutral"
-        icon={FileText}
-        trend="stable"
+        icon={<FileText className="h-5 w-5 text-benaya-600" />}
       />
       <MetricCard
         title="En cours"
         value={inProgressCount.toString()}
         change={formatCurrency(adaptedStats.weightedAmount || 0) + " MAD"}
         changeType="neutral"
-        icon={Clock}
-        trend="stable"
+        icon={<Clock className="h-5 w-5 text-benaya-600" />}
       />
       <MetricCard
         title="Gagnées"
         value={(adaptedStats.byStage?.won || 0).toString()}
         change={formatCurrency(adaptedStats.wonAmount || 0) + " MAD"}
         changeType="positive"
-        icon={CheckCircle}
-        trend="up"
+        icon={<CheckCircle className="h-5 w-5 text-green-600" />}
       />
       <MetricCard
         title="Taux de conversion"
         value={(adaptedStats.conversionRate || 0).toFixed(1) + "%"}
         change={`${adaptedStats.byStage?.lost || 0} perdues`}
         changeType={(adaptedStats.conversionRate || 0) > 50 ? "positive" : "negative"}
-        icon={TrendingUp}
-        trend={(adaptedStats.conversionRate || 0) > 50 ? "up" : "down"}
+        icon={<TrendingUp className="h-5 w-5 text-benaya-600" />}
       />
     </div>
   );

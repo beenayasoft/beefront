@@ -3,6 +3,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Animations pour les skeleton loaders */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Transitions fluides pour le contenu */
+.content-transition {
+  transition: opacity 300ms ease-in-out, transform 200ms ease-in-out;
+}
+
+.content-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.content-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

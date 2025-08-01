@@ -33,6 +33,7 @@ import {
   TableRow,
 } from "../../../components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
+import { TableSkeleton } from "@/components/ui/skeletons";
 import { cn } from "../../../lib/utils";
 import { Work, Material, Labor } from "../types/workLibrary";
 
@@ -236,14 +237,23 @@ const LibraryItemsList = memo(function LibraryItemsList({
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8">
-                  <div className="flex justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-benaya-600"></div>
-                  </div>
-                  <div className="mt-2 text-sm text-neutral-500">Chargement...</div>
-                </TableCell>
-              </TableRow>
+              <>
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><div className="h-4 bg-muted rounded animate-pulse w-24"></div></TableCell>
+                    <TableCell><div className="h-4 bg-muted rounded animate-pulse w-32"></div></TableCell>
+                    <TableCell><div className="h-4 bg-muted rounded animate-pulse w-16"></div></TableCell>
+                    <TableCell><div className="h-4 bg-muted rounded animate-pulse w-20"></div></TableCell>
+                    <TableCell><div className="h-6 bg-muted rounded-full animate-pulse w-16"></div></TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <div className="h-8 w-8 bg-muted rounded animate-pulse"></div>
+                        <div className="h-8 w-8 bg-muted rounded animate-pulse"></div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </>
             ) : items.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-neutral-500">

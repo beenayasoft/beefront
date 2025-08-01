@@ -2,36 +2,46 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { ThemeProvider } from "next-themes";
 import { Suspense, lazy, ReactNode } from "react";
 import { MainLayout } from "@/layouts/MainLayout";
-import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { AuthProvider, useAuth } from "@/features/auth/hooks/useAuth";
 import { PageLoader } from "@/components/ui/PageLoader";
 
 // Import statique uniquement pour Auth (nécessaire au démarrage)
-import Auth from "@/pages/Auth";
+import Auth from "@/features/auth/pages/Auth";
 
-// Lazy loading de toutes les autres pages
+// Lazy loading OPTIMISÉ - TOUTES les pages depuis features/ (réduction bundle size)
 const Index = lazy(() => import("@/pages/Dashboard"));
 const Agenda = lazy(() => import("@/pages/Agenda"));
 const Chantiers = lazy(() => import("@/pages/Chantiers"));
-const DevisNew = lazy(() => import("@/pages/DevisNew"));
-const QuoteEditor = lazy(() => import("@/pages/QuoteEditor"));
-const QuoteDetail = lazy(() => import("@/pages/QuoteDetail"));
-const QuotePreview = lazy(() => import("@/pages/QuotePreview"));
-const Factures = lazy(() => import("@/pages/Factures"));
-const InvoiceDetail = lazy(() => import("@/pages/InvoiceDetail"));
-const InvoiceEditor = lazy(() => import("@/pages/InvoiceEditor"));
-const InvoicePreview = lazy(() => import("@/pages/InvoicePreview"));
 const Interventions = lazy(() => import("@/pages/Interventions"));
 const Stock = lazy(() => import("@/pages/Stock"));
 const Settings = lazy(() => import("@/pages/Settings"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
-const Tiers = lazy(() => import("@/pages/Tiers"));
-const TierDetail = lazy(() => import("@/pages/TierDetail"));
+
+// ✅ FEATURES - Documents (optimisé)
+const DevisNew = lazy(() => import("@/features/documents/pages/DevisNew"));
+const Devis = lazy(() => import("@/features/documents/pages/Devis"));
+const QuoteEditor = lazy(() => import("@/features/documents/pages/QuoteEditor"));
+const QuoteDetail = lazy(() => import("@/features/documents/pages/QuoteDetail"));
+const QuotePreview = lazy(() => import("@/features/documents/pages/QuotePreview"));
+const Factures = lazy(() => import("@/features/documents/pages/Factures"));
+const InvoiceDetail = lazy(() => import("@/features/documents/pages/InvoiceDetail"));
+const InvoiceEditor = lazy(() => import("@/features/documents/pages/InvoiceEditor"));
+const InvoicePreview = lazy(() => import("@/features/documents/pages/InvoicePreview"));
+
+// ✅ FEATURES - CRM (optimisé)
+const Tiers = lazy(() => import("@/features/crm/pages/Tiers"));
+const TierDetail = lazy(() => import("@/features/crm/pages/TierDetail"));
+const Opportunities = lazy(() => import("@/features/crm/pages/Opportunities"));
+const OpportunityDetail = lazy(() => import("@/features/crm/pages/OpportunityDetail"));
+
+// ✅ FEATURES - Library (déjà optimisé)
 const WorkLibrary = lazy(() => import("@/features/library/pages/WorkLibrary"));
 const MaterialDetail = lazy(() => import("@/features/library/pages/MaterialDetail"));
 const LaborDetail = lazy(() => import("@/features/library/pages/LaborDetail"));
 const WorkDetail = lazy(() => import("@/features/library/pages/WorkDetail"));
-const Opportunities = lazy(() => import("@/pages/Opportunities"));
-const OpportunityDetail = lazy(() => import("@/pages/OpportunityDetail"));
+
+// ✅ FEATURES - Admin (optimisé)  
+const Administration = lazy(() => import("@/features/admin/pages/Administration"));
 
 // Composant pour protéger les routes
 interface ProtectedRouteProps {
@@ -117,12 +127,12 @@ export default function App() {
               } />
               <Route path="devis" element={
                 <Suspense fallback={<PageLoader />}>
-                  <DevisNew />
+                  <Devis />
                 </Suspense>
               } />
               <Route path="devis/nouveau" element={
                 <Suspense fallback={<PageLoader />}>
-                  <QuoteEditor />
+                  <DevisNew />
                 </Suspense>
               } />
               <Route path="devis/edit/:id" element={
@@ -174,6 +184,11 @@ export default function App() {
               <Route path="settings" element={
                 <Suspense fallback={<PageLoader />}>
                   <Settings />
+                </Suspense>
+              } />
+              <Route path="administration" element={
+                <Suspense fallback={<PageLoader />}>
+                  <Administration />
                 </Suspense>
               } />
               <Route path="tiers" element={

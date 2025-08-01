@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   TrendingUp,
   DollarSign,
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { DashboardSkeleton } from "@/components/ui/skeletons";
 
 // Simple metric card component
 const MetricCard = ({
@@ -93,6 +94,25 @@ const ActivityItem = ({
 );
 
 export default function Dashboard() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simuler le chargement des données
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 1500); // 1.5s pour simuler le chargement
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <DashboardSkeleton />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 space-y-8">
       {/* Welcome Header */}

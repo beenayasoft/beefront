@@ -1,4 +1,4 @@
-import { Tier } from '@/components/tiers/types';
+import { Tier } from '@/features/crm/types/tier';
 
 // Données de test pour les tiers
 export const initialTiers: Tier[] = [

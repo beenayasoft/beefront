@@ -33,24 +33,21 @@ export function InvoiceStats({ stats }: InvoiceStatsProps) {
         value={stats.total.toString()}
         change={`${stats.draft} brouillons`}
         changeType="neutral"
-        icon={FileText}
-        trend="stable"
+        icon={<FileText className="h-5 w-5 text-benaya-600" />}
       />
       <MetricCard
         title="En attente"
         value={stats.sent.toString()}
         change={formatCurrency(stats.remainingAmount - stats.overdueAmount) + " MAD"}
         changeType="neutral"
-        icon={Clock}
-        trend="stable"
+        icon={<Clock className="h-5 w-5 text-benaya-600" />}
       />
       <MetricCard
         title="En retard"
         value={stats.overdue.toString()}
         change={formatCurrency(stats.overdueAmount) + " MAD"}
         changeType="negative"
-        icon={AlertTriangle}
-        trend="up"
+        icon={<AlertTriangle className="h-5 w-5 text-orange-600" />}
       />
       <MetricCard
         title="Montant encaissé"
@@ -58,8 +55,7 @@ export function InvoiceStats({ stats }: InvoiceStatsProps) {
         currency="MAD"
         change={`${stats.paid} factures payées`}
         changeType="positive"
-        icon={DollarSign}
-        trend="up"
+        icon={<DollarSign className="h-5 w-5 text-green-600" />}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Work, Material, Labor } from '../types/workLibrary';
 import { libraryApi } from '../api/library';
+import { compositeApi } from '../api/composite';
 
 // Fonction optimisée pour supprimer les doublons par ID
 function removeDuplicatesById<T extends { id: string }>(items: T[]): T[] {
@@ -108,49 +109,77 @@ export function useLibraryData(): UseLibraryDataReturn {
       setError(null);
       console.log("🔄 [LIBRARY API] Chargement depuis l'API...");
       
-      // OPTIMISATION: Utiliser l'endpoint unifié si disponible
+      // OPTIMISATION Milestone 3.1: Endpoint composite optimisé en priorité
       try {
-        const allData = await libraryApi.getAllLibraryItems();
+        console.log("🚀 [LIBRARY HOOK] Tentative endpoint composite optimisé...");
+        const result = await compositeApi.getAllLibraryItems({ page_size: 200 });
         
-        // Trier par type
-        const materialsData: Material[] = [];
-        const laborData: Labor[] = [];
-        const worksData: Work[] = [];
-        
-        allData.forEach(item => {
-          if (item && typeof item === 'object') {
-            if ("vatRate" in item || "vat_rate" in item) {
-              materialsData.push(item as Material);
-            } else if ("components" in item) {
-              worksData.push(item as Work);
-            } else {
-              laborData.push(item as Labor);
-            }
-          }
+        console.log("✅ [LIBRARY HOOK] Endpoint composite réussi:", {
+          materials: result.materials.length,
+          labor: result.labor.length,
+          works: result.works.length,
+          performance: result.performance
         });
         
-        setMaterials(materialsData);
-        setLabor(laborData);
-        setWorks(worksData);
-        setCachedData(materialsData, laborData, worksData);
-        
-      } catch (unifiedError) {
-        // Fallback: 3 appels séparés
-        console.warn("Endpoint unifié indisponible, fallback vers appels séparés");
-        const [materialsData, laborData, worksData] = await Promise.all([
-          libraryApi.getMaterials(),
-          libraryApi.getLabor(),
-          libraryApi.getWorks(),
-        ]);
-        
-        const cleanMaterials = removeDuplicatesById(materialsData);
-        const cleanLabor = removeDuplicatesById(laborData);
-        const cleanWorks = removeDuplicatesById(worksData);
+        // Données déjà transformées par l'API composite
+        const cleanMaterials = removeDuplicatesById(result.materials);
+        const cleanLabor = removeDuplicatesById(result.labor);
+        const cleanWorks = removeDuplicatesById(result.works);
         
         setMaterials(cleanMaterials);
         setLabor(cleanLabor);
         setWorks(cleanWorks);
         setCachedData(cleanMaterials, cleanLabor, cleanWorks);
+        
+      } catch (compositeError) {
+        console.warn("🔄 [LIBRARY HOOK] Endpoint composite indisponible, fallback vers API legacy...");
+        console.warn("Erreur composite:", compositeError.message);
+        
+        // Fallback 1: Essayer l'ancienne API getAllLibraryItems
+        try {
+          const allData = await libraryApi.getAllLibraryItems();
+          
+          // Trier par type (logique legacy)
+          const materialsData: Material[] = [];
+          const laborData: Labor[] = [];
+          const worksData: Work[] = [];
+          
+          allData.forEach(item => {
+            if (item && typeof item === 'object') {
+              if ("vatRate" in item || "vat_rate" in item) {
+                materialsData.push(item as Material);
+              } else if ("components" in item) {
+                worksData.push(item as Work);
+              } else {
+                laborData.push(item as Labor);
+              }
+            }
+          });
+          
+          setMaterials(materialsData);
+          setLabor(laborData);
+          setWorks(worksData);
+          setCachedData(materialsData, laborData, worksData);
+          
+        } catch (legacyError) {
+          console.warn("🔄 [LIBRARY HOOK] API legacy échouée, fallback vers 3 appels séparés...");
+          
+          // Fallback 2: 3 appels séparés (dernière option)
+          const [materialsData, laborData, worksData] = await Promise.all([
+            libraryApi.getMaterials(),
+            libraryApi.getLabor(),
+            libraryApi.getWorks(),
+          ]);
+          
+          const cleanMaterials = removeDuplicatesById(materialsData);
+          const cleanLabor = removeDuplicatesById(laborData);
+          const cleanWorks = removeDuplicatesById(worksData);
+          
+          setMaterials(cleanMaterials);
+          setLabor(cleanLabor);
+          setWorks(cleanWorks);
+          setCachedData(cleanMaterials, cleanLabor, cleanWorks);
+        }
       }
       
       console.log("✅ [LIBRARY API] Données chargées avec succès");

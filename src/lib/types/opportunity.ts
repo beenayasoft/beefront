@@ -1,4 +1,4 @@
-import { Tier } from "@/components/tiers/types";
+import { Tier } from "@/features/crm/types/tier";
 
 // Statuts possibles pour une opportunité
 export type OpportunityStatus = 

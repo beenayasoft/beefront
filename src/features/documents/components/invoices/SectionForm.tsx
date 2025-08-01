@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { InvoiceItem } from "../../../../types/invoices.types";
+import { InvoiceItem } from "../../types/invoices.types";
 
 interface SectionFormProps {
   open: boolean;

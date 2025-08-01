@@ -12,6 +12,7 @@ import { LibraryItemsList } from "../components/LibraryItemsList";
 import { LibraryItemForm } from "../components/LibraryItemForm";
 import { WorkCompositionFormRefactored as WorkCompositionForm } from "../components/WorkCompositionFormRefactored";
 import { Work, Material, Labor } from "@/features/library/types";
+import { LibrarySkeleton } from "@/components/ui/skeletons";
 
 // Nouveaux imports pour les hooks et composants séparés
 import { useLibraryData } from "../hooks/useLibraryData";
@@ -64,6 +65,15 @@ export default function WorkLibrary() {
   } = actions;
 
   // Rendu progressif - pas de fallback bloquant
+
+  // Afficher le skeleton pendant le chargement initial
+  if (loading && !materials.length && !labor.length && !works.length) {
+    return (
+      <div className="p-6">
+        <LibrarySkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">

@@ -26,12 +26,8 @@ import { InvoiceList } from "../components/invoices/InvoiceList";
 import { RecordPaymentModal } from "../components/invoices/RecordPaymentModal";
 import { CreateCreditNoteModal } from "../components/invoices/CreateCreditNoteModal";
 import { CreateInvoiceModal } from "../components/invoices/CreateInvoiceModal";
-import { CreateInvoiceFromQuoteModal } from "../components/invoices/CreateInvoiceFromQuoteModal";
 import { ValidateInvoiceModal } from "../components/invoices/ValidateInvoiceModal";
 import { DeleteInvoiceModal } from "../components/invoices/DeleteInvoiceModal";
-import { InvoiceViewModal } from "../components/invoices/InvoiceViewModal";
-import { InvoiceFiltersModal } from "../components/invoices/InvoiceFiltersModal";
-import { BulkInvoiceActionsModal } from "../components/invoices/BulkInvoiceActionsModal";
 import { toast } from "@/components/ui/use-toast";
 import { 
   getInvoices, 

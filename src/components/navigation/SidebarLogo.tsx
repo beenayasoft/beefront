@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import useAuth from "@/hooks/useAuth";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 
 interface SidebarLogoProps {
   isCollapsed: boolean;

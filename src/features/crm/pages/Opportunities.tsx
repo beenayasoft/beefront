@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Grid, List, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ import { Opportunity, OpportunityStatus, LossReason } from "../types/opportunity
 import { useModalState, createSafeSubmitHandler } from "@/hooks/useModalState";
 import { OpportunitySortableItem } from "@/features/crm/components/opportunities/OpportunitySortableItem";
 import { OpportunityCard } from "@/features/crm/components/opportunities/OpportunityCard";
+import { KanbanColumnSkeleton, ListSkeleton } from "@/components/ui/skeletons";
 
 // Définition des colonnes du Kanban
 const kanbanColumns = [
@@ -50,6 +51,8 @@ export default function Opportunities() {
   
   // États principaux
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({
     total: 0,
     byStage: {} as Record<OpportunityStatus, number>,
@@ -79,6 +82,8 @@ export default function Opportunities() {
   // 🚀 CHARGEMENT INITIAL DES DONNÉES
   useEffect(() => {
     const loadOpportunities = async () => {
+      setIsLoading(true);
+      setError(null);
       try {
         console.log('📥 Chargement des opportunités...');
         console.log('🏢 Tenant ID actuel:', localStorage.getItem('tenantId'));
@@ -110,15 +115,20 @@ export default function Opportunities() {
         console.log('✅ Chargement terminé');
       } catch (error: any) {
         console.error('❌ Erreur lors du chargement des opportunités:', error);
+        
+        let errorMessage = 'Impossible de charger les opportunités';
         if (error?.response?.status === 401) {
-          toast.error('Session expirée. Veuillez vous reconnecter.');
+          errorMessage = 'Session expirée. Veuillez vous reconnecter.';
         } else if (error?.response?.status === 404) {
-          toast.error('Service d\'opportunités non disponible');
+          errorMessage = 'Service d\'opportunités non disponible';
         } else if (error?.response?.status === 500) {
-          toast.error('Erreur serveur - Vérifiez les logs Django et la base de données');
-        } else {
-          toast.error('Impossible de charger les opportunités');
+          errorMessage = 'Erreur serveur - Vérifiez les logs Django et la base de données';
         }
+        
+        setError(errorMessage);
+        toast.error(errorMessage);
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -479,6 +489,15 @@ export default function Opportunities() {
 
   // Obtenir l'opportunité active pour l'overlay de glisser-déposer
   const activeOpportunity = activeId ? opportunities.find(opp => opp.id === activeId) : null;
+
+  // Afficher le skeleton pendant le chargement
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        {viewType === 'kanban' ? <KanbanColumnSkeleton /> : <ListSkeleton items={8} variant="detailed" />}
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">

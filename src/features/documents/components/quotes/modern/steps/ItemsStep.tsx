@@ -20,7 +20,7 @@ import { VatRateSelector } from '../../../VatRateSelector';
 import { CreateQuoteItemData } from '../../../types/quotes.types';
 import { formatCurrency } from '@/lib/utils';
 import { LibraryModal } from '@/features/library/components/LibraryModal';
-import { EditorQuoteItem } from '../../../types';
+import { EditorQuoteItem } from '../../../types/quotes.types';
 
 interface ItemsStepProps {
   wizard: UseQuoteWizard;

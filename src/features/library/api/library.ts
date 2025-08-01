@@ -6,6 +6,7 @@ import { worksApi } from './works';
 import { ingredientsApi } from './ingredients';
 import { searchApi } from './search';
 import { statsApi } from './stats';
+import { compositeApi } from './composite';
 import { DjangoPaginatedResponse, PaginationParams, ApiResponse, extractResults, isPaginatedResponse } from './types';
 
 // API Bibliothèque - Point d'entrée unifié
@@ -18,6 +19,7 @@ export const libraryApi = {
   ...ingredientsApi,
   ...searchApi,
   ...statsApi,
+  ...compositeApi,
 
   // ==================== MÉTHODES COMBINÉES ====================
   
@@ -68,3 +70,4 @@ export { worksApi } from './works';
 export { ingredientsApi } from './ingredients';
 export { searchApi } from './search';
 export { statsApi } from './stats';
+export { compositeApi } from './composite';

@@ -24,8 +24,8 @@ import { formatCurrency } from "@/lib/utils";
 interface DiscountFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (item: QuoteItem) => void;
-  item?: Partial<QuoteItem>;
+  onSubmit: (item: EditorQuoteItem) => void;
+  item?: Partial<EditorQuoteItem>;
   isEditing?: boolean;
   quoteTotal: number;
 }
@@ -128,7 +128,7 @@ export function DiscountForm({
         : formData.designation;
       
       // Créer l'élément de remise avec des montants négatifs
-      const newItem: QuoteItem = {
+      const newItem: EditorQuoteItem = {
         id: item?.id || `discount-${Date.now()}`,
         type: "discount",
         position: item?.position || 0,
