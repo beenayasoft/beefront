@@ -66,14 +66,7 @@ export default function WorkLibrary() {
 
   // Rendu progressif - pas de fallback bloquant
 
-  // Afficher le skeleton pendant le chargement initial
-  if (loading && !materials.length && !labor.length && !works.length) {
-    return (
-      <div className="p-6">
-        <LibrarySkeleton />
-      </div>
-    );
-  }
+  // Skeleton loading supprimé - rendu direct du contenu
 
   return (
     <div className="p-6 space-y-6">
