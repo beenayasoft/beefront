@@ -122,37 +122,67 @@ export function OpportunityForm({
     loadTiers();
   }, [toast, preselectedTierId, opportunity?.tierId]);
 
-  // Charger les utilisateurs depuis l'API
+  // Charger les utilisateurs depuis l'API avec timeout optimisé
   useEffect(() => {
     const loadUsers = async () => {
       try {
         setUsersLoading(true);
         setUsersError(null);
         
-        const usersList = await usersService.getUsers();
-        setUsers(usersList);
+        // Chargement en parallèle avec timeout réduit
+        const [usersList, currentUser] = await Promise.allSettled([
+          Promise.race([
+            usersService.getUsers(),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Timeout - Utilisateurs')), 10000)
+            )
+          ]),
+          Promise.race([
+            usersService.getCurrentUser(),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Timeout - Utilisateur courant')), 10000)
+            )
+          ])
+        ]);
         
-        console.log(`✅ Chargé ${usersList.length} utilisateurs pour le formulaire`);
+        // Traiter la liste des utilisateurs
+        if (usersList.status === 'fulfilled') {
+          setUsers(usersList.value as any[]);
+          console.log(`✅ Chargé ${(usersList.value as any[]).length} utilisateurs pour le formulaire`);
+        } else {
+          console.warn('⚠️ Échec du chargement des utilisateurs, utilisation du fallback');
+          // Le service a déjà un fallback avec des utilisateurs par défaut
+          const fallbackUsers = await usersService.getUsers();
+          setUsers(fallbackUsers);
+        }
         
         // Assigner automatiquement l'utilisateur courant si c'est une nouvelle opportunité
-        if (!isEditing && !opportunity?.assignedTo && usersList.length > 0) {
-          // Récupérer l'utilisateur courant
-          const currentUser = await usersService.getCurrentUser();
-          if (currentUser) {
-            console.log(`🔄 Assignation automatique à l'utilisateur courant: ${currentUser.username}`);
+        if (!isEditing && !opportunity?.assignedTo) {
+          if (currentUser.status === 'fulfilled' && currentUser.value) {
+            const user = currentUser.value as any;
+            console.log(`🔄 Assignation automatique à l'utilisateur courant: ${user.username}`);
             setFormData(prev => ({
               ...prev,
-              assignedTo: currentUser.id
+              assignedTo: user.id
             }));
           }
         }
       } catch (error) {
         console.error('❌ Erreur lors du chargement des utilisateurs:', error);
-        setUsersError(error instanceof Error ? error.message : 'Erreur inconnue');
+        setUsersError('Service utilisateurs indisponible');
+        
+        // Utiliser le fallback même en cas d'erreur
+        try {
+          const fallbackUsers = await usersService.getUsers();
+          setUsers(fallbackUsers);
+          console.log('⚠️ Utilisation des utilisateurs par défaut suite à l\'erreur');
+        } catch (fallbackError) {
+          console.error('❌ Échec du fallback utilisateurs:', fallbackError);
+        }
         
         toast({
-          title: "Erreur de chargement",
-          description: "Impossible de charger la liste des utilisateurs. Veuillez réessayer.",
+          title: "Service utilisateurs lent",
+          description: "Utilisation des utilisateurs par défaut.",
           variant: "destructive",
         });
       } finally {

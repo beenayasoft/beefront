@@ -12,7 +12,7 @@ const createApiClient = (): AxiosInstance => {
   // Créer l'instance avec la configuration de base
   const client = axios.create({
     baseURL: config.API_BASE_URL,
-    timeout: 30000,
+    timeout: 15000, // Réduit de 30s à 15s pour éviter les attentes trop longues
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -133,7 +133,11 @@ const createApiClient = (): AxiosInstance => {
         }
       } else if (error.request) {
         // La requête a été faite mais aucune réponse n'a été reçue
-        console.error('Pas de réponse du serveur:', error.request);
+        if (error.code === 'ECONNABORTED' && error.message.includes('timeout')) {
+          console.error('⏰ Timeout de la requête après 15s:', url);
+        } else {
+          console.error('Pas de réponse du serveur:', error.request);
+        }
       } else {
         // Une erreur s'est produite lors de la configuration de la requête
         console.error('Erreur de configuration de la requête:', error.message);
@@ -228,6 +232,9 @@ export const handleApiError = (error: any, defaultMessage: string = 'Une erreur 
     
     // Erreur réseau (pas de réponse)
     if (axiosError.request) {
+      if (axiosError.code === 'ECONNABORTED' && axiosError.message.includes('timeout')) {
+        return 'La requête a pris trop de temps. Le service semble surchargé.';
+      }
       return 'Impossible de se connecter au serveur. Vérifiez votre connexion internet.';
     }
   }
