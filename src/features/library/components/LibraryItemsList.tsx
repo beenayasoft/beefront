@@ -157,7 +157,7 @@ const LibraryItemsList = memo(function LibraryItemsList({
     // Détecter un ouvrage (a des composants)
     if ("components" in item) {
       return (
-        <Badge className="benaya-badge-success gap-1">
+        <Badge className="Beenaya-badge-success gap-1">
           <Hammer className="w-3 h-3" />
           Ouvrage
         </Badge>
@@ -167,7 +167,7 @@ const LibraryItemsList = memo(function LibraryItemsList({
     // Détecter un matériau (a obligatoirement vatRate selon notre interface)
     if ("vatRate" in item) {
       return (
-        <Badge className="benaya-badge-primary gap-1">
+        <Badge className="Beenaya-badge-primary gap-1">
           <Package className="w-3 h-3" />
           Matériau
         </Badge>
@@ -176,7 +176,7 @@ const LibraryItemsList = memo(function LibraryItemsList({
     
     // Par défaut, c'est de la main d'œuvre
     return (
-      <Badge className="benaya-badge-warning gap-1">
+      <Badge className="Beenaya-badge-warning gap-1">
         <Clock className="w-3 h-3" />
         Main d'œuvre
       </Badge>
@@ -224,7 +224,7 @@ const LibraryItemsList = memo(function LibraryItemsList({
 
       {/* Items list */}
       <div className="overflow-hidden border border-neutral-200 dark:border-neutral-700 rounded-lg">
-        <Table key={`table-page-${currentPage}`} className="benaya-table">
+        <Table key={`table-page-${currentPage}`} className="Beenaya-table">
           <TableHeader>
             <TableRow>
               <TableHead>TYPE</TableHead>

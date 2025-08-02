@@ -48,7 +48,7 @@ export default function LaborDetail() {
           <LaborGeneralInfo labor={labor} />
         </div>
 
-        <div className="space-y-6">
+        <div>
           <LaborCostEstimate labor={labor} />
           <LaborSummary labor={labor} />
         </div>
@@ -57,4 +57,4 @@ export default function LaborDetail() {
       {error && <ErrorAlert error={error} />}
     </div>
   );
-} 
+}

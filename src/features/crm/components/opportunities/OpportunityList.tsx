@@ -324,7 +324,7 @@ export function OpportunityList({
                     </Badge>
                   </div>
                 </TableCell>
-                <TableCell className="text-right font-medium text-benaya-600">
+                <TableCell className="text-right font-medium text-Beenaya-600">
                   {formatCurrency(getWeightedAmount(opportunity))}
                 </TableCell>
                 <TableCell>

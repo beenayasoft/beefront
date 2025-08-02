@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Plus, Pencil, Trash2, Check, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { VatRate } from "../types/tenant";
+import { VatRate } from "@/lib/types/tenant";
 
 interface VatRatesManagementProps {
   vatRates: VatRate[];
@@ -20,34 +20,9 @@ interface VatRatesManagementProps {
 
 export function VatRatesManagement({ vatRates, onChange }: VatRatesManagementProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [newRate, setNewRate] = useState<Partial<VatRate>>({
-    code: "",
-    name: "",
-    rate: 0,
-    is_default: false,
-    is_active: true,
-    description: ""
-  });
+  const [newRate, setNewRate] = useState<Partial<VatRate>>({ code: "", name: "", rate: 0 });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showAddForm, setShowAddForm] = useState(false);
-
-  // Log pour déboguer
-  useEffect(() => {
-    console.log("VatRatesManagement - vatRates:", vatRates);
-  }, [vatRates]);
-
-  // Réinitialiser le formulaire quand on ferme le formulaire d'ajout
-  const resetAddForm = () => {
-    setNewRate({
-      code: "",
-      name: "",
-      rate: 0,
-      is_default: false,
-      is_active: true,
-      description: ""
-    });
-    setErrors({});
-  };
 
   const handleEdit = (id: string) => {
     setEditingId(id);
@@ -70,7 +45,6 @@ export function VatRatesManagement({ vatRates, onChange }: VatRatesManagementPro
     // Confirm before deleting
     if (confirm("Êtes-vous sûr de vouloir supprimer ce taux de TVA ?")) {
       const updatedRates = vatRates.filter(rate => rate.id !== id);
-      console.log("Suppression du taux de TVA:", id, "Nouveaux taux:", updatedRates);
       onChange(updatedRates);
     }
   };
@@ -105,35 +79,21 @@ export function VatRatesManagement({ vatRates, onChange }: VatRatesManagementPro
     
     setEditingId(null);
     setErrors({});
-    console.log("Sauvegarde de l'édition du taux de TVA:", id, "Nouveaux taux:", vatRates);
     onChange([...vatRates]);
   };
 
   const handleRateChange = (id: string, field: keyof VatRate, value: string | number) => {
     const updatedRates = vatRates.map(rate => {
       if (rate.id === id) {
-        // Si c'est un champ numérique, s'assurer que la valeur est un nombre valide
-        if (field === 'rate') {
-          const numValue = typeof value === 'string' ? parseFloat(value) : value;
-          return { ...rate, [field]: isNaN(numValue) ? 0 : numValue };
-        }
         return { ...rate, [field]: value };
       }
       return rate;
     });
-    console.log("Modification du taux de TVA:", id, field, value, "Nouveaux taux:", updatedRates);
     onChange(updatedRates);
   };
 
   const handleNewRateChange = (field: keyof VatRate, value: string | number) => {
-    // Si c'est un champ numérique, s'assurer que la valeur est un nombre valide
-    if (field === 'rate') {
-      const numValue = typeof value === 'string' ? parseFloat(value) : value;
-      setNewRate(prev => ({ ...prev, [field]: isNaN(numValue) ? 0 : numValue }));
-    } else {
-      setNewRate(prev => ({ ...prev, [field]: value }));
-    }
-    
+    setNewRate(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -154,17 +114,16 @@ export function VatRatesManagement({ vatRates, onChange }: VatRatesManagementPro
       id: `vat-${Date.now()}`,
       code: newRate.code || "",
       name: newRate.name || "",
-      rate: typeof newRate.rate === 'number' ? newRate.rate : parseFloat(String(newRate.rate || 0)),
-      is_default: newRate.is_default || false,
-      is_active: newRate.is_active !== undefined ? newRate.is_active : true,
-      description: newRate.description || ""
+      rate: newRate.rate || 0,
+      is_default: false,
+      is_active: true,
+      description: newRate.description
     };
     
-    const updatedRates = [...vatRates, newVatRate];
-    console.log("Ajout d'un nouveau taux de TVA:", newVatRate, "Nouveaux taux:", updatedRates);
-    onChange(updatedRates);
-    resetAddForm();
+    onChange([...vatRates, newVatRate]);
+    setNewRate({ code: "", name: "", rate: 0 });
     setShowAddForm(false);
+    setErrors({});
   };
 
   return (
@@ -195,7 +154,7 @@ export function VatRatesManagement({ vatRates, onChange }: VatRatesManagementPro
                       <Input
                         value={rate.code}
                         onChange={(e) => handleRateChange(rate.id, "code", e.target.value)}
-                        className={`benaya-input ${errors.code ? "border-red-500" : ""}`}
+                        className={`Beenaya-input ${errors.code ? "border-red-500" : ""}`}
                       />
                     ) : (
                       rate.code
@@ -212,7 +171,7 @@ export function VatRatesManagement({ vatRates, onChange }: VatRatesManagementPro
                       <Input
                         value={rate.name}
                         onChange={(e) => handleRateChange(rate.id, "name", e.target.value)}
-                        className={`benaya-input ${errors.name ? "border-red-500" : ""}`}
+                        className={`Beenaya-input ${errors.name ? "border-red-500" : ""}`}
                       />
                     ) : (
                       rate.name
@@ -234,7 +193,7 @@ export function VatRatesManagement({ vatRates, onChange }: VatRatesManagementPro
                           step="0.1"
                           value={rate.rate}
                           onChange={(e) => handleRateChange(rate.id, "rate", parseFloat(e.target.value))}
-                          className={`benaya-input ${errors.rate ? "border-red-500" : ""}`}
+                          className={`Beenaya-input ${errors.rate ? "border-red-500" : ""}`}
                         />
                         {errors.rate && (
                           <p className="text-xs text-red-500 flex items-center">
@@ -323,7 +282,7 @@ export function VatRatesManagement({ vatRates, onChange }: VatRatesManagementPro
                 value={newRate.code}
                 onChange={(e) => handleNewRateChange("code", e.target.value)}
                 placeholder="Ex: REDUIT"
-                className={`benaya-input ${errors.code ? "border-red-500" : ""}`}
+                className={`Beenaya-input ${errors.code ? "border-red-500" : ""}`}
               />
               {errors.code && (
                 <p className="text-xs text-red-500 flex items-center">
@@ -342,7 +301,7 @@ export function VatRatesManagement({ vatRates, onChange }: VatRatesManagementPro
                 value={newRate.name}
                 onChange={(e) => handleNewRateChange("name", e.target.value)}
                 placeholder="Ex: Taux réduit"
-                className={`benaya-input ${errors.name ? "border-red-500" : ""}`}
+                className={`Beenaya-input ${errors.name ? "border-red-500" : ""}`}
               />
               {errors.name && (
                 <p className="text-xs text-red-500 flex items-center">
@@ -365,7 +324,7 @@ export function VatRatesManagement({ vatRates, onChange }: VatRatesManagementPro
                 value={newRate.rate}
                 onChange={(e) => handleNewRateChange("rate", parseFloat(e.target.value))}
                 placeholder="Ex: 5.5"
-                className={`benaya-input ${errors.rate ? "border-red-500" : ""}`}
+                className={`Beenaya-input ${errors.rate ? "border-red-500" : ""}`}
               />
               {errors.rate && (
                 <p className="text-xs text-red-500 flex items-center">
@@ -381,7 +340,8 @@ export function VatRatesManagement({ vatRates, onChange }: VatRatesManagementPro
               variant="outline"
               onClick={() => {
                 setShowAddForm(false);
-                resetAddForm();
+                setNewRate({ code: "", name: "", rate: 0 });
+                setErrors({});
               }}
             >
               Annuler

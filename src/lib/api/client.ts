@@ -50,6 +50,15 @@ const createApiClient = (): AxiosInstance => {
     // par l'authentification JWT du gateway (ex: tenant-service direct)
     const tenantId = localStorage.getItem('tenantId');
     if (tenantId) {
+      // Valider que le tenant ID est un UUID valide
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(tenantId)) {
+        console.error('❌ Tenant ID invalide (doit être un UUID):', tenantId);
+        console.warn('🔧 Suppression du tenant ID invalide. Veuillez vous reconnecter.');
+        localStorage.removeItem('tenantId');
+        return config; // Ne pas ajouter le header
+      }
+      
       const url = config.url || '';
       
       // Endpoints qui ont besoin de X-Tenant-ID mais ne passent pas par JWT

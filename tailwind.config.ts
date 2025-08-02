@@ -62,8 +62,8 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Benaya brand colors based on #1B333F
-        benaya: {
+        // Beenaya brand colors based on #1B333F
+        Beenaya: {
           50: "#f0f7f8",
           100: "#daeef1",
           200: "#b9dee4",
@@ -116,8 +116,8 @@ const config: Config = {
         "inner-border": "inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)",
         glow: "0 0 20px rgba(27, 51, 63, 0.15)",
         "glow-lg": "0 0 40px rgba(27, 51, 63, 0.15)",
-        benaya: "0 4px 20px rgba(27, 51, 63, 0.1)",
-        "benaya-lg": "0 8px 40px rgba(27, 51, 63, 0.15)",
+        Beenaya: "0 4px 20px rgba(27, 51, 63, 0.1)",
+        "Beenaya-lg": "0 8px 40px rgba(27, 51, 63, 0.15)",
       },
       backdropBlur: {
         xs: "2px",

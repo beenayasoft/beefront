@@ -312,16 +312,16 @@ export default function Factures() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="benaya-card benaya-gradient text-white">
+      <div className="Beenaya-card Beenaya-gradient text-white">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Factures</h1>
-            <p className="text-benaya-100 mt-1">
+            <p className="text-Beenaya-100 mt-1">
               Gérez vos factures et suivez les paiements
             </p>
           </div>
           <Button 
-            className="gap-2 bg-white text-benaya-900 hover:bg-white/90"
+            className="gap-2 bg-white text-Beenaya-900 hover:bg-white/90"
             onClick={handleCreateInvoice}
           >
             <Plus className="w-4 h-4" />
@@ -354,7 +354,7 @@ export default function Factures() {
       />
 
       {/* Main Content */}
-      <div className="benaya-card">
+      <div className="Beenaya-card">
         {/* Tabs */}
         <InvoiceTabs 
           activeTab={activeTab} 

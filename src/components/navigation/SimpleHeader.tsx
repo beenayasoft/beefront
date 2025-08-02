@@ -1,6 +1,7 @@
-import { Search, Bell, Moon, Sun, Monitor, User } from "lucide-react";
+import { Search, Bell, Moon, Sun, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { UserAvatar } from "@/components/ui/UserAvatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,7 +30,7 @@ export function SimpleHeader() {
   };
 
   return (
-    <header className="h-16 benaya-glass border-b border-neutral-200 dark:border-neutral-700 px-6 flex items-center justify-between">
+    <header className="h-16 Beenaya-glass border-b border-neutral-200 dark:border-neutral-700 px-6 flex items-center justify-between">
       {/* Left - Page Title */}
       <div>
         <h2 className="text-lg font-semibold text-neutral-900 dark:text-white">
@@ -46,7 +47,7 @@ export function SimpleHeader() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-400" />
           <Input
             placeholder="Rechercher..."
-            className="pl-10 benaya-input focus:ring-2 focus:ring-benaya-500 focus:border-benaya-500"
+            className="pl-10 Beenaya-input focus:ring-2 focus:ring-Beenaya-500 focus:border-Beenaya-500"
           />
         </div>
       </div>
@@ -57,7 +58,7 @@ export function SimpleHeader() {
         <Button
           variant="ghost"
           size="icon"
-          className="relative text-neutral-600 dark:text-neutral-400 hover:text-benaya-900 dark:hover:text-white"
+          className="relative text-neutral-600 dark:text-neutral-400 hover:text-Beenaya-900 dark:hover:text-white"
         >
           <Bell className="w-5 h-5" />
           <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
@@ -71,13 +72,13 @@ export function SimpleHeader() {
             <Button
               variant="ghost"
               size="icon"
-              className="text-neutral-600 dark:text-neutral-400 hover:text-benaya-900 dark:hover:text-white"
+              className="text-neutral-600 dark:text-neutral-400 hover:text-Beenaya-900 dark:hover:text-white"
             >
               <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="benaya-glass">
+          <DropdownMenuContent align="end" className="Beenaya-glass">
             <DropdownMenuLabel>Thème</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => setTheme("light")}>
@@ -100,20 +101,23 @@ export function SimpleHeader() {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              size="icon"
-              className="text-neutral-600 dark:text-neutral-400 hover:text-benaya-900 dark:hover:text-white"
+              className="h-10 w-10 rounded-full p-0 hover:bg-Beenaya-100 dark:hover:bg-Beenaya-800"
             >
-              <User className="w-5 h-5" />
+              <UserAvatar 
+                size="sm"
+                className="border border-neutral-200 dark:border-neutral-700"
+                fallbackClassName="bg-Beenaya-600 text-white"
+              />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 benaya-glass">
+          <DropdownMenuContent align="end" className="w-56 Beenaya-glass">
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none text-neutral-900 dark:text-white">
                   {user ? `${user.first_name} ${user.last_name}` : "Utilisateur"}
                 </p>
                 <p className="text-xs leading-none text-neutral-600 dark:text-neutral-400">
-                  {user?.email || "utilisateur@benaya.fr"}
+                  {user?.email || "utilisateur@Beenaya.fr"}
                 </p>
               </div>
             </DropdownMenuLabel>

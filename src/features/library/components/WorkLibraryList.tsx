@@ -29,7 +29,7 @@ const WorkLibraryList = memo(function WorkLibraryList({
 }: WorkLibraryListProps) {
   return (
     <div className="overflow-hidden border border-neutral-200 dark:border-neutral-700 rounded-lg">
-      <Table className="benaya-table">
+      <Table className="Beenaya-table">
         <TableHeader>
           <TableRow>
             <TableHead>RÉFÉRENCE</TableHead>

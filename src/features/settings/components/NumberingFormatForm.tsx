@@ -145,7 +145,7 @@ export function NumberingFormatForm({ numberingSettings, onChange }: NumberingFo
             onChange={(e) => handleInputChange("quoteFormat", e.target.value)}
             onBlur={() => handleBlur("quoteFormat")}
             placeholder="DEV-{AAAA}-{XXXX}"
-            className={`benaya-input ${errors.quoteFormat ? "border-red-500" : ""}`}
+            className={`Beenaya-input ${errors.quoteFormat ? "border-red-500" : ""}`}
           />
           {errors.quoteFormat ? (
             <p className="text-xs text-red-500 flex items-center">
@@ -167,7 +167,7 @@ export function NumberingFormatForm({ numberingSettings, onChange }: NumberingFo
             min="1"
             value={settings.nextQuoteNumber || 1}
             onChange={(e) => handleInputChange("nextQuoteNumber", parseInt(e.target.value) || 1)}
-            className="benaya-input"
+            className="Beenaya-input"
           />
         </div>
       </div>
@@ -211,7 +211,7 @@ export function NumberingFormatForm({ numberingSettings, onChange }: NumberingFo
             onChange={(e) => handleInputChange("invoiceFormat", e.target.value)}
             onBlur={() => handleBlur("invoiceFormat")}
             placeholder="FAC-{AAAA}-{XXXX}"
-            className={`benaya-input ${errors.invoiceFormat ? "border-red-500" : ""}`}
+            className={`Beenaya-input ${errors.invoiceFormat ? "border-red-500" : ""}`}
           />
           {errors.invoiceFormat ? (
             <p className="text-xs text-red-500 flex items-center">
@@ -233,7 +233,7 @@ export function NumberingFormatForm({ numberingSettings, onChange }: NumberingFo
             min="1"
             value={settings.nextInvoiceNumber || 1}
             onChange={(e) => handleInputChange("nextInvoiceNumber", parseInt(e.target.value) || 1)}
-            className="benaya-input"
+            className="Beenaya-input"
           />
         </div>
       </div>
@@ -250,7 +250,7 @@ export function NumberingFormatForm({ numberingSettings, onChange }: NumberingFo
             value={settings.resetFrequency || "yearly"} 
             onValueChange={(value: "yearly" | "monthly" | "never") => handleInputChange("resetFrequency", value)}
           >
-            <SelectTrigger className="benaya-input">
+            <SelectTrigger className="Beenaya-input">
               <SelectValue placeholder="Sélectionner une fréquence" />
             </SelectTrigger>
             <SelectContent>

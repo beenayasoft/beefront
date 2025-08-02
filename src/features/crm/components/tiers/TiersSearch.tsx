@@ -14,7 +14,7 @@ export function TiersSearch({
   onFilterClick
 }: TiersSearchProps) {
   return (
-    <div className="benaya-card">
+    <div className="Beenaya-card">
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1 max-w-md">
           <div className="relative">
@@ -23,7 +23,7 @@ export function TiersSearch({
               placeholder="Rechercher un tiers..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-10 benaya-input"
+              className="pl-10 Beenaya-input"
             />
           </div>
         </div>

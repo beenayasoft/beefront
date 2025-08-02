@@ -68,24 +68,24 @@ const OpportunityCard = memo(function OpportunityCard({
   const getStageBadge = (stage: OpportunityStatus) => {
     switch (stage) {
       case 'new':
-        return <Badge className="benaya-badge-primary">Nouvelle</Badge>;
+        return <Badge className="Beenaya-badge-primary">Nouvelle</Badge>;
       case 'needs_analysis':
-        return <Badge className="benaya-badge-primary">Analyse des besoins</Badge>;
+        return <Badge className="Beenaya-badge-primary">Analyse des besoins</Badge>;
       case 'negotiation':
-        return <Badge className="benaya-badge-warning">Négociation</Badge>;
+        return <Badge className="Beenaya-badge-warning">Négociation</Badge>;
       case 'won':
-        return <Badge className="benaya-badge-success">Gagnée</Badge>;
+        return <Badge className="Beenaya-badge-success">Gagnée</Badge>;
       case 'lost':
-        return <Badge className="benaya-badge-error">Perdue</Badge>;
+        return <Badge className="Beenaya-badge-error">Perdue</Badge>;
       default:
-        return <Badge className="benaya-badge-neutral">—</Badge>;
+        return <Badge className="Beenaya-badge-neutral">—</Badge>;
     }
   };
 
   return (
     <div 
       className={cn(
-        "benaya-card p-3 cursor-grab active:cursor-grabbing transition-all duration-200",
+        "Beenaya-card p-3 cursor-grab active:cursor-grabbing transition-all duration-200",
         isDragging ? "opacity-50 rotate-3 scale-105 shadow-xl z-50" : "hover:shadow-lg",
         opportunity.stage === 'won' && "border-l-4 border-l-green-500",
         opportunity.stage === 'lost' && "border-l-4 border-l-red-500",
@@ -110,7 +110,7 @@ const OpportunityCard = memo(function OpportunityCard({
                   <MoreHorizontal className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="benaya-glass">
+              <DropdownMenuContent align="end" className="Beenaya-glass">
                 {onView && (
                   <DropdownMenuItem onClick={() => onView(opportunity)}>
                     <Eye className="mr-2 h-4 w-4" />

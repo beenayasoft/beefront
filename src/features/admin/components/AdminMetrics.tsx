@@ -29,8 +29,8 @@ export default function AdminMetrics({ users, invitations }: AdminMetricsProps) 
                 </span>
               </div>
             </div>
-            <div className="p-3 bg-benaya-100 dark:bg-benaya-900/30 rounded-xl">
-              <Users className="w-6 h-6 text-benaya-900 dark:text-benaya-200" />
+            <div className="p-3 bg-Beenaya-100 dark:bg-Beenaya-900/30 rounded-xl">
+              <Users className="w-6 h-6 text-Beenaya-900 dark:text-Beenaya-200" />
             </div>
           </div>
         </CardContent>
@@ -49,8 +49,8 @@ export default function AdminMetrics({ users, invitations }: AdminMetricsProps) 
                 </span>
               </div>
             </div>
-            <div className="p-3 bg-benaya-100 dark:bg-benaya-900/30 rounded-xl">
-              <UserCog className="w-6 h-6 text-benaya-900 dark:text-benaya-200" />
+            <div className="p-3 bg-Beenaya-100 dark:bg-Beenaya-900/30 rounded-xl">
+              <UserCog className="w-6 h-6 text-Beenaya-900 dark:text-Beenaya-200" />
             </div>
           </div>
         </CardContent>
@@ -69,8 +69,8 @@ export default function AdminMetrics({ users, invitations }: AdminMetricsProps) 
                 </span>
               </div>
             </div>
-            <div className="p-3 bg-benaya-100 dark:bg-benaya-900/30 rounded-xl">
-              <Mail className="w-6 h-6 text-benaya-900 dark:text-benaya-200" />
+            <div className="p-3 bg-Beenaya-100 dark:bg-Beenaya-900/30 rounded-xl">
+              <Mail className="w-6 h-6 text-Beenaya-900 dark:text-Beenaya-200" />
             </div>
           </div>
         </CardContent>
@@ -89,8 +89,8 @@ export default function AdminMetrics({ users, invitations }: AdminMetricsProps) 
                 </span>
               </div>
             </div>
-            <div className="p-3 bg-benaya-100 dark:bg-benaya-900/30 rounded-xl">
-              <Shield className="w-6 h-6 text-benaya-900 dark:text-benaya-200" />
+            <div className="p-3 bg-Beenaya-100 dark:bg-Beenaya-900/30 rounded-xl">
+              <Shield className="w-6 h-6 text-Beenaya-900 dark:text-Beenaya-200" />
             </div>
           </div>
         </CardContent>

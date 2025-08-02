@@ -169,17 +169,17 @@ export default function OpportunityDetail() {
   const getStageBadge = (stage: OpportunityStatus) => {
     switch (stage) {
       case 'new':
-        return <Badge className="benaya-badge-primary">Nouvelle</Badge>;
+        return <Badge className="Beenaya-badge-primary">Nouvelle</Badge>;
       case 'needs_analysis':
-        return <Badge className="benaya-badge-primary">Analyse des besoins</Badge>;
+        return <Badge className="Beenaya-badge-primary">Analyse des besoins</Badge>;
       case 'negotiation':
-        return <Badge className="benaya-badge-warning">Négociation</Badge>;
+        return <Badge className="Beenaya-badge-warning">Négociation</Badge>;
       case 'won':
-        return <Badge className="benaya-badge-success">Gagnée</Badge>;
+        return <Badge className="Beenaya-badge-success">Gagnée</Badge>;
       case 'lost':
-        return <Badge className="benaya-badge-error">Perdue</Badge>;
+        return <Badge className="Beenaya-badge-error">Perdue</Badge>;
       default:
-        return <Badge className="benaya-badge-neutral">—</Badge>;
+        return <Badge className="Beenaya-badge-neutral">—</Badge>;
     }
   };
 
@@ -464,8 +464,8 @@ export default function OpportunityDetail() {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="benaya-card p-8 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-benaya-600 mx-auto"></div>
+        <div className="Beenaya-card p-8 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-Beenaya-600 mx-auto"></div>
           <p className="mt-4">Chargement de l'opportunité...</p>
         </div>
       </div>
@@ -475,7 +475,7 @@ export default function OpportunityDetail() {
   if (error || !opportunity) {
     return (
       <div className="p-6">
-        <div className="benaya-card p-8 text-center">
+        <div className="Beenaya-card p-8 text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-4">{error || "Opportunité non trouvée"}</h2>
           <Button onClick={() => navigate("/opportunities")}>
@@ -490,7 +490,7 @@ export default function OpportunityDetail() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="benaya-card benaya-gradient text-white">
+      <div className="Beenaya-card Beenaya-gradient text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button 
@@ -509,7 +509,7 @@ export default function OpportunityDetail() {
                 </h1>
                 {getStageBadge(opportunity.stage)}
               </div>
-              <p className="text-benaya-100 mt-1">
+              <p className="text-Beenaya-100 mt-1">
                 Client: {opportunity.tierName}
               </p>
             </div>
@@ -527,7 +527,7 @@ export default function OpportunityDetail() {
             
             {opportunity.stage !== 'won' && opportunity.stage !== 'lost' && (
               <Button 
-                className="bg-white text-benaya-900 hover:bg-white/90"
+                className="bg-white text-Beenaya-900 hover:bg-white/90"
                 onClick={handleCreateQuote}
               >
                 <FileText className="w-4 h-4 mr-2" />
@@ -543,7 +543,7 @@ export default function OpportunityDetail() {
         {/* Left Column - Details */}
         <div className="lg:col-span-2 space-y-6">
           {/* Basic Information */}
-          <div className="benaya-card">
+          <div className="Beenaya-card">
             <h3 className="font-medium text-lg mb-4">Informations générales</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -591,13 +591,13 @@ export default function OpportunityDetail() {
           </div>
 
           {/* Financial Information */}
-          <div className="benaya-card">
+          <div className="Beenaya-card">
             <h3 className="font-medium text-lg mb-4">Informations financières</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <div className="text-sm text-neutral-600 dark:text-neutral-400">Montant estimé</div>
-                <div className="text-2xl font-bold text-benaya-900 dark:text-benaya-200">
+                <div className="text-2xl font-bold text-Beenaya-900 dark:text-Beenaya-200">
                   {formatCurrency(opportunity.estimatedAmount)} MAD
                 </div>
               </div>
@@ -622,7 +622,7 @@ export default function OpportunityDetail() {
               
               <div className="space-y-2">
                 <div className="text-sm text-neutral-600 dark:text-neutral-400">Montant pondéré</div>
-                <div className="text-2xl font-bold text-benaya-900 dark:text-benaya-200">
+                <div className="text-2xl font-bold text-Beenaya-900 dark:text-Beenaya-200">
                   {formatCurrency(opportunity.estimatedAmount * opportunity.probability / 100)} MAD
                 </div>
               </div>
@@ -647,7 +647,7 @@ export default function OpportunityDetail() {
 
           {/* Loss Information (if applicable) */}
           {opportunity.stage === 'lost' && opportunity.lossReason && (
-            <div className="benaya-card border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+            <div className="Beenaya-card border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
               <h3 className="font-medium text-lg mb-4 text-red-800 dark:text-red-200">Informations sur la perte</h3>
               
               <div className="space-y-4">
@@ -678,7 +678,7 @@ export default function OpportunityDetail() {
           )}
 
           {/* ✅ AMÉLIORATION : Devis associés avec données réelles */}
-          <div className="benaya-card">
+          <div className="Beenaya-card">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-medium text-lg flex items-center gap-2">
                 Devis associés
@@ -711,7 +711,7 @@ export default function OpportunityDetail() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <FileText className="w-4 h-4 text-benaya-600" />
+                        <FileText className="w-4 h-4 text-Beenaya-600" />
                         <div>
                           <span className="font-medium">{quote.number}</span>
                           <div className="flex items-center gap-2 mt-1">
@@ -767,7 +767,7 @@ export default function OpportunityDetail() {
         {/* Right Column - Actions and Timeline */}
         <div className="space-y-6">
           {/* Actions */}
-          <div className="benaya-card">
+          <div className="Beenaya-card">
             <h3 className="font-medium text-lg mb-4">Actions</h3>
             
             <div className="space-y-3">
@@ -783,7 +783,7 @@ export default function OpportunityDetail() {
               {opportunity.stage !== 'won' && opportunity.stage !== 'lost' && (
                 <>
                   <Button 
-                    className="w-full justify-start gap-2 benaya-button-primary"
+                    className="w-full justify-start gap-2 Beenaya-button-primary"
                     onClick={handleCreateQuote}
                   >
                     <FileText className="w-4 h-4" />
@@ -823,7 +823,7 @@ export default function OpportunityDetail() {
 
           {/* Project Information (if won) */}
           {opportunity.stage === 'won' && opportunity.projectId && (
-            <div className="benaya-card border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+            <div className="Beenaya-card border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
               <h3 className="font-medium text-lg mb-4 text-green-800 dark:text-green-200">Projet créé</h3>
               
               <div className="space-y-4">
@@ -846,12 +846,12 @@ export default function OpportunityDetail() {
           )}
 
           {/* Timeline */}
-          <div className="benaya-card">
+          <div className="Beenaya-card">
             <h3 className="font-medium text-lg mb-4">Chronologie</h3>
             
             <div className="space-y-6">
-              <div className="relative pl-6 pb-6 border-l-2 border-benaya-200 dark:border-benaya-800">
-                <div className="absolute left-[-8px] top-0 w-4 h-4 rounded-full bg-benaya-600"></div>
+              <div className="relative pl-6 pb-6 border-l-2 border-Beenaya-200 dark:border-Beenaya-800">
+                <div className="absolute left-[-8px] top-0 w-4 h-4 rounded-full bg-Beenaya-600"></div>
                 <div className="space-y-1">
                   <div className="font-medium">Opportunité créée</div>
                   <div className="text-sm text-neutral-600 dark:text-neutral-400">

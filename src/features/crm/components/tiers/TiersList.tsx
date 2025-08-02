@@ -143,7 +143,7 @@ export function TiersList({
   return (
     <div className="space-y-4">
       <div className="overflow-hidden border border-neutral-200 dark:border-neutral-700 rounded-lg">
-        <Table className="benaya-table">
+        <Table className="Beenaya-table">
           <TableHeader>
             <TableRow>
               <TableHead>NOM</TableHead>
@@ -200,7 +200,7 @@ export function TiersList({
                         <MoreVertical className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="benaya-glass">
+                    <DropdownMenuContent align="end" className="Beenaya-glass">
                       {onView && (
                         <DropdownMenuItem 
                           onSelect={(e) => e.preventDefault()}

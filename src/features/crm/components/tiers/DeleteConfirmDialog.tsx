@@ -49,7 +49,7 @@ export function DeleteConfirmDialog({
   if (!tier) {
     return (
       <AlertDialog open={open} onOpenChange={onOpenChange}>
-        <AlertDialogContent className="benaya-glass">
+        <AlertDialogContent className="Beenaya-glass">
           <AlertDialogHeader>
             <AlertDialogTitle>Erreur</AlertDialogTitle>
             <AlertDialogDescription>
@@ -68,7 +68,7 @@ export function DeleteConfirmDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="benaya-glass">
+      <AlertDialogContent className="Beenaya-glass">
         <AlertDialogHeader>
           <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
           <AlertDialogDescription>

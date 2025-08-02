@@ -135,49 +135,49 @@ export default function Interventions() {
     switch (status) {
       case "scheduled":
         return (
-          <Badge className="benaya-badge-primary gap-1">
+          <Badge className="Beenaya-badge-primary gap-1">
             <Clock className="w-3 h-3" />
             Programmée
           </Badge>
         );
       case "in_progress":
         return (
-          <Badge className="benaya-badge-warning gap-1">
+          <Badge className="Beenaya-badge-warning gap-1">
             <Wrench className="w-3 h-3" />
             En cours
           </Badge>
         );
       case "completed":
         return (
-          <Badge className="benaya-badge-success gap-1">
+          <Badge className="Beenaya-badge-success gap-1">
             <CheckCircle className="w-3 h-3" />
             Terminée
           </Badge>
         );
       case "cancelled":
         return (
-          <Badge className="benaya-badge-neutral gap-1">
+          <Badge className="Beenaya-badge-neutral gap-1">
             <div className="w-2 h-2 bg-neutral-400 rounded-full"></div>
             Annulée
           </Badge>
         );
       default:
-        return <Badge className="benaya-badge-neutral">—</Badge>;
+        return <Badge className="Beenaya-badge-neutral">—</Badge>;
     }
   };
 
   const getTypeBadge = (type: InterventionType) => {
     switch (type) {
       case "maintenance":
-        return <Badge className="benaya-badge-primary">Maintenance</Badge>;
+        return <Badge className="Beenaya-badge-primary">Maintenance</Badge>;
       case "repair":
-        return <Badge className="benaya-badge-warning">Réparation</Badge>;
+        return <Badge className="Beenaya-badge-warning">Réparation</Badge>;
       case "inspection":
-        return <Badge className="benaya-badge-primary">Inspection</Badge>;
+        return <Badge className="Beenaya-badge-primary">Inspection</Badge>;
       case "emergency":
-        return <Badge className="benaya-badge-error">Urgence</Badge>;
+        return <Badge className="Beenaya-badge-error">Urgence</Badge>;
       default:
-        return <Badge className="benaya-badge-neutral">Autre</Badge>;
+        return <Badge className="Beenaya-badge-neutral">Autre</Badge>;
     }
   };
 
@@ -195,15 +195,15 @@ export default function Interventions() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="benaya-card benaya-gradient text-white">
+      <div className="Beenaya-card Beenaya-gradient text-white">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Interventions</h1>
-            <p className="text-benaya-100 mt-1">
+            <p className="text-Beenaya-100 mt-1">
               Planifiez et suivez vos interventions techniques
             </p>
           </div>
-          <Button className="gap-2 bg-white text-benaya-900 hover:bg-white/90">
+          <Button className="gap-2 bg-white text-Beenaya-900 hover:bg-white/90">
             <Plus className="w-4 h-4" />
             Nouvelle intervention
           </Button>
@@ -212,15 +212,15 @@ export default function Interventions() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="benaya-card text-center">
-          <div className="text-2xl font-bold text-benaya-900 dark:text-benaya-200">
+        <div className="Beenaya-card text-center">
+          <div className="text-2xl font-bold text-Beenaya-900 dark:text-Beenaya-200">
             {mockInterventions.length}
           </div>
           <div className="text-sm text-neutral-600 dark:text-neutral-400">
             Total interventions
           </div>
         </div>
-        <div className="benaya-card text-center">
+        <div className="Beenaya-card text-center">
           <div className="text-2xl font-bold text-blue-600">
             {mockInterventions.filter((i) => i.status === "scheduled").length}
           </div>
@@ -228,7 +228,7 @@ export default function Interventions() {
             Programmées
           </div>
         </div>
-        <div className="benaya-card text-center">
+        <div className="Beenaya-card text-center">
           <div className="text-2xl font-bold text-orange-600">
             {mockInterventions.filter((i) => i.status === "in_progress").length}
           </div>
@@ -236,7 +236,7 @@ export default function Interventions() {
             En cours
           </div>
         </div>
-        <div className="benaya-card text-center">
+        <div className="Beenaya-card text-center">
           <div className="text-2xl font-bold text-green-600">
             {mockInterventions.filter((i) => i.status === "completed").length}
           </div>
@@ -247,7 +247,7 @@ export default function Interventions() {
       </div>
 
       {/* Filters */}
-      <div className="benaya-card">
+      <div className="Beenaya-card">
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1 max-w-md">
             <div className="relative">
@@ -256,7 +256,7 @@ export default function Interventions() {
                 placeholder="Rechercher une intervention..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 benaya-input"
+                className="pl-10 Beenaya-input"
               />
             </div>
           </div>
@@ -274,7 +274,7 @@ export default function Interventions() {
       </div>
 
       {/* Main Table */}
-      <div className="benaya-card">
+      <div className="Beenaya-card">
         {/* Tabs */}
         <div className="mb-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -295,7 +295,7 @@ export default function Interventions() {
 
         {/* Table */}
         <div className="overflow-hidden border border-neutral-200 dark:border-neutral-700 rounded-lg">
-          <Table className="benaya-table">
+          <Table className="Beenaya-table">
             <TableHeader>
               <TableRow>
                 <TableHead>STATUT</TableHead>
@@ -325,7 +325,7 @@ export default function Interventions() {
                   </TableCell>
                   <TableCell>{getTypeBadge(intervention.type)}</TableCell>
                   <TableCell>
-                    <Badge className="benaya-badge-primary text-xs">
+                    <Badge className="Beenaya-badge-primary text-xs">
                       {intervention.client}
                     </Badge>
                   </TableCell>
@@ -376,7 +376,7 @@ export default function Interventions() {
                           <MoreHorizontal className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="benaya-glass">
+                      <DropdownMenuContent align="end" className="Beenaya-glass">
                         <DropdownMenuItem>
                           <Eye className="mr-2 h-4 w-4" />
                           Voir détails

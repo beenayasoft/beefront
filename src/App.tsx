@@ -90,7 +90,9 @@ export default function App() {
             {/* Auth routes - rediriger si déjà connecté */}
             <Route path="/auth" element={
               <AuthRoute>
-                <Auth />
+                <Suspense fallback={<PageLoader />}>
+                  <Auth />
+                </Suspense>
               </AuthRoute>
             } />
 
@@ -224,6 +226,11 @@ export default function App() {
             </Route>
 
             {/* 404 route */}
+            <Route path="*" element={
+              <Suspense fallback={<PageLoader />}>
+                <NotFound />
+              </Suspense>
+            } />
             <Route path="*" element={
               <Suspense fallback={<PageLoader />}>
                 <NotFound />

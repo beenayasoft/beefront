@@ -56,11 +56,11 @@ export default function Administration() {
   return (
     <div className="p-6 space-y-8">
       {/* Header */}
-      <div className="benaya-card benaya-gradient text-white">
+      <div className="Beenaya-card Beenaya-gradient text-white">
         <div className="space-y-4">
           <div>
             <h1 className="text-3xl font-bold">Administration</h1>
-            <p className="text-benaya-100 text-lg mt-2">
+            <p className="text-Beenaya-100 text-lg mt-2">
               Gérez les utilisateurs et les invitations de votre organisation
             </p>
           </div>
@@ -83,10 +83,10 @@ export default function Administration() {
       {/* Main Content Tabs */}
       <Tabs defaultValue="users" className="space-y-6">
         <TabsList className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
-          <TabsTrigger value="users" className="data-[state=active]:bg-benaya-900 data-[state=active]:text-white">
+          <TabsTrigger value="users" className="data-[state=active]:bg-Beenaya-900 data-[state=active]:text-white">
             Utilisateurs
           </TabsTrigger>
-          <TabsTrigger value="invitations" className="data-[state=active]:bg-benaya-900 data-[state=active]:text-white">
+          <TabsTrigger value="invitations" className="data-[state=active]:bg-Beenaya-900 data-[state=active]:text-white">
             Invitations
           </TabsTrigger>
         </TabsList>

@@ -101,24 +101,24 @@
 }
 
 @layer components {
-  /* Benaya Glass Components */
-  .benaya-glass {
-    @apply backdrop-blur-xl bg-white/90 dark:bg-neutral-900/90 border border-white/20 dark:border-neutral-700/20 shadow-benaya;
+  /* Beenaya Glass Components */
+  .Beenaya-glass {
+    @apply backdrop-blur-xl bg-white/90 dark:bg-neutral-900/90 border border-white/20 dark:border-neutral-700/20 shadow-Beenaya;
   }
 
-  .benaya-card {
-    @apply relative overflow-hidden rounded-2xl p-6 benaya-glass transition-all duration-300 hover:shadow-benaya-lg;
+  .Beenaya-card {
+    @apply relative overflow-hidden rounded-2xl p-6 Beenaya-glass transition-all duration-300 hover:shadow-Beenaya-lg;
   }
 
-  .benaya-button-primary {
-    @apply bg-benaya-900 text-white hover:bg-benaya-800 shadow-benaya hover:shadow-benaya-lg transition-all duration-200;
+  .Beenaya-button-primary {
+    @apply bg-Beenaya-900 text-white hover:bg-Beenaya-800 shadow-Beenaya hover:shadow-Beenaya-lg transition-all duration-200;
   }
 
-  .benaya-button-secondary {
-    @apply bg-white dark:bg-neutral-800 text-benaya-900 dark:text-white border border-benaya-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700;
+  .Beenaya-button-secondary {
+    @apply bg-white dark:bg-neutral-800 text-Beenaya-900 dark:text-white border border-Beenaya-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700;
   }
 
-  .benaya-input {
+  .Beenaya-input {
     @apply bg-white/50 dark:bg-neutral-800/50 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white placeholder:text-neutral-500;
   }
 
@@ -128,79 +128,79 @@
   }
 
   .nav-item-active {
-    @apply bg-benaya-900 text-white shadow-benaya;
+    @apply bg-Beenaya-900 text-white shadow-Beenaya;
   }
 
   .nav-item-inactive {
-    @apply text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-benaya-900 dark:hover:text-white;
+    @apply text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-Beenaya-900 dark:hover:text-white;
   }
 
   /* Badge Styles */
-  .benaya-badge {
+  .Beenaya-badge {
     @apply inline-flex items-center rounded-lg px-3 py-1 text-xs font-medium;
   }
 
-  .benaya-badge-primary {
-    @apply bg-benaya-100 dark:bg-benaya-900/30 text-benaya-900 dark:text-benaya-200 border border-benaya-200 dark:border-benaya-700;
+  .Beenaya-badge-primary {
+    @apply bg-Beenaya-100 dark:bg-Beenaya-900/30 text-Beenaya-900 dark:text-Beenaya-200 border border-Beenaya-200 dark:border-Beenaya-700;
   }
 
-  .benaya-badge-success {
+  .Beenaya-badge-success {
     @apply bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-700;
   }
 
-  .benaya-badge-warning {
+  .Beenaya-badge-warning {
     @apply bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-700;
   }
 
-  .benaya-badge-error {
+  .Beenaya-badge-error {
     @apply bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-700;
   }
 
-  .benaya-badge-neutral {
+  .Beenaya-badge-neutral {
     @apply bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700;
   }
 
   /* Table Styles */
-  .benaya-table {
+  .Beenaya-table {
     @apply w-full border-collapse;
   }
 
-  .benaya-table th {
+  .Beenaya-table th {
     @apply border-b border-neutral-200 dark:border-neutral-700 py-3 px-4 text-left text-sm font-semibold text-neutral-900 dark:text-white bg-neutral-50 dark:bg-neutral-800/50;
   }
 
-  .benaya-table td {
+  .Beenaya-table td {
     @apply border-b border-neutral-100 dark:border-neutral-800 py-4 px-4 text-sm text-neutral-700 dark:text-neutral-300;
   }
 
-  .benaya-table tr:hover td {
+  .Beenaya-table tr:hover td {
     @apply bg-neutral-50 dark:bg-neutral-800/30;
   }
 
   /* Scrollbar */
-  .benaya-scrollbar::-webkit-scrollbar {
+  .Beenaya-scrollbar::-webkit-scrollbar {
     @apply w-2;
   }
 
-  .benaya-scrollbar::-webkit-scrollbar-track {
+  .Beenaya-scrollbar::-webkit-scrollbar-track {
     @apply bg-transparent;
   }
 
-  .benaya-scrollbar::-webkit-scrollbar-thumb {
+  .Beenaya-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-neutral-300 dark:bg-neutral-600 rounded-full border-2 border-transparent bg-clip-content;
   }
 
-  .benaya-scrollbar::-webkit-scrollbar-thumb:hover {
-    @apply bg-benaya-400 dark:bg-benaya-600;
+  .Beenaya-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-Beenaya-400 dark:bg-Beenaya-600;
   }
 
   /* Gradients */
-  .benaya-gradient {
-    @apply bg-gradient-to-r from-benaya-900 to-benaya-700;
+  .Beenaya-gradient {
+    @apply bg-gradient-to-r from-Beenaya-900 to-Beenaya-700;
   }
 
-  .benaya-gradient-soft {
-    @apply bg-gradient-to-r from-benaya-50 to-benaya-100 dark:from-benaya-900/20 dark:to-benaya-800/20;
+  .Beenaya-gradient-soft {
+    @apply bg-gradient-to-r from-Beenaya-50 to-Beenaya-100 dark:from-Beenaya-900/20 dark:to-Beenaya-800/20;
   }
 }
 

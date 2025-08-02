@@ -146,42 +146,42 @@ export default function Stock() {
     switch (status) {
       case "in_stock":
         return (
-          <Badge className="benaya-badge-success gap-1">
+          <Badge className="Beenaya-badge-success gap-1">
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
             En stock
           </Badge>
         );
       case "low_stock":
         return (
-          <Badge className="benaya-badge-warning gap-1">
+          <Badge className="Beenaya-badge-warning gap-1">
             <AlertTriangle className="w-3 h-3" />
             Stock faible
           </Badge>
         );
       case "out_of_stock":
         return (
-          <Badge className="benaya-badge-error gap-1">
+          <Badge className="Beenaya-badge-error gap-1">
             <Minus className="w-3 h-3" />
             Rupture
           </Badge>
         );
       default:
-        return <Badge className="benaya-badge-neutral">—</Badge>;
+        return <Badge className="Beenaya-badge-neutral">—</Badge>;
     }
   };
 
   const getCategoryBadge = (category: ItemCategory) => {
     switch (category) {
       case "materials":
-        return <Badge className="benaya-badge-primary">Matériaux</Badge>;
+        return <Badge className="Beenaya-badge-primary">Matériaux</Badge>;
       case "tools":
-        return <Badge className="benaya-badge-warning">Outils</Badge>;
+        return <Badge className="Beenaya-badge-warning">Outils</Badge>;
       case "equipment":
-        return <Badge className="benaya-badge-primary">Équipements</Badge>;
+        return <Badge className="Beenaya-badge-primary">Équipements</Badge>;
       case "consumables":
-        return <Badge className="benaya-badge-neutral">Consommables</Badge>;
+        return <Badge className="Beenaya-badge-neutral">Consommables</Badge>;
       default:
-        return <Badge className="benaya-badge-neutral">Autre</Badge>;
+        return <Badge className="Beenaya-badge-neutral">Autre</Badge>;
     }
   };
 
@@ -201,11 +201,11 @@ export default function Stock() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="benaya-card benaya-gradient text-white">
+      <div className="Beenaya-card Beenaya-gradient text-white">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Stock</h1>
-            <p className="text-benaya-100 mt-1">
+            <p className="text-Beenaya-100 mt-1">
               Gérez votre inventaire et vos approvisionnements
             </p>
           </div>
@@ -217,7 +217,7 @@ export default function Stock() {
               <BarChart3 className="w-4 h-4" />
               Rapport
             </Button>
-            <Button className="gap-2 bg-white text-benaya-900 hover:bg-white/90">
+            <Button className="gap-2 bg-white text-Beenaya-900 hover:bg-white/90">
               <Plus className="w-4 h-4" />
               Ajouter article
             </Button>
@@ -227,15 +227,15 @@ export default function Stock() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="benaya-card text-center">
-          <div className="text-2xl font-bold text-benaya-900 dark:text-benaya-200">
+        <div className="Beenaya-card text-center">
+          <div className="text-2xl font-bold text-Beenaya-900 dark:text-Beenaya-200">
             {mockStockItems.length}
           </div>
           <div className="text-sm text-neutral-600 dark:text-neutral-400">
             Articles total
           </div>
         </div>
-        <div className="benaya-card text-center">
+        <div className="Beenaya-card text-center">
           <div className="text-2xl font-bold text-green-600">
             {getTotalValue().toLocaleString("fr-FR")} MAD
           </div>
@@ -243,7 +243,7 @@ export default function Stock() {
             Valeur totale
           </div>
         </div>
-        <div className="benaya-card text-center">
+        <div className="Beenaya-card text-center">
           <div className="text-2xl font-bold text-orange-600">
             {getLowStockCount()}
           </div>
@@ -251,7 +251,7 @@ export default function Stock() {
             Stock faible
           </div>
         </div>
-        <div className="benaya-card text-center">
+        <div className="Beenaya-card text-center">
           <div className="text-2xl font-bold text-red-600">
             {getOutOfStockCount()}
           </div>
@@ -296,7 +296,7 @@ export default function Stock() {
       )}
 
       {/* Filters */}
-      <div className="benaya-card">
+      <div className="Beenaya-card">
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1 max-w-md">
             <div className="relative">
@@ -305,7 +305,7 @@ export default function Stock() {
                 placeholder="Rechercher un article..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 benaya-input"
+                className="pl-10 Beenaya-input"
               />
             </div>
           </div>
@@ -319,7 +319,7 @@ export default function Stock() {
       </div>
 
       {/* Main Table */}
-      <div className="benaya-card">
+      <div className="Beenaya-card">
         {/* Tabs */}
         <div className="mb-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -344,7 +344,7 @@ export default function Stock() {
 
         {/* Table */}
         <div className="overflow-hidden border border-neutral-200 dark:border-neutral-700 rounded-lg">
-          <Table className="benaya-table">
+          <Table className="Beenaya-table">
             <TableHeader>
               <TableRow>
                 <TableHead>STATUT</TableHead>
@@ -399,7 +399,7 @@ export default function Stock() {
                     {item.totalValue.toLocaleString("fr-FR")} MAD
                   </TableCell>
                   <TableCell>
-                    <Badge className="benaya-badge-primary text-xs">
+                    <Badge className="Beenaya-badge-primary text-xs">
                       {item.supplier}
                     </Badge>
                   </TableCell>
@@ -411,7 +411,7 @@ export default function Stock() {
                           <MoreHorizontal className="w-4 h-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="benaya-glass">
+                      <DropdownMenuContent align="end" className="Beenaya-glass">
                         <DropdownMenuItem>
                           <Eye className="mr-2 h-4 w-4" />
                           Voir détails

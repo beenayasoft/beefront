@@ -495,16 +495,16 @@ export default function Opportunities() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="benaya-card benaya-gradient text-white">
+      <div className="Beenaya-card Beenaya-gradient text-white">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold">Opportunités</h1>
-            <p className="text-benaya-100 text-sm mt-1">
+            <p className="text-Beenaya-100 text-sm mt-1">
               Gérez votre pipeline commercial
             </p>
           </div>
           <Button 
-            className="gap-2 bg-white text-benaya-900 hover:bg-white/90 mt-3 sm:mt-0"
+            className="gap-2 bg-white text-Beenaya-900 hover:bg-white/90 mt-3 sm:mt-0"
             onClick={() => handleAddNewSecure()}
           >
             <Plus className="w-4 h-4" />

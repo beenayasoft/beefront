@@ -4,6 +4,7 @@
 export interface TenantInfo {
   id: string;
   name: string;
+  slogan?: string;
   slug?: string;
   domain?: string;
   email?: string;
@@ -23,6 +24,7 @@ export interface TenantInfo {
   // Informations légales - structure plate
   legal: {
     siret?: string;
+    ice?: string;
     vat_number?: string;
     legal_form?: string;
   };
@@ -111,8 +113,16 @@ export interface DocumentNumbering {
   next_number: number;
   include_year: boolean;
   include_month: boolean;
+  include_day: boolean;          // ✅ NOUVEAU
+  date_format: string;           // ✅ NOUVEAU
+  separator: string;             // ✅ NOUVEAU
+  custom_format?: string;        // ✅ NOUVEAU
   reset_yearly: boolean;
   reset_monthly: boolean;
+  format_description?: string;   // ✅ NOUVEAU
+  preview?: string;              // ✅ NOUVEAU
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface DocumentAppearance {
@@ -147,6 +157,7 @@ export interface TenantUpdateData {
   postal_code?: string;
   country?: string;
   siret?: string;
+  ice?: string;
   vat_number?: string;
   legal_form?: string;
   settings?: {

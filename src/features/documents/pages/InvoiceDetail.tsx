@@ -113,35 +113,35 @@ export default function InvoiceDetail() {
     switch (status) {
       case "draft":
         return (
-          <Badge className="benaya-badge-neutral gap-1">
+          <Badge className="Beenaya-badge-neutral gap-1">
             <div className="w-2 h-2 bg-neutral-400 rounded-full"></div>
             Brouillon
           </Badge>
         );
       case "sent":
         return (
-          <Badge className="benaya-badge-primary gap-1">
+          <Badge className="Beenaya-badge-primary gap-1">
             <Send className="w-3 h-3" />
             Émise
           </Badge>
         );
       case "overdue":
         return (
-          <Badge className="benaya-badge-error gap-1">
+          <Badge className="Beenaya-badge-error gap-1">
             <AlertCircle className="w-3 h-3" />
             En retard
           </Badge>
         );
       case "partially_paid":
         return (
-          <Badge className="benaya-badge-warning gap-1">
+          <Badge className="Beenaya-badge-warning gap-1">
             <Clock className="w-3 h-3" />
             Partiellement payée
           </Badge>
         );
       case "paid":
         return (
-          <Badge className="benaya-badge-success gap-1">
+          <Badge className="Beenaya-badge-success gap-1">
             <Check className="w-3 h-3" />
             Payée
           </Badge>
@@ -149,13 +149,13 @@ export default function InvoiceDetail() {
       case "cancelled":
       case "cancelled_by_credit_note":
         return (
-          <Badge className="benaya-badge-neutral gap-1">
+          <Badge className="Beenaya-badge-neutral gap-1">
             <X className="w-3 h-3" />
             Annulée
           </Badge>
         );
       default:
-        return <Badge className="benaya-badge-neutral">—</Badge>;
+        return <Badge className="Beenaya-badge-neutral">—</Badge>;
     }
   };
 
@@ -167,8 +167,8 @@ export default function InvoiceDetail() {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="benaya-card p-8 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-benaya-600 mx-auto"></div>
+        <div className="Beenaya-card p-8 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-Beenaya-600 mx-auto"></div>
           <p className="mt-4">Chargement de la facture...</p>
         </div>
       </div>
@@ -178,7 +178,7 @@ export default function InvoiceDetail() {
   if (error || !invoice) {
     return (
       <div className="p-6">
-        <div className="benaya-card p-8 text-center">
+        <div className="Beenaya-card p-8 text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-4">{error || "Facture non trouvée"}</h2>
           <Button onClick={() => navigate("/factures")}>
@@ -193,7 +193,7 @@ export default function InvoiceDetail() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="benaya-card benaya-gradient text-white">
+      <div className="Beenaya-card Beenaya-gradient text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button 
@@ -212,7 +212,7 @@ export default function InvoiceDetail() {
                 </h1>
                 {getStatusBadge(invoice.status)}
               </div>
-              <p className="text-benaya-100 mt-1">
+              <p className="text-Beenaya-100 mt-1">
                 Client: {invoice.clientName} {invoice.projectName && `- Projet: ${invoice.projectName}`}
               </p>
             </div>
@@ -220,7 +220,7 @@ export default function InvoiceDetail() {
           
           <div className="flex items-center gap-2">
             <div className="text-right mr-4">
-              <div className="text-benaya-100 text-sm">Total TTC</div>
+              <div className="text-Beenaya-100 text-sm">Total TTC</div>
               <div className="text-xl font-bold">{formatCurrency(invoice.totalTTC)} MAD</div>
             </div>
             
@@ -261,7 +261,7 @@ export default function InvoiceDetail() {
         {/* Invoice Details */}
         <div className="lg:col-span-2 space-y-6">
           {/* Client and Invoice Info */}
-          <div className="benaya-card">
+          <div className="Beenaya-card">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <h3 className="font-medium flex items-center gap-2">
@@ -338,7 +338,7 @@ export default function InvoiceDetail() {
           </div>
 
           {/* Invoice Items */}
-          <div className="benaya-card">
+          <div className="Beenaya-card">
             <h3 className="font-medium text-lg mb-4">Détail de la facture</h3>
             
             <div className="border border-neutral-200 dark:border-neutral-700 rounded-lg overflow-hidden">
@@ -413,7 +413,7 @@ export default function InvoiceDetail() {
           </div>
 
           {/* Notes and Terms */}
-          <div className="benaya-card">
+          <div className="Beenaya-card">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {invoice.notes && (
                 <div className="space-y-2">
@@ -439,7 +439,7 @@ export default function InvoiceDetail() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Status and Actions */}
-          <div className="benaya-card">
+          <div className="Beenaya-card">
             <h3 className="font-medium text-lg mb-4">Statut et actions</h3>
             
             <div className="space-y-6">
@@ -479,7 +479,7 @@ export default function InvoiceDetail() {
               <div className="space-y-3">
                 {(invoice.status === "sent" || invoice.status === "overdue" || invoice.status === "partially_paid") && (
                   <Button 
-                    className="w-full benaya-button-primary gap-2"
+                    className="w-full Beenaya-button-primary gap-2"
                     onClick={() => setPaymentModalOpen(true)}
                   >
                     <Check className="w-4 h-4" />
@@ -520,7 +520,7 @@ export default function InvoiceDetail() {
           </div>
 
           {/* Payment History */}
-          <div className="benaya-card">
+          <div className="Beenaya-card">
             <h3 className="font-medium text-lg mb-4">Historique des paiements</h3>
             
             {invoice.payments.length === 0 ? (

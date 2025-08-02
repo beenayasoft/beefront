@@ -646,8 +646,8 @@ export default function TierDetail() {
       <div className="p-6 space-y-6">
         {/* En-tête adaptatif style ancien - Full width */}
         <div className="mb-6">
-          {/* En-tête principal avec style benaya */}
-          <div className={`benaya-card text-white ${isEntreprise ? 'benaya-gradient' : 'bg-gradient-to-r from-green-600 to-green-700'}`}>
+          {/* En-tête principal avec style Beenaya */}
+          <div className={`Beenaya-card text-white ${isEntreprise ? 'Beenaya-gradient' : 'bg-gradient-to-r from-green-600 to-green-700'}`}>
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-3">
@@ -681,7 +681,7 @@ export default function TierDetail() {
               </div>
               <div className="flex-shrink-0 ml-6">
                 <Button 
-                  className="gap-2 bg-white text-benaya-900 hover:bg-white/90 px-8"
+                  className="gap-2 bg-white text-Beenaya-900 hover:bg-white/90 px-8"
                   onClick={handleEdit}
                 >
                   Modifier
@@ -719,7 +719,7 @@ export default function TierDetail() {
 
               {/* Contenu des onglets */}
               <TabsContent value="identity" className="mt-6">
-                <Card className="benaya-card">
+                <Card className="Beenaya-card">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       {isEntreprise ? <Building className="h-5 w-5" /> : <User className="h-5 w-5" />}
@@ -784,7 +784,7 @@ export default function TierDetail() {
               </TabsContent>
 
               <TabsContent value="contacts" className="mt-6">
-                <Card className="benaya-card">
+                <Card className="Beenaya-card">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Users className="h-5 w-5" />
@@ -821,7 +821,7 @@ export default function TierDetail() {
                                 <div>
                                   <span className="text-neutral-500">Email:</span>
                                   <div className="font-medium">
-                                    <a href={`mailto:${contact.email}`} className="text-benaya-600 hover:underline">
+                                    <a href={`mailto:${contact.email}`} className="text-Beenaya-600 hover:underline">
                                       {contact.email}
                                     </a>
                                   </div>
@@ -831,7 +831,7 @@ export default function TierDetail() {
                                 <div>
                                   <span className="text-neutral-500">Téléphone:</span>
                                   <div className="font-medium">
-                                    <a href={`tel:${contact.telephone.replace(/\s/g, "")}`} className="text-benaya-600 hover:underline">
+                                    <a href={`tel:${contact.telephone.replace(/\s/g, "")}`} className="text-Beenaya-600 hover:underline">
                                       {contact.telephone}
                                     </a>
                                   </div>
@@ -852,7 +852,7 @@ export default function TierDetail() {
               </TabsContent>
 
               <TabsContent value="addresses" className="mt-6">
-                <Card className="benaya-card">
+                <Card className="Beenaya-card">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Home className="h-5 w-5" />
@@ -893,7 +893,7 @@ export default function TierDetail() {
 
               {/* 🎯 NOUVEL ONGLET : Devis */}
               <TabsContent value="quotes" className="mt-6">
-                <Card className="benaya-card">
+                <Card className="Beenaya-card">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <FileText className="h-5 w-5" />
@@ -1140,7 +1140,7 @@ export default function TierDetail() {
                             ) : (
                               <Button 
                                 onClick={() => navigate(`/devis/new?client=${tierData.id}`)}
-                                className="gap-2 benaya-button-primary"
+                                className="gap-2 Beenaya-button-primary"
                               >
                                 <Plus className="h-4 w-4" />
                                 Créer le premier devis
@@ -1158,7 +1158,7 @@ export default function TierDetail() {
             {/* 🎯 SECTION : Opportunités du client (LOGIQUE MÉTIER: seulement clients et prospects) */}
             {isClientOrProspect && (
               <div className="md:col-span-2 mt-6">
-                <Card className="benaya-card">
+                <Card className="Beenaya-card">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <BarChart3 className="h-5 w-5" />
@@ -1421,7 +1421,7 @@ export default function TierDetail() {
 
           {/* Panneau latéral - Résumé */}
           <div className="lg:col-span-1">
-            <Card className="benaya-card sticky top-6">
+            <Card className="Beenaya-card sticky top-6">
               <CardHeader>
                 <CardTitle className="text-lg">Résumé</CardTitle>
               </CardHeader>
@@ -1468,7 +1468,7 @@ export default function TierDetail() {
 
             {/* Actions rapides */}
             {tierData && (
-              <Card className="benaya-card mt-6">
+              <Card className="Beenaya-card mt-6">
                 <CardHeader>
                   <CardTitle className="text-lg">Actions rapides</CardTitle>
                 </CardHeader>
@@ -1476,7 +1476,7 @@ export default function TierDetail() {
                   {/* 🎯 LOGIQUE MÉTIER : Bouton opportunité seulement pour clients et prospects */}
                   {isClientOrProspect && (
                     <Button 
-                      className="w-full gap-2 benaya-button-primary" 
+                      className="w-full gap-2 Beenaya-button-primary" 
                       onClick={handleCreateOpportunity}
                     >
                       <BarChart3 className="h-4 w-4" />

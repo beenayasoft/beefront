@@ -4,6 +4,8 @@
 import React from 'react';
 import { formatCurrency } from '@/lib/utils';
 import { formatDate } from '@/lib/utils/formatters';
+import { PaymentMethodsSection } from '@/components/payment/PaymentMethodsSection';
+import type { PaymentMethod } from '@/lib/api/paymentMethods';
 
 // Type pour les props du composant
 interface QuotePreviewProps {
@@ -42,6 +44,12 @@ interface QuotePreviewProps {
     documentTemplate?: "modern" | "classic" | "minimal";
     primaryColor?: string;
     showLogo?: boolean;
+    // Nouveaux champs pour le logo
+    logoData?: string;
+    logoSize?: number;
+    logoPositionType?: 'left' | 'top' | 'header';
+    logoCenterInHeader?: boolean;
+    // Champs existants
     showCompanyName?: boolean;
     showCompanyAddress?: boolean;
     showCompanyEmail?: boolean;
@@ -57,7 +65,24 @@ interface QuotePreviewProps {
     showSignatureArea?: boolean;
     tableHeaderColor?: string;
     tableAlternateColor?: string;
+    // Nouveaux champs pour les styles de tableaux
+    tableBorderStyle?: 'straight' | 'rounded';
+    tableBorderHorizontal?: boolean;
+    tableBorderVertical?: boolean;
+    tableBorderWidth?: number;
+    tableBorderColor?: string;
+    sectionContrast?: boolean;
+    sectionContrastColor?: string;
+    showSectionSubtotals?: boolean;
+    tableRowPadding?: number;
+    tableColumnSpacing?: number;
+    // Nouveaux champs pour les moyens de paiement
+    showPaymentMethods?: boolean;
+    paymentMethodsTitle?: string;
+    paymentMethodsLayout?: 'horizontal' | 'vertical' | 'grid';
+    paymentMethodsStyle?: 'modern' | 'classic' | 'minimal';
   };
+  paymentMethods?: PaymentMethod[];
 }
 
 /**
@@ -66,6 +91,7 @@ interface QuotePreviewProps {
  */
 export const QuotePreview: React.FC<QuotePreviewProps> = ({ 
   quote, 
+  paymentMethods = [],
   appearanceSettings = {
     documentTemplate: "modern",
     primaryColor: "#1B333F",
@@ -85,6 +111,11 @@ export const QuotePreview: React.FC<QuotePreviewProps> = ({
     showSignatureArea: true,
     tableHeaderColor: "#f8f9fa",
     tableAlternateColor: "#f2f2f2",
+    // Configuration par défaut des moyens de paiement
+    showPaymentMethods: true,
+    paymentMethodsTitle: "Moyens de paiement",
+    paymentMethodsLayout: "horizontal",
+    paymentMethodsStyle: "modern",
   }
 }) => {
   return (
@@ -259,6 +290,19 @@ export const QuotePreview: React.FC<QuotePreviewProps> = ({
             Conditions générales
           </h3>
           <p className="text-gray-700">{quote.termsAndConditions}</p>
+        </div>
+      )}
+
+      {/* Moyens de paiement */}
+      {appearanceSettings.showPaymentMethods && paymentMethods.length > 0 && (
+        <div className="mb-6">
+          <PaymentMethodsSection
+            paymentMethods={paymentMethods}
+            title={appearanceSettings.paymentMethodsTitle}
+            layout={appearanceSettings.paymentMethodsLayout}
+            style={appearanceSettings.paymentMethodsStyle}
+            className="text-xs"
+          />
         </div>
       )}
       

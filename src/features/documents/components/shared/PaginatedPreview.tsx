@@ -5,6 +5,8 @@ import React, { useMemo } from 'react';
 import { formatCurrency } from '@/lib/utils';
 import { formatDate } from '@/lib/utils/formatters';
 import { paginateDocumentItems, type DocumentItem, type PaginationConfig } from '@/lib/utils/pagination';
+import { PaymentMethodsSection } from '@/components/payment/PaymentMethodsSection';
+import type { PaymentMethod } from '@/lib/api/paymentMethods';
 
 interface PaginatedPreviewProps {
   document: {
@@ -54,8 +56,14 @@ interface PaginatedPreviewProps {
     showSignatureArea?: boolean;
     tableHeaderColor?: string;
     tableAlternateColor?: string;
+    // Nouveaux champs pour les moyens de paiement
+    showPaymentMethods?: boolean;
+    paymentMethodsTitle?: string;
+    paymentMethodsLayout?: 'horizontal' | 'vertical' | 'grid';
+    paymentMethodsStyle?: 'modern' | 'classic' | 'minimal';
   };
   paginationConfig?: PaginationConfig;
+  paymentMethods?: PaymentMethod[];
 }
 
 const defaultAppearanceSettings = {
@@ -77,6 +85,11 @@ const defaultAppearanceSettings = {
   showSignatureArea: true,
   tableHeaderColor: "#f8f9fa",
   tableAlternateColor: "#f2f2f2",
+  // Configuration par défaut des moyens de paiement
+  showPaymentMethods: true,
+  paymentMethodsTitle: "Moyens de paiement",
+  paymentMethodsLayout: "horizontal" as const,
+  paymentMethodsStyle: "modern" as const,
 };
 
 const defaultPaginationConfig: PaginationConfig = {
@@ -89,7 +102,8 @@ export const PaginatedPreview: React.FC<PaginatedPreviewProps> = ({
   document,
   documentType,
   appearanceSettings = defaultAppearanceSettings,
-  paginationConfig = defaultPaginationConfig
+  paginationConfig = defaultPaginationConfig,
+  paymentMethods = []
 }) => {
   const settings = { ...defaultAppearanceSettings, ...appearanceSettings };
 
@@ -146,6 +160,19 @@ export const PaginatedPreview: React.FC<PaginatedPreviewProps> = ({
                   document={document}
                   settings={settings}
                 />
+
+                {/* Moyens de paiement - seulement sur dernière page */}
+                {settings.showPaymentMethods && paymentMethods.length > 0 && (
+                  <div className="mb-4">
+                    <PaymentMethodsSection
+                      paymentMethods={paymentMethods}
+                      title={settings.paymentMethodsTitle}
+                      layout={settings.paymentMethodsLayout}
+                      style={settings.paymentMethodsStyle}
+                      className="text-xs"
+                    />
+                  </div>
+                )}
               </>
             )}
 

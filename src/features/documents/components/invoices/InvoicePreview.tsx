@@ -5,6 +5,8 @@
 import React from 'react';
 import { formatCurrency } from '@/lib/utils';
 import { formatDate } from '@/lib/utils/formatters';
+import { PaymentMethodsSection } from '@/components/payment/PaymentMethodsSection';
+import type { PaymentMethod } from '@/lib/api/paymentMethods';
 
 // Type pour les props du composant
 interface InvoicePreviewProps {
@@ -52,6 +54,12 @@ interface InvoicePreviewProps {
     documentTemplate?: "modern" | "classic" | "minimal";
     primaryColor?: string;
     showLogo?: boolean;
+    // Nouveaux champs pour le logo
+    logoData?: string;
+    logoSize?: number;
+    logoPositionType?: 'left' | 'top' | 'header';
+    logoCenterInHeader?: boolean;
+    // Champs existants
     showCompanyName?: boolean;
     showCompanyAddress?: boolean;
     showCompanyEmail?: boolean;
@@ -67,7 +75,24 @@ interface InvoicePreviewProps {
     showSignatureArea?: boolean;
     tableHeaderColor?: string;
     tableAlternateColor?: string;
+    // Nouveaux champs pour les styles de tableaux
+    tableBorderStyle?: 'straight' | 'rounded';
+    tableBorderHorizontal?: boolean;
+    tableBorderVertical?: boolean;
+    tableBorderWidth?: number;
+    tableBorderColor?: string;
+    sectionContrast?: boolean;
+    sectionContrastColor?: string;
+    showSectionSubtotals?: boolean;
+    tableRowPadding?: number;
+    tableColumnSpacing?: number;
+    // Nouveaux champs pour les moyens de paiement
+    showPaymentMethods?: boolean;
+    paymentMethodsTitle?: string;
+    paymentMethodsLayout?: 'horizontal' | 'vertical' | 'grid';
+    paymentMethodsStyle?: 'modern' | 'classic' | 'minimal';
   };
+  paymentMethods?: PaymentMethod[];
 }
 
 /**
@@ -76,6 +101,7 @@ interface InvoicePreviewProps {
  */
 export const InvoicePreview: React.FC<InvoicePreviewProps> = ({ 
   invoice, 
+  paymentMethods = [],
   appearanceSettings = {
     documentTemplate: "modern",
     primaryColor: "#1B333F",
@@ -95,6 +121,11 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     showSignatureArea: false, // Les factures n'ont généralement pas de zone de signature
     tableHeaderColor: "#f8f9fa",
     tableAlternateColor: "#f2f2f2",
+    // Configuration par défaut des moyens de paiement
+    showPaymentMethods: true,
+    paymentMethodsTitle: "Moyens de paiement",
+    paymentMethodsLayout: "horizontal",
+    paymentMethodsStyle: "modern",
   }
 }) => {
   return (
@@ -269,6 +300,19 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             Conditions de paiement
           </h3>
           <p className="text-gray-700">{invoice.termsAndConditions}</p>
+        </div>
+      )}
+
+      {/* Moyens de paiement */}
+      {appearanceSettings.showPaymentMethods && paymentMethods.length > 0 && (
+        <div className="mb-4">
+          <PaymentMethodsSection
+            paymentMethods={paymentMethods}
+            title={appearanceSettings.paymentMethodsTitle}
+            layout={appearanceSettings.paymentMethodsLayout}
+            style={appearanceSettings.paymentMethodsStyle}
+            className="text-xs"
+          />
         </div>
       )}
 

@@ -24,9 +24,17 @@ import {
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
 
 export function HeaderActions() {
   const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
+  
+  // Obtenir les initiales de l'utilisateur pour l'avatar
+  const getInitials = () => {
+    if (!user) return "U";
+    return `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}` || user.email?.[0] || "U";
+  };
 
   return (
     <div className="flex items-center space-x-2">
@@ -121,9 +129,9 @@ export function HeaderActions() {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-9 w-9 rounded-lg p-0">
             <Avatar className="h-8 w-8">
-              <AvatarImage src="/avatars/01.png" alt="@jean" />
+              <AvatarImage src={user?.avatar || ""} alt={user?.username || "@user"} />
               <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold">
-                J
+                {getInitials()}
               </AvatarFallback>
             </Avatar>
           </Button>
@@ -131,9 +139,14 @@ export function HeaderActions() {
         <DropdownMenuContent className="w-56" align="end" forceMount>
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">Jean</p>
+              <p className="text-sm font-medium leading-none">
+                {user?.first_name && user?.last_name 
+                  ? `${user.first_name} ${user.last_name}`
+                  : user?.username || "Utilisateur"
+                }
+              </p>
               <p className="text-xs leading-none text-muted-foreground">
-                jean@benaya.fr
+                {user?.email || ""}
               </p>
             </div>
           </DropdownMenuLabel>

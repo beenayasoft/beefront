@@ -170,7 +170,7 @@ export function DiscountForm({
                 id="designation"
                 value={formData.designation}
                 onChange={(e) => handleInputChange("designation", e.target.value)}
-                className={`benaya-input ${errors.designation ? "border-red-500" : ""}`}
+                className={`Beenaya-input ${errors.designation ? "border-red-500" : ""}`}
                 placeholder="Remise globale"
               />
               {errors.designation && (
@@ -188,7 +188,7 @@ export function DiscountForm({
                   value={formData.discountType} 
                   onValueChange={(value: "percentage" | "fixed") => handleInputChange("discountType", value)}
                 >
-                  <SelectTrigger className="benaya-input">
+                  <SelectTrigger className="Beenaya-input">
                     <SelectValue placeholder="Type de remise" />
                   </SelectTrigger>
                   <SelectContent>
@@ -210,7 +210,7 @@ export function DiscountForm({
                     step="0.01"
                     value={formData.discountValue}
                     onChange={(e) => handleInputChange("discountValue", parseFloat(e.target.value))}
-                    className={`benaya-input ${errors.discountValue ? "border-red-500" : ""} ${formData.discountType === "percentage" ? "pr-8" : ""}`}
+                    className={`Beenaya-input ${errors.discountValue ? "border-red-500" : ""} ${formData.discountType === "percentage" ? "pr-8" : ""}`}
                   />
                   {formData.discountType === "percentage" && (
                     <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
@@ -251,7 +251,7 @@ export function DiscountForm({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
-          <Button onClick={handleSubmit} className="benaya-button-primary gap-2">
+          <Button onClick={handleSubmit} className="Beenaya-button-primary gap-2">
             <Check className="w-4 h-4" />
             {isEditing ? "Mettre à jour" : "Appliquer la remise"}
           </Button>

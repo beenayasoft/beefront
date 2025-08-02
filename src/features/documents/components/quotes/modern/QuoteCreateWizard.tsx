@@ -148,11 +148,11 @@ const QuoteCreateWizard: React.FC<QuoteCreateWizardProps> = ({
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="benaya-card benaya-gradient text-white">
+      <div className="Beenaya-card Beenaya-gradient text-white">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Nouveau devis</h1>
-            <p className="text-benaya-100 mt-1">
+            <p className="text-Beenaya-100 mt-1">
               Créez un devis professionnel en quelques étapes
             </p>
           </div>
@@ -160,7 +160,7 @@ const QuoteCreateWizard: React.FC<QuoteCreateWizardProps> = ({
           <div className="flex space-x-2">
             <button
               onClick={handleCancel}
-              className="px-4 py-2 bg-white text-benaya-900 rounded-md hover:bg-white/90 font-medium"
+              className="px-4 py-2 bg-white text-Beenaya-900 rounded-md hover:bg-white/90 font-medium"
             >
               Annuler
             </button>
