@@ -1,0 +1,1 @@
+never read @beefront\.git_disabled, andnot useful folder
