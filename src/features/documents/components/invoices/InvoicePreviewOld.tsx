@@ -160,7 +160,7 @@ export function InvoicePreview({
             <tr className="bg-neutral-50">
               <td 
                 colSpan={5} 
-                className="py-3 px-4 font-semibold text-benaya-900 border-b border-neutral-200"
+                className="py-3 px-4 font-semibold text-Beenaya-900 border-b border-neutral-200"
                 style={{ 
                   paddingLeft: `${level * 20 + 16}px`,
                   color: appearanceSettings.primaryColor
@@ -284,7 +284,7 @@ export function InvoicePreview({
                     </div>
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold" style={{ color: appearanceSettings.primaryColor }}>Benaya Construction</h1>
+                    <h1 className="text-2xl font-bold" style={{ color: appearanceSettings.primaryColor }}>Beenaya Construction</h1>
                     <p className="text-sm text-neutral-600">Votre spécialiste en construction</p>
                   </div>
                 </div>
@@ -293,7 +293,7 @@ export function InvoicePreview({
                 <p>123 Rue de la Construction</p>
                 <p>75001 Paris, France</p>
                 <p>Tél: +33 1 23 45 67 89</p>
-                <p>Email: contact@benaya.fr</p>
+                <p>Email: contact@Beenaya.fr</p>
                 <p>SIRET: 123 456 789 00012</p>
               </div>
             </div>
@@ -446,7 +446,7 @@ export function InvoicePreview({
 
             {/* Legal Mentions */}
             <div className="text-xs text-neutral-500 mt-8 pt-4 border-t border-neutral-200">
-              <p>Benaya Construction - SIRET: 123 456 789 00012 - TVA: FR12345678901</p>
+              <p>Beenaya Construction - SIRET: 123 456 789 00012 - TVA: FR12345678901</p>
               <p>123 Rue de la Construction, 75001 Paris, France</p>
               <p>En cas de retard de paiement, une pénalité de 3 fois le taux d'intérêt légal sera appliquée.</p>
             </div>
@@ -459,7 +459,7 @@ export function InvoicePreview({
             <button 
               onClick={goToPreviousPage}
               disabled={currentPage === 1}
-              className={`p-2 rounded-full ${currentPage === 1 ? 'text-neutral-300' : 'text-benaya-600 hover:bg-benaya-50'}`}
+              className={`p-2 rounded-full ${currentPage === 1 ? 'text-neutral-300' : 'text-Beenaya-600 hover:bg-Beenaya-50'}`}
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -469,7 +469,7 @@ export function InvoicePreview({
             <button 
               onClick={goToNextPage}
               disabled={currentPage === totalPages}
-              className={`p-2 rounded-full ${currentPage === totalPages ? 'text-neutral-300' : 'text-benaya-600 hover:bg-benaya-50'}`}
+              className={`p-2 rounded-full ${currentPage === totalPages ? 'text-neutral-300' : 'text-Beenaya-600 hover:bg-Beenaya-50'}`}
             >
               <ChevronRight className="w-5 h-5" />
             </button>

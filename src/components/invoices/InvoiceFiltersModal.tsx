@@ -243,7 +243,7 @@ export function InvoiceFiltersModal({
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-benaya-600" />
+            <Filter className="w-5 h-5 text-Beenaya-600" />
             ✨ Filtres avancés
           </DialogTitle>
           <DialogDescription className="flex items-center justify-between">

@@ -321,7 +321,7 @@ export function OpportunityForm({
         value={formData.assignedTo || ""}
         onValueChange={(value) => handleInputChange("assignedTo", value)}
       >
-        <SelectTrigger className="benaya-input">
+        <SelectTrigger className="Beenaya-input">
           <SelectValue placeholder={usersLoading ? "Chargement..." : "Sélectionner un responsable"} />
           {usersLoading && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
         </SelectTrigger>
@@ -367,7 +367,7 @@ export function OpportunityForm({
               id="name"
               value={formData.name || ""}
               onChange={(e) => handleInputChange("name", e.target.value)}
-              className={`benaya-input ${errors.name ? "border-red-500" : ""}`}
+              className={`Beenaya-input ${errors.name ? "border-red-500" : ""}`}
               placeholder="Ex: Rénovation Villa Dupont"
             />
             {errors.name && (
@@ -398,7 +398,7 @@ export function OpportunityForm({
               onValueChange={handleTierChange}
               disabled={tiersLoading || disableTierSelection}
             >
-              <SelectTrigger className={`benaya-input ${errors.tierId ? "border-red-500" : ""} ${
+              <SelectTrigger className={`Beenaya-input ${errors.tierId ? "border-red-500" : ""} ${
                 preselectedTierId && formData.tierId === preselectedTierId 
                   ? "border-green-500 bg-green-50 ring-2 ring-green-200" 
                   : ""
@@ -456,7 +456,7 @@ export function OpportunityForm({
             id="description"
             value={formData.description || ""}
             onChange={(e) => handleInputChange("description", e.target.value)}
-            className="benaya-input resize-none"
+            className="Beenaya-input resize-none"
             placeholder="Description du projet"
             rows={3}
           />
@@ -476,7 +476,7 @@ export function OpportunityForm({
               value={formData.stage}
               onValueChange={(value) => handleInputChange("stage", value)}
             >
-              <SelectTrigger className={`benaya-input ${errors.stage ? "border-red-500" : ""}`}>
+              <SelectTrigger className={`Beenaya-input ${errors.stage ? "border-red-500" : ""}`}>
                 <SelectValue placeholder="Sélectionner une étape" />
               </SelectTrigger>
               <SelectContent>
@@ -528,7 +528,7 @@ export function OpportunityForm({
               value={formData.source}
               onValueChange={(value) => handleInputChange("source", value as OpportunitySource)}
             >
-              <SelectTrigger className={`benaya-input ${errors.source ? "border-red-500" : ""}`}>
+              <SelectTrigger className={`Beenaya-input ${errors.source ? "border-red-500" : ""}`}>
                 <SelectValue placeholder="Sélectionner une source" />
               </SelectTrigger>
               <SelectContent>
@@ -564,7 +564,7 @@ export function OpportunityForm({
               step="1000"
               value={formData.estimatedAmount || ""}
               onChange={(e) => handleInputChange("estimatedAmount", parseFloat(e.target.value))}
-              className={`benaya-input ${errors.estimatedAmount ? "border-red-500" : ""}`}
+              className={`Beenaya-input ${errors.estimatedAmount ? "border-red-500" : ""}`}
               placeholder="0"
             />
             {errors.estimatedAmount && (
@@ -589,7 +589,7 @@ export function OpportunityForm({
               max="100"
               value={formData.probability || ""}
               readOnly
-              className={`benaya-input bg-neutral-50 cursor-not-allowed ${errors.probability ? "border-red-500" : "border-blue-300"}`}
+              className={`Beenaya-input bg-neutral-50 cursor-not-allowed ${errors.probability ? "border-red-500" : "border-blue-300"}`}
               placeholder="20"
             />
             <p className="text-xs text-neutral-500">
@@ -612,7 +612,7 @@ export function OpportunityForm({
               type="date"
               value={formData.expectedCloseDate || ""}
               onChange={(e) => handleInputChange("expectedCloseDate", e.target.value)}
-              className={`benaya-input ${errors.expectedCloseDate ? "border-red-500" : ""}`}
+              className={`Beenaya-input ${errors.expectedCloseDate ? "border-red-500" : ""}`}
             />
             {errors.expectedCloseDate && (
               <p className="text-xs text-red-500 flex items-center">
@@ -638,7 +638,7 @@ export function OpportunityForm({
                 value={formData.lossReason || ""}
                 onValueChange={(value) => handleInputChange("lossReason", value)}
               >
-                <SelectTrigger className={`benaya-input ${errors.lossReason ? "border-red-500" : ""}`}>
+                <SelectTrigger className={`Beenaya-input ${errors.lossReason ? "border-red-500" : ""}`}>
                   <SelectValue placeholder="Sélectionner une raison" />
                 </SelectTrigger>
                 <SelectContent>
@@ -667,7 +667,7 @@ export function OpportunityForm({
                 id="lossDescription"
                 value={formData.lossDescription || ""}
                 onChange={(e) => handleInputChange("lossDescription", e.target.value)}
-                className="benaya-input resize-none"
+                className="Beenaya-input resize-none"
                 placeholder="Détails sur la raison de la perte"
                 rows={3}
               />
@@ -693,7 +693,7 @@ export function OpportunityForm({
         <Button type="button" variant="outline" onClick={onCancel}>
           Annuler
         </Button>
-        <Button type="submit" className="benaya-button-primary">
+        <Button type="submit" className="Beenaya-button-primary">
           <Check className="mr-2 h-4 w-4" />
           {isEditing ? "Mettre à jour" : "Créer l'opportunité"}
         </Button>

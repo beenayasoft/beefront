@@ -245,7 +245,7 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-benaya-600">
+          <DialogTitle className="flex items-center gap-2 text-Beenaya-600">
             <FileText className="w-5 h-5" />
             ✨ Nouvelle facture
           </DialogTitle>
@@ -256,7 +256,7 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
 
         <div className="space-y-6">
           {/* Section Client */}
-          <Card className="benaya-glass">
+          <Card className="Beenaya-glass">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-sm font-medium">
                 <User className="w-4 h-4" />
@@ -339,7 +339,7 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
           </Card>
 
           {/* Section Projet */}
-          <Card className="benaya-glass">
+          <Card className="Beenaya-glass">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-sm font-medium">
                 <Building2 className="w-4 h-4" />
@@ -387,7 +387,7 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
           </Card>
 
           {/* Section Conditions */}
-          <Card className="benaya-glass">
+          <Card className="Beenaya-glass">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-sm font-medium">
                 <Calendar className="w-4 h-4" />
@@ -442,7 +442,7 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
           </Card>
 
           {/* Section Notes */}
-          <Card className="benaya-glass">
+          <Card className="Beenaya-glass">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-sm font-medium">
                 <FileText className="w-4 h-4" />
@@ -503,7 +503,7 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
           <Button
             onClick={handleSubmit}
             disabled={!selectedClient || loading}
-            className="gap-2 bg-benaya-600 hover:bg-benaya-700"
+            className="gap-2 bg-Beenaya-600 hover:bg-Beenaya-700"
           >
             {loading ? (
               <>

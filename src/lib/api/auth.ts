@@ -55,6 +55,36 @@ export const authApi = {
     const response = await apiClient.get('/api/auth/me/');
     return response.data;
   },
+
+  // Mettre à jour les informations de l'utilisateur connecté
+  updateUserInfo: async (data: {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone?: string;
+  }): Promise<any> => {
+    const response = await apiClient.patch('/api/auth/me/', data);
+    return response.data;
+  },
+
+  // Upload d'avatar
+  uploadAvatar: async (file: File): Promise<{ avatar_url: string; message: string }> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    
+    const response = await apiClient.post('/api/auth/avatar/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // Supprimer l'avatar
+  deleteAvatar: async (): Promise<{ message: string }> => {
+    const response = await apiClient.delete('/api/auth/avatar/');
+    return response.data;
+  },
 };
 
 export default authApi;

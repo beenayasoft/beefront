@@ -265,7 +265,7 @@ export function InvoiceItemForm({
                       placeholder="Rechercher dans la bibliothèque..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 benaya-input"
+                      className="pl-10 Beenaya-input"
                     />
                   </div>
                   
@@ -337,7 +337,7 @@ export function InvoiceItemForm({
                   id="designation"
                   value={formData.designation}
                   onChange={(e) => handleInputChange("designation", e.target.value)}
-                  className={`benaya-input ${errors.designation ? "border-red-500" : ""}`}
+                  className={`Beenaya-input ${errors.designation ? "border-red-500" : ""}`}
                   placeholder="Nom de l'article ou service"
                 />
                 {errors.designation && (
@@ -354,7 +354,7 @@ export function InvoiceItemForm({
                   value={formData.type} 
                   onValueChange={(value) => handleInputChange("type", value)}
                 >
-                  <SelectTrigger className="benaya-input">
+                  <SelectTrigger className="Beenaya-input">
                     <SelectValue placeholder="Type d'élément" />
                   </SelectTrigger>
                   <SelectContent>
@@ -372,7 +372,7 @@ export function InvoiceItemForm({
                 id="description"
                 value={formData.description}
                 onChange={(e) => handleInputChange("description", e.target.value)}
-                className="benaya-input resize-none"
+                className="Beenaya-input resize-none"
                 placeholder="Description détaillée"
                 rows={3}
               />
@@ -392,7 +392,7 @@ export function InvoiceItemForm({
                 step="0.01"
                 value={formData.quantity}
                 onChange={(e) => handleInputChange("quantity", parseFloat(e.target.value))}
-                className={`benaya-input ${errors.quantity ? "border-red-500" : ""}`}
+                className={`Beenaya-input ${errors.quantity ? "border-red-500" : ""}`}
               />
               {errors.quantity && (
                 <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -408,7 +408,7 @@ export function InvoiceItemForm({
                 value={formData.unit} 
                 onValueChange={(value) => handleInputChange("unit", value)}
               >
-                <SelectTrigger className="benaya-input">
+                <SelectTrigger className="Beenaya-input">
                   <SelectValue placeholder="Unité" />
                 </SelectTrigger>
                 <SelectContent>
@@ -435,7 +435,7 @@ export function InvoiceItemForm({
                 step="0.01"
                 value={formData.unitPrice}
                 onChange={(e) => handleInputChange("unitPrice", parseFloat(e.target.value))}
-                className={`benaya-input ${errors.unitPrice ? "border-red-500" : ""}`}
+                className={`Beenaya-input ${errors.unitPrice ? "border-red-500" : ""}`}
               />
               {errors.unitPrice && (
                 <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -453,7 +453,7 @@ export function InvoiceItemForm({
                 value={formData.vatRate?.toString()} 
                 onValueChange={(value) => handleInputChange("vatRate", parseInt(value))}
               >
-                <SelectTrigger className={`benaya-input ${errors.vatRate ? "border-red-500" : ""}`}>
+                <SelectTrigger className={`Beenaya-input ${errors.vatRate ? "border-red-500" : ""}`}>
                   <SelectValue placeholder="Taux de TVA" />
                 </SelectTrigger>
                 <SelectContent>
@@ -486,7 +486,7 @@ export function InvoiceItemForm({
               step="0.01"
               value={formData.discount || 0}
               onChange={(e) => handleInputChange("discount", parseFloat(e.target.value))}
-              className={`benaya-input ${errors.discount ? "border-red-500" : ""}`}
+              className={`Beenaya-input ${errors.discount ? "border-red-500" : ""}`}
             />
             {errors.discount && (
               <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -523,7 +523,7 @@ export function InvoiceItemForm({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
-          <Button onClick={handleSubmit} className="benaya-button-primary gap-2">
+          <Button onClick={handleSubmit} className="Beenaya-button-primary gap-2">
             <Check className="w-4 h-4" />
             {isEditing ? "Mettre à jour" : "Ajouter"}
           </Button>

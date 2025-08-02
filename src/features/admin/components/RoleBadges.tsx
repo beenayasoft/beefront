@@ -14,16 +14,16 @@ export function RoleBadges({ roles }: RoleBadgesProps) {
         
         switch(role.name) {
           case "Administrateur":
-            badgeClass = "bg-benaya-900 hover:bg-benaya-800";
+            badgeClass = "bg-Beenaya-900 hover:bg-Beenaya-800";
             break;
           case "Gérant":
-            badgeClass = "bg-benaya-700 hover:bg-benaya-600";
+            badgeClass = "bg-Beenaya-700 hover:bg-Beenaya-600";
             break;
           case "Administratif/Bureau":
-            badgeClass = "bg-benaya-500 hover:bg-benaya-400";
+            badgeClass = "bg-Beenaya-500 hover:bg-Beenaya-400";
             break;
           case "Opérationnel/Travaux":
-            badgeClass = "bg-benaya-300 text-benaya-900 hover:bg-benaya-200";
+            badgeClass = "bg-Beenaya-300 text-Beenaya-900 hover:bg-Beenaya-200";
             break;
           default:
             badgeClass = "bg-gray-500 hover:bg-gray-400";

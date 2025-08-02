@@ -227,7 +227,7 @@ export function NumberingFormatFormAdvanced({ documentNumbering, onChange }: Num
             value={config.prefix || ''}
             onChange={(e) => updateConfig(activeTab, { prefix: e.target.value })}
             placeholder="DEV"
-            className="benaya-input"
+            className="Beenaya-input"
           />
           <p className="text-xs text-neutral-500">
             Texte qui apparaît au début du numéro
@@ -243,7 +243,7 @@ export function NumberingFormatFormAdvanced({ documentNumbering, onChange }: Num
             value={config.suffix || ''}
             onChange={(e) => updateConfig(activeTab, { suffix: e.target.value })}
             placeholder="DRAFT"
-            className="benaya-input"
+            className="Beenaya-input"
           />
           <p className="text-xs text-neutral-500">
             Texte qui apparaît à la fin du numéro
@@ -260,7 +260,7 @@ export function NumberingFormatFormAdvanced({ documentNumbering, onChange }: Num
             value={String(config.padding)}
             onValueChange={(value) => updateConfig(activeTab, { padding: parseInt(value) })}
           >
-            <SelectTrigger className="benaya-input">
+            <SelectTrigger className="Beenaya-input">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -283,7 +283,7 @@ export function NumberingFormatFormAdvanced({ documentNumbering, onChange }: Num
             min="1"
             value={config.next_number}
             onChange={(e) => updateConfig(activeTab, { next_number: parseInt(e.target.value) || 1 })}
-            className="benaya-input"
+            className="Beenaya-input"
           />
           <p className="text-xs text-neutral-500">
             Le prochain numéro qui sera utilisé
@@ -299,7 +299,7 @@ export function NumberingFormatFormAdvanced({ documentNumbering, onChange }: Num
           value={config.separator === '' ? 'none' : config.separator}
           onValueChange={(value) => updateConfig(activeTab, { separator: value === 'none' ? '' : value })}
         >
-          <SelectTrigger className="benaya-input">
+          <SelectTrigger className="Beenaya-input">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -361,7 +361,7 @@ export function NumberingFormatFormAdvanced({ documentNumbering, onChange }: Num
             value={config.date_format}
             onValueChange={(value) => updateConfig(activeTab, { date_format: value })}
           >
-            <SelectTrigger className="benaya-input">
+            <SelectTrigger className="Beenaya-input">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -391,7 +391,7 @@ export function NumberingFormatFormAdvanced({ documentNumbering, onChange }: Num
           value={config.custom_format || ''}
           onChange={(e) => updateConfig(activeTab, { custom_format: e.target.value })}
           placeholder="{prefix}-{year}-{month}-{day}-{number}"
-          className="benaya-input min-h-[80px]"
+          className="Beenaya-input min-h-[80px]"
         />
         <div className="text-xs text-neutral-500">
           <p className="mb-2">Variables disponibles :</p>

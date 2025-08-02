@@ -145,9 +145,9 @@ export function BulkInvoiceActionsModal({
       label: 'Marquer comme émises',
       icon: Send,
       description: 'Changer le statut vers "émise"',
-      color: 'text-benaya-600',
-      bgColor: 'bg-benaya-50',
-      borderColor: 'border-benaya-200'
+      color: 'text-Beenaya-600',
+      bgColor: 'bg-Beenaya-50',
+      borderColor: 'border-Beenaya-200'
     },
     {
       id: 'archive' as const,
@@ -347,7 +347,7 @@ export function BulkInvoiceActionsModal({
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CheckSquare className="w-5 h-5 text-benaya-600" />
+            <CheckSquare className="w-5 h-5 text-Beenaya-600" />
             Actions en lot
           </DialogTitle>
           <DialogDescription>
@@ -522,7 +522,7 @@ export function BulkInvoiceActionsModal({
               <Card>
                 <CardContent className="py-8">
                   <div className="text-center">
-                    <div className="w-6 h-6 animate-spin rounded-full border-2 border-neutral-300 border-t-benaya-600 mx-auto" />
+                    <div className="w-6 h-6 animate-spin rounded-full border-2 border-neutral-300 border-t-Beenaya-600 mx-auto" />
                     <div className="text-neutral-500 mt-2">Vérification des contraintes...</div>
                   </div>
                 </CardContent>

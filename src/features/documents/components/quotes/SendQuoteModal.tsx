@@ -138,7 +138,7 @@ export function SendQuoteModal({
             <Button
               type="submit"
               disabled={loading || !formData.recipient_email.trim()}
-              className="benaya-button-primary"
+              className="Beenaya-button-primary"
             >
               {loading ? "Envoi..." : "Envoyer le devis"}
             </Button>

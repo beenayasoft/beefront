@@ -42,6 +42,7 @@ interface AuthContextType {
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
+  updateUser: (userData: Partial<User>) => void;
   error: string | null;
   // Fonctions utilitaires pour accéder aux informations du tenant
   getTenantName: () => string;
@@ -63,12 +64,44 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Fonction pour sauvegarder les données utilisateur dans localStorage
+  const saveUserToStorage = (userData: User) => {
+    try {
+      localStorage.setItem('userInfo', JSON.stringify(userData));
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde des données utilisateur:', error);
+    }
+  };
+
+  // Fonction pour charger les données utilisateur depuis localStorage
+  const loadUserFromStorage = (): User | null => {
+    try {
+      const userInfo = localStorage.getItem('userInfo');
+      return userInfo ? JSON.parse(userInfo) : null;
+    } catch (error) {
+      console.error('Erreur lors du chargement des données utilisateur:', error);
+      return null;
+    }
+  };
+
+  // Fonction pour effacer les données utilisateur du localStorage
+  const clearUserFromStorage = () => {
+    localStorage.removeItem('userInfo');
+  };
+
   // Vérifier l'authentification au chargement
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('accessToken');
       if (token) {
+        // Charger d'abord les données depuis le localStorage pour un affichage immédiat
+        const cachedUser = loadUserFromStorage();
+        if (cachedUser) {
+          setUser(cachedUser);
+        }
+
         try {
+          // Puis récupérer les données fraîches depuis l'API
           const userData = await authApi.getUserInfo();
           if (userData?.tenant_id) {
             // Récupérer les informations complètes du tenant
@@ -81,6 +114,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             }
           }
           setUser(userData);
+          saveUserToStorage(userData);
         } catch (error) {
           // Essayer de rafraîchir le token si la requête échoue
           const refreshToken = localStorage.getItem('refreshToken');
@@ -104,6 +138,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 }
               }
               setUser(userData);
+              saveUserToStorage(userData);
             } catch (refreshError) {
               handleLogout();
               setError('Session expirée, veuillez vous reconnecter.');
@@ -141,6 +176,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (data.user) {
         setUser(data.user);
+        saveUserToStorage(data.user);
       } else {
         const userData = await authApi.getUserInfo();
         if (userData?.tenant_id) {
@@ -154,6 +190,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }
         }
         setUser(userData);
+        saveUserToStorage(userData);
       }
     } catch (error: any) {
       setError(error.response?.data?.detail || 'Erreur de connexion');
@@ -189,6 +226,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('tenantId'); // Supprimer le tenant_id à la déconnexion
+    clearUserFromStorage(); // Effacer les données utilisateur du localStorage
     setUser(null);
   };
 
@@ -211,6 +249,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return user?.username || 'Utilisateur';
   };
 
+  // Fonction pour mettre à jour les données utilisateur (ex: avatar)
+  const updateUser = (userData: Partial<User>) => {
+    if (user) {
+      const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+      saveUserToStorage(updatedUser);
+    }
+  };
+
   // Valeur du contexte
   const value = {
     user,
@@ -219,6 +266,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     login: handleLogin,
     register: handleRegister,
     logout: handleLogout,
+    updateUser,
     error,
     getTenantName,
     getTenantInfo,

@@ -80,7 +80,7 @@ export default function MaterialDetail() {
       <div className="p-6">
         <div className="flex items-center justify-center py-12">
           <div className="text-center space-y-4">
-            <Loader2 className="w-8 h-8 animate-spin mx-auto text-benaya-600" />
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-Beenaya-600" />
             <div className="text-lg font-medium">Chargement du matériau...</div>
           </div>
         </div>
@@ -111,7 +111,7 @@ export default function MaterialDetail() {
   return (
     <div className="p-6 space-y-6">
       {/* En-tête avec navigation et actions intégrées */}
-      <div className="benaya-card benaya-gradient text-white">
+      <div className="Beenaya-card Beenaya-gradient text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button 
@@ -134,7 +134,7 @@ export default function MaterialDetail() {
                     Matériau
                   </Badge>
                 </div>
-                <p className="text-benaya-100 mt-1">
+                <p className="text-Beenaya-100 mt-1">
                   {material.reference && `Réf: ${material.reference} • `}
                   {formatCurrency(material.unitPrice)} par {material.unit}
                 </p>
@@ -182,7 +182,7 @@ export default function MaterialDetail() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-benaya-600" />
+                <FileText className="w-5 h-5 text-Beenaya-600" />
                 Informations générales
               </CardTitle>
             </CardHeader>
@@ -254,7 +254,7 @@ export default function MaterialDetail() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
-                  <Building className="w-5 h-5 text-benaya-600" />
+                  <Building className="w-5 h-5 text-Beenaya-600" />
                   Fournisseur
                 </CardTitle>
               </CardHeader>
@@ -271,7 +271,7 @@ export default function MaterialDetail() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
-                <BarChart3 className="w-5 h-5 text-benaya-600" />
+                <BarChart3 className="w-5 h-5 text-Beenaya-600" />
                 Résumé
               </CardTitle>
             </CardHeader>

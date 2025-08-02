@@ -406,7 +406,7 @@ export function LibraryItemDetail({
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <Calculator className="w-5 h-5 text-benaya-600" />
+                      <Calculator className="w-5 h-5 text-Beenaya-600" />
                       Analyse des coûts
                     </CardTitle>
                   </CardHeader>
@@ -432,7 +432,7 @@ export function LibraryItemDetail({
                         <span>Marge ({costs.margin}%):</span>
                         <span className="font-medium">{formatCurrency(costs.marginAmount)}</span>
                       </div>
-                      <div className="flex justify-between font-semibold text-benaya-700 pt-2 border-t border-neutral-200">
+                      <div className="flex justify-between font-semibold text-Beenaya-700 pt-2 border-t border-neutral-200">
                         <span>Prix de vente recommandé:</span>
                         <span>{formatCurrency(costs.recommendedPrice)}</span>
                       </div>
@@ -443,7 +443,7 @@ export function LibraryItemDetail({
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <PieChart className="w-5 h-5 text-benaya-600" />
+                      <PieChart className="w-5 h-5 text-Beenaya-600" />
                       Répartition des coûts
                     </CardTitle>
                   </CardHeader>

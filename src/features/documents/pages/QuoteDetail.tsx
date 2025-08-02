@@ -338,11 +338,11 @@ const QuoteDetail: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="benaya-card benaya-gradient text-white">
+      <div className="Beenaya-card Beenaya-gradient text-white">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Devis {quote.number}</h1>
-            <p className="text-benaya-100 mt-1">
+            <p className="text-Beenaya-100 mt-1">
               {quote.statusDisplay || quote.status} - Créé le {formatDate(quote.createdAt)}
             </p>
           </div>
@@ -350,7 +350,7 @@ const QuoteDetail: React.FC = () => {
           <div className="flex space-x-2">
             <Link
               to={`/devis/${id}/edit`}
-              className="px-4 py-2 bg-white text-benaya-900 rounded-md hover:bg-white/90 font-medium"
+              className="px-4 py-2 bg-white text-Beenaya-900 rounded-md hover:bg-white/90 font-medium"
             >
               Modifier
             </Link>

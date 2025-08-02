@@ -39,7 +39,7 @@ export function WorkLibraryList({
 }: WorkLibraryListProps) {
   return (
     <div className="overflow-hidden border border-neutral-200 dark:border-neutral-700 rounded-lg">
-      <Table className="benaya-table">
+      <Table className="Beenaya-table">
         <TableHeader>
           <TableRow>
             <TableHead>RÉFÉRENCE</TableHead>
@@ -82,10 +82,10 @@ export function WorkLibraryList({
                   <Badge 
                     className={
                       work.margin < 15 
-                        ? "benaya-badge-error" 
+                        ? "Beenaya-badge-error" 
                         : work.margin < 25 
-                          ? "benaya-badge-warning" 
-                          : "benaya-badge-success"
+                          ? "Beenaya-badge-warning" 
+                          : "Beenaya-badge-success"
                     }
                   >
                     {work.margin.toFixed(1)}%
@@ -113,7 +113,7 @@ export function WorkLibraryList({
                         </svg>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="benaya-glass">
+                    <DropdownMenuContent align="end" className="Beenaya-glass">
                       <DropdownMenuItem onClick={() => onView && onView(work)}>
                         <Eye className="mr-2 h-4 w-4" />
                         Voir détails

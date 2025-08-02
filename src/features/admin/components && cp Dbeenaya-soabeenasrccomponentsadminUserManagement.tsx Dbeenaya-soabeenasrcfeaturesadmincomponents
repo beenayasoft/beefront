@@ -217,7 +217,7 @@ export default function InviteUserModal({
                       </Select>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {selectedRoles.map((role) => (
-                          <Badge key={role.id} className="bg-benaya-700">
+                          <Badge key={role.id} className="bg-Beenaya-700">
                             <Shield className="w-3 h-3 mr-1" />
                             {role.name}
                             <button
@@ -252,7 +252,7 @@ export default function InviteUserModal({
               </Button>
               <Button 
                 type="submit" 
-                className="bg-benaya-900" 
+                className="bg-Beenaya-900" 
                 disabled={isLoading || !hasAvailableRoles || selectedRoles.length === 0}
               >
                 {isLoading ? "Envoi en cours..." : "Envoyer l'invitation"}

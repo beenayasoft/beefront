@@ -288,7 +288,7 @@ export function InvoiceModalsDemo() {
           <CardTitle className="text-sm font-medium">📋 Informations techniques</CardTitle>
         </CardHeader>
         <CardContent className="text-sm space-y-2">
-          <div><strong>Identité visuelle :</strong> Classes benaya-glass, benaya-600, cards avec headers iconifiés</div>
+          <div><strong>Identité visuelle :</strong> Classes Beenaya-glass, Beenaya-600, cards avec headers iconifiés</div>
           <div><strong>Gestion d'état :</strong> Loading states, validation côté client, gestion d'erreur</div>
           <div><strong>API intégration :</strong> Toutes les fonctions API implémentées avec types TypeScript</div>
           <div><strong>UX avancée :</strong> Toast notifications, badges de statut, actions contextuelles</div>

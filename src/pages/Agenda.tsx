@@ -120,7 +120,7 @@ export default function Agenda() {
       case "meeting":
         return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-700";
       case "site_visit":
-        return "bg-benaya-100 dark:bg-benaya-900/30 text-benaya-800 dark:text-benaya-200 border-benaya-200 dark:border-benaya-700";
+        return "bg-Beenaya-100 dark:bg-Beenaya-900/30 text-Beenaya-800 dark:text-Beenaya-200 border-Beenaya-200 dark:border-Beenaya-700";
       case "intervention":
         return "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border-orange-200 dark:border-orange-700";
       case "deadline":
@@ -162,13 +162,13 @@ export default function Agenda() {
               "min-h-[120px] p-2 border border-neutral-200 dark:border-neutral-700",
               !isCurrentMonth &&
                 "bg-neutral-50 dark:bg-neutral-800/50 text-neutral-400",
-              isToday && "bg-benaya-50 dark:bg-benaya-900/20",
+              isToday && "bg-Beenaya-50 dark:bg-Beenaya-900/20",
             )}
           >
             <div
               className={cn(
                 "flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium",
-                isToday && "bg-benaya-900 text-white",
+                isToday && "bg-Beenaya-900 text-white",
                 !isToday &&
                   isCurrentMonth &&
                   "text-neutral-900 dark:text-white",
@@ -231,7 +231,7 @@ export default function Agenda() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Time slots */}
         <div className="lg:col-span-3">
-          <div className="benaya-card">
+          <div className="Beenaya-card">
             <div className="space-y-0">
               {hours.map((hour) => {
                 const hourEvents = events.filter((event) => {
@@ -287,7 +287,7 @@ export default function Agenda() {
 
         {/* Events sidebar */}
         <div className="space-y-4">
-          <div className="benaya-card">
+          <div className="Beenaya-card">
             <h3 className="font-semibold text-neutral-900 dark:text-white mb-4">
               Événements du jour
             </h3>
@@ -336,7 +336,7 @@ export default function Agenda() {
           return (
             <div
               key={monthIndex}
-              className="benaya-card cursor-pointer hover:shadow-lg transition-shadow"
+              className="Beenaya-card cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => {
                 setCurrentDate(monthDate);
                 setView("month");
@@ -346,7 +346,7 @@ export default function Agenda() {
                 {monthNames[monthIndex]}
               </h3>
               <div className="text-center">
-                <div className="text-2xl font-bold text-benaya-900 dark:text-benaya-200">
+                <div className="text-2xl font-bold text-Beenaya-900 dark:text-Beenaya-200">
                   {monthEvents.length}
                 </div>
                 <div className="text-xs text-neutral-600 dark:text-neutral-400">
@@ -363,15 +363,15 @@ export default function Agenda() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="benaya-card benaya-gradient text-white">
+      <div className="Beenaya-card Beenaya-gradient text-white">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Agenda</h1>
-            <p className="text-benaya-100 mt-1">
+            <p className="text-Beenaya-100 mt-1">
               Planifiez et gérez vos rendez-vous
             </p>
           </div>
-          <Button className="gap-2 bg-white text-benaya-900 hover:bg-white/90">
+          <Button className="gap-2 bg-white text-Beenaya-900 hover:bg-white/90">
             <Plus className="w-4 h-4" />
             Nouvel événement
           </Button>
@@ -379,7 +379,7 @@ export default function Agenda() {
       </div>
 
       {/* Controls */}
-      <div className="benaya-card">
+      <div className="Beenaya-card">
         <div className="flex items-center justify-between">
           {/* Navigation */}
           <div className="flex items-center gap-4">
@@ -420,7 +420,7 @@ export default function Agenda() {
                   onClick={() => setView(viewType)}
                   className={cn(
                     "rounded-none border-none",
-                    view === viewType && "benaya-button-primary",
+                    view === viewType && "Beenaya-button-primary",
                   )}
                 >
                   {viewType === "day" && "Jour"}
@@ -434,7 +434,7 @@ export default function Agenda() {
       </div>
 
       {/* Calendar Content */}
-      <div className="benaya-card">
+      <div className="Beenaya-card">
         {view === "month" && renderMonthView()}
         {view === "day" && renderDayView()}
         {view === "year" && renderYearView()}

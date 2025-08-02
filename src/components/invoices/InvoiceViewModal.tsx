@@ -200,7 +200,7 @@ export function InvoiceViewModal({
       <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Eye className="w-5 h-5 text-benaya-600" />
+            <Eye className="w-5 h-5 text-Beenaya-600" />
             Facture {invoice.number || "Brouillon"}
           </DialogTitle>
           <DialogDescription className="flex items-center gap-4">
@@ -353,7 +353,7 @@ export function InvoiceViewModal({
                     <div className="text-sm text-neutral-600">TVA</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-benaya-600">
+                    <div className="text-2xl font-bold text-Beenaya-600">
                       {formatCurrency(invoice.totalTTC)} MAD
                     </div>
                     <div className="text-sm text-neutral-600">Total TTC</div>
@@ -478,7 +478,7 @@ export function InvoiceViewModal({
               <CardContent>
                 {loadingPayments ? (
                   <div className="text-center py-8">
-                    <div className="w-6 h-6 animate-spin rounded-full border-2 border-neutral-300 border-t-benaya-600 mx-auto" />
+                    <div className="w-6 h-6 animate-spin rounded-full border-2 border-neutral-300 border-t-Beenaya-600 mx-auto" />
                     <div className="text-neutral-500 mt-2">Chargement des paiements...</div>
                   </div>
                 ) : payments.length > 0 ? (

@@ -510,10 +510,10 @@ export default function WorkLibrary() {
   if (loading && materials.length === 0 && labor.length === 0 && works.length === 0) {
     return (
       <div className="p-6 space-y-6">
-        <div className="benaya-card">
+        <div className="Beenaya-card">
           <div className="flex items-center justify-center py-12">
             <div className="text-center space-y-4">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto text-benaya-600" />
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-Beenaya-600" />
               <div className="text-lg font-medium">Chargement de la bibliothèque...</div>
               <div className="text-sm text-neutral-600">
                 Récupération des données depuis l'API
@@ -536,11 +536,11 @@ export default function WorkLibrary() {
       )}
 
       {/* Header */}
-      <div className="benaya-card benaya-gradient text-white">
+      <div className="Beenaya-card Beenaya-gradient text-white">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Bibliothèque d'ouvrages</h1>
-            <p className="text-benaya-100 mt-1">
+            <p className="text-Beenaya-100 mt-1">
               Gérez vos ouvrages, matériaux et main d'œuvre
             </p>
           </div>
@@ -555,7 +555,7 @@ export default function WorkLibrary() {
             <Dialog open={showTypeSelector} onOpenChange={setShowTypeSelector}>
               <DialogTrigger asChild>
                 <Button 
-                  className="gap-2 bg-white text-benaya-900 hover:bg-white/90"
+                  className="gap-2 bg-white text-Beenaya-900 hover:bg-white/90"
                   disabled={loading}
                   onClick={() => setShowTypeSelector(true)}
                 >
@@ -610,8 +610,8 @@ export default function WorkLibrary() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="benaya-card text-center">
-          <div className="text-2xl font-bold text-benaya-900 dark:text-benaya-200">
+        <div className="Beenaya-card text-center">
+          <div className="text-2xl font-bold text-Beenaya-900 dark:text-Beenaya-200">
             {filteredItems.length}
             {filteredItems.length !== getTotalItems() && (
               <span className="text-sm text-neutral-500 ml-1">
@@ -623,7 +623,7 @@ export default function WorkLibrary() {
             {filteredItems.length !== getTotalItems() ? "Éléments filtrés" : "Éléments total"}
           </div>
         </div>
-        <div className="benaya-card text-center">
+        <div className="Beenaya-card text-center">
           <div className="text-2xl font-bold text-green-600">
             {getTotalValue().toLocaleString("fr-FR")} MAD
           </div>
@@ -631,7 +631,7 @@ export default function WorkLibrary() {
             Valeur catalogue
           </div>
         </div>
-        <div className="benaya-card text-center">
+        <div className="Beenaya-card text-center">
           <div className="text-2xl font-bold text-amber-600">
             {getRecentlyUpdated()}
           </div>
@@ -642,7 +642,7 @@ export default function WorkLibrary() {
       </div>
 
       {/* Filters */}
-      <div className="benaya-card">
+      <div className="Beenaya-card">
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1 max-w-md">
             <div className="relative">
@@ -652,7 +652,7 @@ export default function WorkLibrary() {
                 value={searchQuery}
                 onChange={handleSearchChange}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch(searchQuery)}
-                className="pl-10 benaya-input"
+                className="pl-10 Beenaya-input"
               />
             </div>
           </div>
@@ -681,7 +681,7 @@ export default function WorkLibrary() {
       </div>
 
       {/* Main Content */}
-      <div className="benaya-card">
+      <div className="Beenaya-card">
         <div className="grid grid-cols-1 gap-6">
           <div>
             <LibraryItemsList

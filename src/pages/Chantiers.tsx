@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { UserIcon } from "@/components/ui/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -132,7 +133,7 @@ const columns = [
     id: "in_progress",
     title: "En cours",
     color:
-      "bg-benaya-100 dark:bg-benaya-900/30 border-benaya-200 dark:border-benaya-700",
+      "bg-Beenaya-100 dark:bg-Beenaya-900/30 border-Beenaya-200 dark:border-Beenaya-700",
   },
   {
     id: "on_hold",
@@ -171,7 +172,7 @@ const SortableProjectCard = ({ project }: { project: Project }) => {
       {...attributes}
       {...listeners}
       className={cn(
-        "benaya-card p-4 group hover:shadow-lg transition-all cursor-grab active:cursor-grabbing",
+        "Beenaya-card p-4 group hover:shadow-lg transition-all cursor-grab active:cursor-grabbing",
         isDragging && "opacity-50 rotate-3 scale-105 shadow-2xl z-50",
       )}
     >
@@ -248,7 +249,7 @@ const ProjectCardContent = ({ project }: { project: Project }) => {
       {/* Info */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
-          <User className="w-3 h-3" />
+          <UserIcon size="xs" className="opacity-70" />
           <span>{project.client}</span>
         </div>
         <div className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
@@ -280,7 +281,7 @@ const ProjectCardContent = ({ project }: { project: Project }) => {
           </div>
           <div className="w-full h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full">
             <div
-              className="h-full bg-benaya-900 rounded-full transition-all duration-300"
+              className="h-full bg-Beenaya-900 rounded-full transition-all duration-300"
               style={{ width: `${project.progress}%` }}
             ></div>
           </div>
@@ -354,15 +355,15 @@ export default function Chantiers() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="benaya-card benaya-gradient text-white">
+      <div className="Beenaya-card Beenaya-gradient text-white">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Chantiers</h1>
-            <p className="text-benaya-100 mt-1">
+            <p className="text-Beenaya-100 mt-1">
               Suivez l'avancement de vos projets
             </p>
           </div>
-          <Button className="gap-2 bg-white text-benaya-900 hover:bg-white/90">
+          <Button className="gap-2 bg-white text-Beenaya-900 hover:bg-white/90">
             <Plus className="w-4 h-4" />
             Nouveau chantier
           </Button>
@@ -371,15 +372,15 @@ export default function Chantiers() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="benaya-card text-center">
-          <div className="text-2xl font-bold text-benaya-900 dark:text-benaya-200">
+        <div className="Beenaya-card text-center">
+          <div className="text-2xl font-bold text-Beenaya-900 dark:text-Beenaya-200">
             {projects.length}
           </div>
           <div className="text-sm text-neutral-600 dark:text-neutral-400">
             Total projets
           </div>
         </div>
-        <div className="benaya-card text-center">
+        <div className="Beenaya-card text-center">
           <div className="text-2xl font-bold text-blue-600">
             {projects.filter((p) => p.status === "in_progress").length}
           </div>
@@ -387,7 +388,7 @@ export default function Chantiers() {
             En cours
           </div>
         </div>
-        <div className="benaya-card text-center">
+        <div className="Beenaya-card text-center">
           <div className="text-2xl font-bold text-green-600">
             {projects.filter((p) => p.status === "completed").length}
           </div>
@@ -395,8 +396,8 @@ export default function Chantiers() {
             Terminés
           </div>
         </div>
-        <div className="benaya-card text-center">
-          <div className="text-2xl font-bold text-benaya-900 dark:text-benaya-200">
+        <div className="Beenaya-card text-center">
+          <div className="text-2xl font-bold text-Beenaya-900 dark:text-Beenaya-200">
             1,890,000
           </div>
           <div className="text-sm text-neutral-600 dark:text-neutral-400">
@@ -406,7 +407,7 @@ export default function Chantiers() {
       </div>
 
       {/* Filters */}
-      <div className="benaya-card">
+      <div className="Beenaya-card">
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1 max-w-md">
             <div className="relative">
@@ -415,7 +416,7 @@ export default function Chantiers() {
                 placeholder="Rechercher un chantier..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 benaya-input"
+                className="pl-10 Beenaya-input"
               />
             </div>
           </div>
@@ -429,7 +430,7 @@ export default function Chantiers() {
       </div>
 
       {/* Drag and Drop Info */}
-      <div className="benaya-card bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+      <div className="Beenaya-card bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
         <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
           <Clock className="w-5 h-5" />
           <div>
@@ -503,7 +504,7 @@ export default function Chantiers() {
 
         <DragOverlay>
           {activeProject ? (
-            <div className="benaya-card p-4 rotate-3 scale-105 shadow-2xl border-2 border-benaya-500">
+            <div className="Beenaya-card p-4 rotate-3 scale-105 shadow-2xl border-2 border-Beenaya-500">
               <ProjectCardContent project={activeProject} />
             </div>
           ) : null}

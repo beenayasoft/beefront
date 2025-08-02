@@ -27,6 +27,7 @@ export function transformBackendToFrontend(backendData: any): TenantInfo {
     legal: {
       legal_form: backendData.legal_form || backendData.legal?.legal_form || '',
       siret: backendData.siret || backendData.legal?.siret || '',
+      ice: backendData.ice || backendData.legal?.ice || '',
       vat_number: backendData.vat_number || backendData.legal?.vat_number || '',
     },
     
@@ -59,7 +60,16 @@ export function transformBackendToFrontend(backendData: any): TenantInfo {
       },
     },
     
-    vat_rates: backendData.vat_rates || [],
+    vat_rates: (backendData.vat_rates || []).map((rate: any) => ({
+      id: rate.id ? String(rate.id) : undefined,
+      code: rate.code || '',
+      name: rate.name || '',
+      rate: parseFloat(rate.rate) || 0,
+      rate_display: rate.rate_display || `${rate.rate}%`,
+      description: rate.description || '',
+      is_default: Boolean(rate.is_default),
+      is_active: Boolean(rate.is_active)
+    })),
     payment_terms: backendData.payment_terms || [],
     document_numbering: backendData.document_numbering || [],
     document_appearance: backendData.document_appearance || {
@@ -115,6 +125,7 @@ export function transformFrontendToBackend(frontendData: Partial<TenantInfo>): T
   if (frontendData.legal) {
     if (frontendData.legal.legal_form !== undefined) backendData.legal_form = frontendData.legal.legal_form;
     if (frontendData.legal.siret !== undefined) backendData.siret = frontendData.legal.siret;
+    if (frontendData.legal.ice !== undefined) backendData.ice = frontendData.legal.ice;
     if (frontendData.legal.vat_number !== undefined) backendData.vat_number = frontendData.legal.vat_number;
   }
   
@@ -123,7 +134,7 @@ export function transformFrontendToBackend(frontendData: Partial<TenantInfo>): T
     backendData.settings = {};
     
     if (frontendData.settings.logo_url !== undefined) backendData.settings.logo_url = frontendData.settings.logo_url;
-    if (frontendData.settings.logo_base64 !== undefined) backendData.settings.logo_data = frontendData.settings.logo_base64; // Renommer logo_base64 en logo_data pour le backend
+    if (frontendData.settings.logo_base64 !== undefined) backendData.settings.logo_base64 = frontendData.settings.logo_base64; // Envoyer logo_base64 car c'est ce que la vue attend
     if (frontendData.settings.primary_color !== undefined) backendData.settings.primary_color = frontendData.settings.primary_color;
     if (frontendData.settings.secondary_color !== undefined) backendData.settings.secondary_color = frontendData.settings.secondary_color;
     if (frontendData.settings.accent_color !== undefined) backendData.settings.accent_color = frontendData.settings.accent_color;

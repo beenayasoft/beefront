@@ -6,16 +6,16 @@ export function useTierUtils() {
   const getTypeBadge = (type: string) => {
     switch (type) {
       case "client":
-        return <Badge className="benaya-badge-primary">Client</Badge>;
+        return <Badge className="Beenaya-badge-primary">Client</Badge>;
       case "fournisseur":
-        return <Badge className="benaya-badge-warning">Fournisseur</Badge>;
+        return <Badge className="Beenaya-badge-warning">Fournisseur</Badge>;
 
       case "sous_traitant":
-        return <Badge className="benaya-badge-info">Sous-traitant</Badge>;
+        return <Badge className="Beenaya-badge-info">Sous-traitant</Badge>;
       case "prospect":
-        return <Badge className="benaya-badge-neutral">Prospect</Badge>;
+        return <Badge className="Beenaya-badge-neutral">Prospect</Badge>;
       default:
-        return <Badge className="benaya-badge-neutral">—</Badge>;
+        return <Badge className="Beenaya-badge-neutral">—</Badge>;
     }
   };
 
@@ -23,11 +23,11 @@ export function useTierUtils() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge className="benaya-badge-success">Actif</Badge>;
+        return <Badge className="Beenaya-badge-success">Actif</Badge>;
       case "inactive":
-        return <Badge className="benaya-badge-neutral">Inactif</Badge>;
+        return <Badge className="Beenaya-badge-neutral">Inactif</Badge>;
       default:
-        return <Badge className="benaya-badge-neutral">—</Badge>;
+        return <Badge className="Beenaya-badge-neutral">—</Badge>;
     }
   };
 

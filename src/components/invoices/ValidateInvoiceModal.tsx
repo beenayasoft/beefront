@@ -107,7 +107,7 @@ export function ValidateInvoiceModal({
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Send className="w-5 h-5 text-benaya-600" />
+            <Send className="w-5 h-5 text-Beenaya-600" />
             ✨ Valider et émettre la facture
           </DialogTitle>
           <DialogDescription>
@@ -153,7 +153,7 @@ export function ValidateInvoiceModal({
                   </div>
                   <div className="flex justify-between text-lg font-semibold">
                     <span>Total TTC:</span>
-                    <span className="text-benaya-600">{formatCurrency(invoice.totalTTC)} MAD</span>
+                    <span className="text-Beenaya-600">{formatCurrency(invoice.totalTTC)} MAD</span>
                   </div>
                 </div>
               </div>
@@ -163,7 +163,7 @@ export function ValidateInvoiceModal({
           {/* Paramètres d'émission */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 pb-2 border-b">
-              <Calendar className="w-4 h-4 text-benaya-600" />
+              <Calendar className="w-4 h-4 text-Beenaya-600" />
               <h3 className="font-medium">Paramètres d'émission</h3>
             </div>
             

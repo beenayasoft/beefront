@@ -33,9 +33,9 @@ export function Chart({
   return (
     <div className={`neo-card p-6 space-y-4 ${className}`}>
       <div className="flex items-center gap-2">
-        <div className="p-2 bg-benaya-100 dark:bg-benaya-900 rounded-lg">
+        <div className="p-2 bg-Beenaya-100 dark:bg-Beenaya-900 rounded-lg">
           <svg
-            className="w-4 h-4 text-benaya-600 dark:text-benaya-400"
+            className="w-4 h-4 text-Beenaya-600 dark:text-Beenaya-400"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -56,7 +56,7 @@ export function Chart({
       </div>
 
       <div className="space-y-2">
-        <div className="text-2xl font-bold text-benaya-600 dark:text-benaya-400">
+        <div className="text-2xl font-bold text-Beenaya-600 dark:text-Beenaya-400">
           {value} {currency}
         </div>
 

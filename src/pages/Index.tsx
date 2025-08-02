@@ -75,7 +75,7 @@ export default function Index() {
               </h2>
               <Button
                 variant="link"
-                className="text-benaya-600 dark:text-benaya-400 p-0"
+                className="text-Beenaya-600 dark:text-Beenaya-400 p-0"
               >
                 Tout voir
               </Button>
@@ -122,7 +122,7 @@ export default function Index() {
               </h2>
               <Button
                 variant="link"
-                className="text-benaya-600 dark:text-benaya-400 p-0"
+                className="text-Beenaya-600 dark:text-Beenaya-400 p-0"
               >
                 Tout voir
               </Button>
@@ -190,7 +190,7 @@ export default function Index() {
 
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-benaya-500 rounded-full mt-2"></div>
+                <div className="w-2 h-2 bg-Beenaya-500 rounded-full mt-2"></div>
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-neo-gray-900 dark:text-white">
                     Bon de commande créé
@@ -202,7 +202,7 @@ export default function Index() {
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-benaya-500 rounded-full mt-2"></div>
+                <div className="w-2 h-2 bg-Beenaya-500 rounded-full mt-2"></div>
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-neo-gray-900 dark:text-white">
                     Bon de commande créé
@@ -214,7 +214,7 @@ export default function Index() {
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-benaya-500 rounded-full mt-2"></div>
+                <div className="w-2 h-2 bg-Beenaya-500 rounded-full mt-2"></div>
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-neo-gray-900 dark:text-white">
                     Intervention créée
@@ -228,7 +228,7 @@ export default function Index() {
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="w-2 h-2 bg-benaya-500 rounded-full mt-2"></div>
+                <div className="w-2 h-2 bg-Beenaya-500 rounded-full mt-2"></div>
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-neo-gray-900 dark:text-white">
                     Devis créé

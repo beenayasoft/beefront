@@ -150,12 +150,12 @@ export function LibraryItemForm({
 
   const getTypeBadge = () => {
     return type === "material" ? (
-      <Badge className="benaya-badge-primary gap-1">
+      <Badge className="Beenaya-badge-primary gap-1">
         <Package className="w-3 h-3" />
         Matériau
       </Badge>
     ) : (
-      <Badge className="benaya-badge-warning gap-1">
+      <Badge className="Beenaya-badge-warning gap-1">
         <Clock className="w-3 h-3" />
         Main d'œuvre
       </Badge>
@@ -201,7 +201,7 @@ export function LibraryItemForm({
                   value={formData.name || ""}
                   onChange={handleChange}
                   placeholder={`Nom du ${getTypeLabel().toLowerCase()}`}
-                  className={`benaya-input ${errors.name ? "border-red-500 focus:border-red-500" : ""}`}
+                  className={`Beenaya-input ${errors.name ? "border-red-500 focus:border-red-500" : ""}`}
                 />
                 {errors.name && (
                   <div className="flex items-center gap-1 text-xs text-red-600">
@@ -222,7 +222,7 @@ export function LibraryItemForm({
                   onChange={handleChange}
                   placeholder={`Description détaillée du ${getTypeLabel().toLowerCase()}`}
                   rows={3}
-                  className="benaya-input resize-none"
+                  className="Beenaya-input resize-none"
                 />
               </div>
             </div>
@@ -243,7 +243,7 @@ export function LibraryItemForm({
                   value={formData.unit || ""}
                   onValueChange={(value) => handleSelectChange("unit", value)}
                 >
-                  <SelectTrigger className={`benaya-input ${errors.unit ? "border-red-500" : ""}`}>
+                  <SelectTrigger className={`Beenaya-input ${errors.unit ? "border-red-500" : ""}`}>
                     <SelectValue placeholder="Sélectionner une unité" />
                   </SelectTrigger>
                   <SelectContent>
@@ -289,7 +289,7 @@ export function LibraryItemForm({
                     value={formData.unitPrice || ""}
                     onChange={handleChange}
                     placeholder="0.00"
-                    className={`benaya-input pr-12 ${errors.unitPrice ? "border-red-500 focus:border-red-500" : ""}`}
+                    className={`Beenaya-input pr-12 ${errors.unitPrice ? "border-red-500 focus:border-red-500" : ""}`}
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-neutral-500 text-sm">
                     MAD
@@ -321,7 +321,7 @@ export function LibraryItemForm({
                     value={((formData as Partial<Material>).vatRate || 20).toString()}
                     onValueChange={(value) => handleSelectChange("vatRate", value)}
                   >
-                    <SelectTrigger className={`benaya-input ${errors.vatRate ? "border-red-500" : ""}`}>
+                    <SelectTrigger className={`Beenaya-input ${errors.vatRate ? "border-red-500" : ""}`}>
                       <SelectValue placeholder="Taux de TVA" />
                     </SelectTrigger>
                     <SelectContent>
@@ -350,7 +350,7 @@ export function LibraryItemForm({
                     value={(formData as Partial<Material>).supplier || ""}
                     onChange={handleChange}
                     placeholder="Nom du fournisseur"
-                    className="benaya-input"
+                    className="Beenaya-input"
                   />
                 </div>
               </div>
@@ -371,7 +371,7 @@ export function LibraryItemForm({
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full sm:w-auto benaya-button"
+            className="w-full sm:w-auto Beenaya-button"
           >
             {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {isEditing ? "Mettre à jour" : "Créer"}

@@ -125,7 +125,7 @@ export function SectionForm({
                 value={formData.type} 
                 onValueChange={(value) => handleInputChange("type", value)}
               >
-                <SelectTrigger className="benaya-input">
+                <SelectTrigger className="Beenaya-input">
                   <SelectValue placeholder="Type de section" />
                 </SelectTrigger>
                 <SelectContent>
@@ -143,7 +143,7 @@ export function SectionForm({
                 id="designation"
                 value={formData.designation}
                 onChange={(e) => handleInputChange("designation", e.target.value)}
-                className={`benaya-input ${errors.designation ? "border-red-500" : ""}`}
+                className={`Beenaya-input ${errors.designation ? "border-red-500" : ""}`}
                 placeholder="Titre de la section"
               />
               {errors.designation && (
@@ -160,7 +160,7 @@ export function SectionForm({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
-          <Button onClick={handleSubmit} className="benaya-button-primary gap-2">
+          <Button onClick={handleSubmit} className="Beenaya-button-primary gap-2">
             <Check className="w-4 h-4" />
             {isEditing ? "Mettre à jour" : "Ajouter"}
           </Button>

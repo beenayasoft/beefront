@@ -318,7 +318,7 @@ export function WorkCompositionForm({
               }
             </DialogDescription>
           </div>
-          <Badge className="benaya-badge-success gap-1">
+          <Badge className="Beenaya-badge-success gap-1">
             <Hammer className="w-3 h-3" />
             Ouvrage
           </Badge>
@@ -344,7 +344,7 @@ export function WorkCompositionForm({
                   value={formData.name || ""}
                   onChange={handleChange}
                   placeholder="Nom de l'ouvrage"
-                  className={`benaya-input ${errors.name ? "border-red-500 focus:border-red-500" : ""}`}
+                  className={`Beenaya-input ${errors.name ? "border-red-500 focus:border-red-500" : ""}`}
                 />
                 {errors.name && (
                   <div className="flex items-center gap-1 text-xs text-red-600">
@@ -364,7 +364,7 @@ export function WorkCompositionForm({
                   value={formData.reference || ""}
                   onChange={handleChange}
                   placeholder="Référence de l'ouvrage"
-                  className="benaya-input"
+                  className="Beenaya-input"
                 />
               </div>
             </div>
@@ -380,7 +380,7 @@ export function WorkCompositionForm({
                 onChange={handleChange}
                 placeholder="Description détaillée de l'ouvrage"
                 rows={3}
-                className="benaya-input resize-none"
+                className="Beenaya-input resize-none"
               />
             </div>
 
@@ -393,7 +393,7 @@ export function WorkCompositionForm({
                   value={formData.unit || ""}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, unit: value }))}
                 >
-                  <SelectTrigger className={`benaya-input ${errors.unit ? "border-red-500" : ""}`}>
+                  <SelectTrigger className={`Beenaya-input ${errors.unit ? "border-red-500" : ""}`}>
                     <SelectValue placeholder="Sélectionner une unité" />
                   </SelectTrigger>
                   <SelectContent>
@@ -427,7 +427,7 @@ export function WorkCompositionForm({
                     value={formData.margin || ""}
                     onChange={handleChange}
                     placeholder="20"
-                    className={`benaya-input pr-8 ${errors.margin ? "border-red-500 focus:border-red-500" : ""}`}
+                    className={`Beenaya-input pr-8 ${errors.margin ? "border-red-500 focus:border-red-500" : ""}`}
                   />
                   <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-neutral-500 text-sm">
                     %
@@ -482,7 +482,7 @@ export function WorkCompositionForm({
                       value={newComponent.componentType}
                       onValueChange={handleComponentTypeChange as (value: string) => void}
                     >
-                      <SelectTrigger className="benaya-input">
+                      <SelectTrigger className="Beenaya-input">
                         <SelectValue placeholder="Type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -516,7 +516,7 @@ export function WorkCompositionForm({
                       value={newComponent.id}
                       onValueChange={handleComponentIdChange}
                     >
-                      <SelectTrigger className="benaya-input">
+                      <SelectTrigger className="Beenaya-input">
                         <SelectValue placeholder="Sélectionner" />
                       </SelectTrigger>
                       <SelectContent>
@@ -571,7 +571,7 @@ export function WorkCompositionForm({
                       value={newComponent.quantity}
                       onChange={handleComponentQuantityChange}
                       placeholder="1"
-                      className="benaya-input"
+                      className="Beenaya-input"
                     />
                   </div>
 
@@ -581,7 +581,7 @@ export function WorkCompositionForm({
                       type="button"
                       onClick={addComponent}
                       disabled={!newComponent.id || newComponent.quantity <= 0}
-                      className="w-full benaya-button"
+                      className="w-full Beenaya-button"
                     >
                       Ajouter
                     </Button>
@@ -609,19 +609,19 @@ export function WorkCompositionForm({
                       <TableRow key={index}>
                         <TableCell>
                           {component.componentType === "material" && (
-                            <Badge className="benaya-badge-primary gap-1">
+                            <Badge className="Beenaya-badge-primary gap-1">
                               <Package className="w-3 h-3" />
                               Matériau
                             </Badge>
                           )}
                           {component.componentType === "labor" && (
-                            <Badge className="benaya-badge-warning gap-1">
+                            <Badge className="Beenaya-badge-warning gap-1">
                               <Clock className="w-3 h-3" />
                               Main d'œuvre
                             </Badge>
                           )}
                           {component.componentType === "work" && (
-                            <Badge className="benaya-badge-success gap-1">
+                            <Badge className="Beenaya-badge-success gap-1">
                               <Hammer className="w-3 h-3" />
                               Ouvrage
                             </Badge>
@@ -720,7 +720,7 @@ export function WorkCompositionForm({
           <Button
             type="submit"
             disabled={isLoading || components.length === 0}
-            className="w-full sm:w-auto benaya-button"
+            className="w-full sm:w-auto Beenaya-button"
           >
             {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {isEditing ? "Mettre à jour" : "Créer l'ouvrage"}

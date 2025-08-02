@@ -76,11 +76,11 @@ export interface PaymentTerm {
 }
 
 export interface VatRate {
-  id: string;
+  id?: string;
   code: string;
   name: string;
   rate: number;
-  rate_display: string;
+  rate_display?: string;
   description?: string;
   is_default: boolean;
   is_active: boolean;

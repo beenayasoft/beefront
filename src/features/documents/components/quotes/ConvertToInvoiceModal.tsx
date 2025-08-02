@@ -194,7 +194,7 @@ export function ConvertToInvoiceModal({
             <Button
               type="submit"
               disabled={loading}
-              className="benaya-button-primary"
+              className="Beenaya-button-primary"
             >
               {loading ? "Création..." : "Créer la facture"}
             </Button>

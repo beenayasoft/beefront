@@ -6,7 +6,6 @@ export { QuoteList } from './QuoteList';
 export { QuoteAlerts } from './QuoteAlerts';
 
 // Composants de l'éditeur (déjà existants)
-export { QuotePreview } from './QuotePreview';
 
 // Composants d'édition (déjà existants dans /editor)
 export * from './editor';

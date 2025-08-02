@@ -1,8 +1,8 @@
+export { CompanyIdentityForm } from './CompanyIdentityForm';
+export { DocumentAppearanceForm } from './DocumentAppearanceForm';
+export { LegalFinancialForm } from './LegalFinancialForm';
 export { NumberingFormatForm } from './NumberingFormatForm';
 export { NumberingFormatFormAdvanced } from './NumberingFormatFormAdvanced';
-export { ServiceConnectionTest } from './ServiceConnectionTest';
 export { PaymentTermsManagement } from './PaymentTermsManagement';
-export { VatRatesManagement } from './VatRatesManagement';
-export { CompanyIdentityForm } from './CompanyIdentityForm';
-export { LegalFinancialForm } from './LegalFinancialForm';
-export { DocumentAppearanceForm } from './DocumentAppearanceForm'; 
+export { ServiceConnectionTest } from './ServiceConnectionTest';
+export { VatRatesManagement } from './VatRatesManagement'; 

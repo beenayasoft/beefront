@@ -17,7 +17,7 @@ export default function PlaceholderPage({
     <div className="min-h-full flex items-center justify-center p-6">
       <div className="max-w-md w-full text-center space-y-8">
         {/* Icon */}
-        <div className="mx-auto w-20 h-20 rounded-2xl bg-benaya-900 flex items-center justify-center">
+        <div className="mx-auto w-20 h-20 rounded-2xl bg-Beenaya-900 flex items-center justify-center">
           <Icon className="w-10 h-10 text-white" />
         </div>
 
@@ -39,7 +39,7 @@ export default function PlaceholderPage({
 
         {/* Actions */}
         <div className="flex flex-col gap-3">
-          <Button className="benaya-button-primary gap-2">
+          <Button className="Beenaya-button-primary gap-2">
             Retour au dashboard
             <ArrowRight className="w-4 h-4" />
           </Button>
@@ -54,7 +54,7 @@ export default function PlaceholderPage({
           </div>
           <div className="w-full h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full">
             <div
-              className="h-full bg-benaya-900 rounded-full transition-all duration-500"
+              className="h-full bg-Beenaya-900 rounded-full transition-all duration-500"
               style={{ width: "25%" }}
             ></div>
           </div>

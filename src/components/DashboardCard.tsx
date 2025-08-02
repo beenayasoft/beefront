@@ -40,8 +40,8 @@ export function DashboardCard({
           )}
         </div>
         {Icon && (
-          <div className="p-3 bg-benaya-100 dark:bg-benaya-900 rounded-lg">
-            <Icon className="w-6 h-6 text-benaya-600 dark:text-benaya-400" />
+          <div className="p-3 bg-Beenaya-100 dark:bg-Beenaya-900 rounded-lg">
+            <Icon className="w-6 h-6 text-Beenaya-600 dark:text-Beenaya-400" />
           </div>
         )}
       </div>

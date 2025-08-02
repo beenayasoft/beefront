@@ -121,7 +121,7 @@ export function ValidateQuoteModal({
             <Button
               type="submit"
               disabled={loading}
-              className="benaya-button-primary"
+              className="Beenaya-button-primary"
             >
               {loading ? "Validation..." : "Valider le devis"}
             </Button>

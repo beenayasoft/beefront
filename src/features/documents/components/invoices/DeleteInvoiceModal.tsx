@@ -210,7 +210,7 @@ export function DeleteInvoiceModal({
             <Card>
               <CardContent className="py-6">
                 <div className="flex items-center justify-center gap-2 text-neutral-500">
-                  <div className="w-4 h-4 animate-spin rounded-full border-2 border-neutral-300 border-t-benaya-600" />
+                  <div className="w-4 h-4 animate-spin rounded-full border-2 border-neutral-300 border-t-Beenaya-600" />
                   Vérification des contraintes...
                 </div>
               </CardContent>
@@ -221,7 +221,7 @@ export function DeleteInvoiceModal({
               {constraints.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="font-medium flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-benaya-600" />
+                    <Shield className="w-4 h-4 text-Beenaya-600" />
                     Contraintes de suppression
                   </h3>
                   

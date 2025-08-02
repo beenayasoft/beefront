@@ -577,8 +577,8 @@ export default function InvoiceEditor() {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="benaya-card p-8 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-benaya-600 mx-auto"></div>
+        <div className="Beenaya-card p-8 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-Beenaya-600 mx-auto"></div>
           <p className="mt-4">Chargement de la facture...</p>
         </div>
       </div>
@@ -588,7 +588,7 @@ export default function InvoiceEditor() {
   if (error) {
     return (
       <div className="p-6">
-        <div className="benaya-card p-8 text-center">
+        <div className="Beenaya-card p-8 text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-4">{error}</h2>
           <Button onClick={() => navigate("/factures")}>
@@ -679,7 +679,7 @@ export default function InvoiceEditor() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="benaya-card benaya-gradient text-white">
+      <div className="Beenaya-card Beenaya-gradient text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button 
@@ -697,12 +697,12 @@ export default function InvoiceEditor() {
                   {isNewInvoice ? "Nouvelle facture" : invoice.number}
                 </h1>
                 {!isNewInvoice && (
-                  <Badge className="benaya-badge-neutral gap-1 bg-white/20 text-white border-white/30">
+                  <Badge className="Beenaya-badge-neutral gap-1 bg-white/20 text-white border-white/30">
                     Brouillon
                   </Badge>
                 )}
               </div>
-              <p className="text-benaya-100 mt-1">
+              <p className="text-Beenaya-100 mt-1">
                 {isNewInvoice 
                   ? "Créez une nouvelle facture" 
                   : `Client: ${invoice.clientName} ${invoice.projectName ? `- Projet: ${invoice.projectName}` : ""}`
@@ -732,7 +732,7 @@ export default function InvoiceEditor() {
             </Button>
             
             <Button 
-              className="bg-white text-benaya-900 hover:bg-white/90"
+              className="bg-white text-Beenaya-900 hover:bg-white/90"
               onClick={handleValidateAndSend}
               disabled={saving}
             >
@@ -764,7 +764,7 @@ export default function InvoiceEditor() {
           {/* Details Tab */}
           <TabsContent value="details" className="space-y-6 mt-6">
             {/* Client and Project */}
-            <div className="benaya-card">
+            <div className="Beenaya-card">
               <h3 className="font-medium text-lg mb-4">Informations client et projet</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -777,7 +777,7 @@ export default function InvoiceEditor() {
                       value={invoice.clientId} 
                       onValueChange={handleClientChange}
                     >
-                      <SelectTrigger className={`benaya-input ${errors.clientId ? "border-red-500" : ""}`}>
+                      <SelectTrigger className={`Beenaya-input ${errors.clientId ? "border-red-500" : ""}`}>
                         <SelectValue placeholder="Sélectionner un client" />
                       </SelectTrigger>
                       <SelectContent>
@@ -802,7 +802,7 @@ export default function InvoiceEditor() {
                       id="clientAddress"
                       value={invoice.clientAddress}
                       onChange={(e) => handleInputChange("clientAddress", e.target.value)}
-                      className="benaya-input resize-none"
+                      className="Beenaya-input resize-none"
                       rows={3}
                     />
                   </div>
@@ -815,7 +815,7 @@ export default function InvoiceEditor() {
                       value={invoice.projectId} 
                       onValueChange={handleProjectChange}
                     >
-                      <SelectTrigger className="benaya-input">
+                      <SelectTrigger className="Beenaya-input">
                         <SelectValue placeholder="Sélectionner un projet" />
                       </SelectTrigger>
                       <SelectContent>
@@ -834,7 +834,7 @@ export default function InvoiceEditor() {
                       id="projectAddress"
                       value={invoice.projectAddress}
                       onChange={(e) => handleInputChange("projectAddress", e.target.value)}
-                      className="benaya-input resize-none"
+                      className="Beenaya-input resize-none"
                       rows={3}
                     />
                   </div>
@@ -843,7 +843,7 @@ export default function InvoiceEditor() {
             </div>
 
             {/* Dates and Terms */}
-            <div className="benaya-card">
+            <div className="Beenaya-card">
               <h3 className="font-medium text-lg mb-4">Dates et conditions</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -856,7 +856,7 @@ export default function InvoiceEditor() {
                     type="date"
                     value={invoice.issueDate}
                     onChange={(e) => handleInputChange("issueDate", e.target.value)}
-                    className={`benaya-input ${errors.issueDate ? "border-red-500" : ""}`}
+                    className={`Beenaya-input ${errors.issueDate ? "border-red-500" : ""}`}
                   />
                   {errors.issueDate && (
                     <p className="text-xs text-red-500 mt-1 flex items-center">
@@ -872,7 +872,7 @@ export default function InvoiceEditor() {
                     value={invoice.paymentTerms?.toString()} 
                     onValueChange={(value) => handleInputChange("paymentTerms", parseInt(value))}
                   >
-                    <SelectTrigger className="benaya-input">
+                    <SelectTrigger className="Beenaya-input">
                       <SelectValue placeholder="Délai de paiement" />
                     </SelectTrigger>
                     <SelectContent>
@@ -895,7 +895,7 @@ export default function InvoiceEditor() {
                     type="date"
                     value={invoice.dueDate}
                     onChange={(e) => handleInputChange("dueDate", e.target.value)}
-                    className={`benaya-input ${errors.dueDate ? "border-red-500" : ""}`}
+                    className={`Beenaya-input ${errors.dueDate ? "border-red-500" : ""}`}
                     readOnly
                   />
                   {errors.dueDate && (
@@ -911,7 +911,7 @@ export default function InvoiceEditor() {
           
           {/* Items Tab */}
           <TabsContent value="items" className="space-y-6 mt-6">
-            <div className="benaya-card">
+            <div className="Beenaya-card">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-medium text-lg">Éléments de la facture</h3>
                 
@@ -1064,7 +1064,7 @@ export default function InvoiceEditor() {
           
           {/* Payment Tab */}
           <TabsContent value="payment" className="space-y-6 mt-6">
-            <div className="benaya-card">
+            <div className="Beenaya-card">
               <h3 className="font-medium text-lg mb-4">Conditions de paiement</h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1074,7 +1074,7 @@ export default function InvoiceEditor() {
                     id="notes"
                     value={invoice.notes}
                     onChange={(e) => handleInputChange("notes", e.target.value)}
-                    className="benaya-input min-h-[100px]"
+                    className="Beenaya-input min-h-[100px]"
                     placeholder="Notes additionnelles pour le client"
                   />
                 </div>
@@ -1084,19 +1084,19 @@ export default function InvoiceEditor() {
                     id="termsAndConditions"
                     value={invoice.termsAndConditions}
                     onChange={(e) => handleInputChange("termsAndConditions", e.target.value)}
-                    className="benaya-input min-h-[100px]"
+                    className="Beenaya-input min-h-[100px]"
                     placeholder="Conditions de paiement, coordonnées bancaires, etc."
                   />
                 </div>
               </div>
             </div>
 
-            <div className="benaya-card">
+            <div className="Beenaya-card">
               <h3 className="font-medium text-lg mb-4">Moyens de paiement</h3>
               
               <div className="space-y-4">
                 <div className="flex items-center gap-3 p-3 border border-neutral-200 dark:border-neutral-700 rounded-lg">
-                  <CreditCard className="w-5 h-5 text-benaya-600" />
+                  <CreditCard className="w-5 h-5 text-Beenaya-600" />
                   <div className="flex-1">
                     <div className="font-medium">Virement bancaire</div>
                     <div className="text-sm text-neutral-600 dark:text-neutral-400">
@@ -1194,7 +1194,7 @@ export default function InvoiceEditor() {
           </Button>
           
           <Button 
-            className="benaya-button-primary"
+            className="Beenaya-button-primary"
             onClick={handleValidateAndSend}
             disabled={saving || invoice.status !== "draft"}
           >

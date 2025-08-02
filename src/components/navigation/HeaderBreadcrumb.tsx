@@ -40,7 +40,7 @@ export function HeaderBreadcrumb() {
 
       {/* Breadcrumb */}
       <div className="flex items-center space-x-2 text-sm">
-        <span className="text-slate-500 dark:text-slate-400">Benaya ERP</span>
+        <span className="text-slate-500 dark:text-slate-400">Beenaya ERP</span>
 
         {pathSegments.length > 0 && (
           <>

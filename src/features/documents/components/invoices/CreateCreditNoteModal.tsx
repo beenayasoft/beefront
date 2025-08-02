@@ -270,7 +270,7 @@ export function CreateCreditNoteModal({
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-benaya-600" />
+            <FileText className="w-5 h-5 text-Beenaya-600" />
             Créer un avoir
           </DialogTitle>
           <DialogDescription>
@@ -466,7 +466,7 @@ export function CreateCreditNoteModal({
                         className={cn(
                           "p-3 border rounded-lg transition-colors",
                           formData.selectedItems.includes(item.id)
-                            ? "bg-benaya-50 border-benaya-200"
+                            ? "bg-Beenaya-50 border-Beenaya-200"
                             : "hover:bg-neutral-50"
                         )}
                       >
@@ -518,7 +518,7 @@ export function CreateCreditNoteModal({
               <CardContent>
                 {loadingPreview ? (
                   <div className="text-center py-8">
-                    <div className="w-6 h-6 animate-spin rounded-full border-2 border-neutral-300 border-t-benaya-600 mx-auto" />
+                    <div className="w-6 h-6 animate-spin rounded-full border-2 border-neutral-300 border-t-Beenaya-600 mx-auto" />
                     <div className="text-neutral-500 mt-2">Calcul en cours...</div>
                   </div>
                 ) : creditPreview ? (

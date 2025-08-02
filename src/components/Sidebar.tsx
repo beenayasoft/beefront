@@ -132,7 +132,7 @@ export function Sidebar({ className }: SidebarProps) {
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-6 py-4 border-b border-neo-gray-200 dark:border-neo-gray-800">
-        <div className="w-8 h-8 text-benaya-600 dark:text-benaya-400">
+        <div className="w-8 h-8 text-Beenaya-600 dark:text-Beenaya-400">
           <svg viewBox="0 0 40 40" fill="none" className="w-full h-full">
             <g fill="currentColor" opacity="0.9">
               <path d="M20 2L27.32 6.5V15.5L20 20L12.68 15.5V6.5L20 2Z" />
@@ -160,7 +160,7 @@ export function Sidebar({ className }: SidebarProps) {
           </svg>
         </div>
         <span className="text-xl font-bold text-neo-gray-900 dark:text-white">
-          benaya
+          Beenaya
         </span>
       </div>
 
@@ -177,7 +177,7 @@ export function Sidebar({ className }: SidebarProps) {
                 className={cn(
                   "sidebar-item",
                   isActive(item.href) &&
-                    "active bg-benaya-50 dark:bg-benaya-950 text-benaya-700 dark:text-benaya-300",
+                    "active bg-Beenaya-50 dark:bg-Beenaya-950 text-Beenaya-700 dark:text-Beenaya-300",
                 )}
               >
                 <Icon className="w-5 h-5" />
@@ -204,7 +204,7 @@ export function Sidebar({ className }: SidebarProps) {
                   className={cn(
                     "sidebar-item",
                     isActive(item.href) &&
-                      "active bg-benaya-50 dark:bg-benaya-950 text-benaya-700 dark:text-benaya-300",
+                      "active bg-Beenaya-50 dark:bg-Beenaya-950 text-Beenaya-700 dark:text-Beenaya-300",
                   )}
                 >
                   <Icon className="w-5 h-5" />
@@ -232,7 +232,7 @@ export function Sidebar({ className }: SidebarProps) {
                   className={cn(
                     "sidebar-item",
                     isActive(item.href) &&
-                      "active bg-benaya-50 dark:bg-benaya-950 text-benaya-700 dark:text-benaya-300",
+                      "active bg-Beenaya-50 dark:bg-Beenaya-950 text-Beenaya-700 dark:text-Beenaya-300",
                   )}
                 >
                   <Icon className="w-5 h-5" />
@@ -260,7 +260,7 @@ export function Sidebar({ className }: SidebarProps) {
                   className={cn(
                     "sidebar-item",
                     isActive(item.href) &&
-                      "active bg-benaya-50 dark:bg-benaya-950 text-benaya-700 dark:text-benaya-300",
+                      "active bg-Beenaya-50 dark:bg-Beenaya-950 text-Beenaya-700 dark:text-Beenaya-300",
                   )}
                 >
                   <Icon className="w-5 h-5" />
@@ -288,7 +288,7 @@ export function Sidebar({ className }: SidebarProps) {
                   className={cn(
                     "sidebar-item",
                     isActive(item.href) &&
-                      "active bg-benaya-50 dark:bg-benaya-950 text-benaya-700 dark:text-benaya-300",
+                      "active bg-Beenaya-50 dark:bg-Beenaya-950 text-Beenaya-700 dark:text-Beenaya-300",
                   )}
                 >
                   <Icon className="w-5 h-5" />
@@ -312,7 +312,7 @@ export function Sidebar({ className }: SidebarProps) {
                 className={cn(
                   "sidebar-item",
                   isActive(item.href) &&
-                    "active bg-benaya-50 dark:bg-benaya-950 text-benaya-700 dark:text-benaya-300",
+                    "active bg-Beenaya-50 dark:bg-Beenaya-950 text-Beenaya-700 dark:text-Beenaya-300",
                 )}
               >
                 <Icon className="w-5 h-5" />

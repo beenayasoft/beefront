@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { DocumentNumbering } from '@/lib/types/tenant';
 import { toast } from '@/hooks/use-toast';
-import { apiClient } from '@/lib/api/client';
+import { settingsApi } from '../api/settings';
 
 interface NumberingPreview {
   preview: string;
@@ -26,23 +26,8 @@ export function useNumberingFormat(): UseNumberingFormatReturn {
     setError(null);
 
     try {
-      const response = await apiClient.post('/tenants/preview-numbering/', {
-        document_type: config.document_type || 'quote',
-        prefix: config.prefix || '',
-        suffix: config.suffix || '',
-        padding: config.padding || 3,
-        next_number: config.next_number || 1,
-        include_year: config.include_year ?? true,
-        include_month: config.include_month ?? false,
-        include_day: config.include_day ?? false,
-        date_format: config.date_format || 'YYYY-MM-DD',
-        separator: config.separator || '-',
-        custom_format: config.custom_format || '',
-        reset_yearly: config.reset_yearly ?? true,
-        reset_monthly: config.reset_monthly ?? false,
-      });
-
-      return response.data.preview;
+      const preview = await settingsApi.generateNumberingPreview(config);
+      return preview;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
       setError(errorMessage);
@@ -154,19 +139,14 @@ export function useNumberingFormat(): UseNumberingFormatReturn {
     setError(null);
 
     try {
-      const response = await apiClient.post(
-        `/tenants/document_numbering/${numberingId}/reset/`,
-        { new_value: newValue }
-      );
-
-      const data = response.data;
+      const success = await settingsApi.resetNumberingCounter(numberingId, newValue);
       
       toast({
         title: "Compteur réinitialisé",
-        description: data.message || `Le compteur a été remis à ${newValue}`,
+        description: `Le compteur a été remis à ${newValue}`,
       });
 
-      return true;
+      return success;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
       setError(errorMessage);

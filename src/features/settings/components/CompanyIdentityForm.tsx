@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Upload, X } from "lucide-react";
-import { TenantInfo } from "../types/tenant";
+import { TenantInfo } from "@/lib/types/tenant";
 
 interface CompanyIdentityFormProps {
   companyData: TenantInfo;
@@ -18,6 +18,10 @@ export function CompanyIdentityForm({ companyData, onChange }: CompanyIdentityFo
 
   const handleNameChange = (value: string) => {
     onChange({ name: value });
+  };
+
+  const handleSloganChange = (value: string) => {
+    onChange({ slogan: value });
   };
 
   const handleAddressChange = (field: string, value: string) => {
@@ -84,7 +88,19 @@ export function CompanyIdentityForm({ companyData, onChange }: CompanyIdentityFo
             value={companyData.name || ""}
             onChange={(e) => handleNameChange(e.target.value)}
             placeholder="Nom de votre entreprise"
-            className="benaya-input"
+            className="Beenaya-input"
+          />
+        </div>
+
+        {/* Company Slogan */}
+        <div className="space-y-2 md:col-span-2">
+          <Label htmlFor="companySlogan">Slogan/description de l'entreprise</Label>
+          <Input
+            id="companySlogan"
+            value={companyData.slogan || ""}
+            onChange={(e) => handleSloganChange(e.target.value)}
+            placeholder="Votre slogan ou une courte description de votre entreprise"
+            className="Beenaya-input"
           />
         </div>
 
@@ -143,14 +159,14 @@ export function CompanyIdentityForm({ companyData, onChange }: CompanyIdentityFo
             value={companyData.address?.line1 || ""}
             onChange={(e) => handleAddressChange("line1", e.target.value)}
             placeholder="Adresse ligne 1"
-            className="benaya-input min-h-[40px]"
+            className="Beenaya-input min-h-[40px]"
           />
           <Textarea
             id="address2"
             value={companyData.address?.line2 || ""}
             onChange={(e) => handleAddressChange("line2", e.target.value)}
             placeholder="Adresse ligne 2 (optionnel)"
-            className="benaya-input min-h-[40px] mt-2"
+            className="Beenaya-input min-h-[40px] mt-2"
           />
         </div>
 
@@ -162,7 +178,7 @@ export function CompanyIdentityForm({ companyData, onChange }: CompanyIdentityFo
             value={companyData.address?.postal_code || ""}
             onChange={(e) => handleAddressChange("postal_code", e.target.value)}
             placeholder="Code postal"
-            className="benaya-input"
+            className="Beenaya-input"
           />
         </div>
 
@@ -173,7 +189,7 @@ export function CompanyIdentityForm({ companyData, onChange }: CompanyIdentityFo
             value={companyData.address?.city || ""}
             onChange={(e) => handleAddressChange("city", e.target.value)}
             placeholder="Ville"
-            className="benaya-input"
+            className="Beenaya-input"
           />
         </div>
 
@@ -184,7 +200,7 @@ export function CompanyIdentityForm({ companyData, onChange }: CompanyIdentityFo
             value={companyData.address?.country || ""}
             onChange={(e) => handleAddressChange("country", e.target.value)}
             placeholder="Pays"
-            className="benaya-input"
+            className="Beenaya-input"
           />
         </div>
 
@@ -196,7 +212,7 @@ export function CompanyIdentityForm({ companyData, onChange }: CompanyIdentityFo
             value={companyData.phone || ""}
             onChange={(e) => handleContactChange("phone", e.target.value)}
             placeholder="Téléphone"
-            className="benaya-input"
+            className="Beenaya-input"
           />
         </div>
 
@@ -208,7 +224,7 @@ export function CompanyIdentityForm({ companyData, onChange }: CompanyIdentityFo
             value={companyData.email || ""}
             onChange={(e) => handleContactChange("email", e.target.value)}
             placeholder="Email"
-            className="benaya-input"
+            className="Beenaya-input"
           />
         </div>
 
@@ -220,7 +236,7 @@ export function CompanyIdentityForm({ companyData, onChange }: CompanyIdentityFo
             value={companyData.website || ""}
             onChange={(e) => handleContactChange("website", e.target.value)}
             placeholder="Site web"
-            className="benaya-input"
+            className="Beenaya-input"
           />
         </div>
       </div>

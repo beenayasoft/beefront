@@ -23,7 +23,7 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex">
       {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 benaya-gradient relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 Beenaya-gradient relative overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
@@ -89,7 +89,7 @@ export default function Auth() {
                 <img src="/logo.svg" alt="Beenaya logo" className="w-10 h-10" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-benaya-900">Beenaya</h1>
+                <h1 className="text-2xl font-bold text-Beenaya-900">Beenaya</h1>
               </div>
             </div>
           </div>
@@ -101,7 +101,7 @@ export default function Auth() {
             </h2>
             <p className="text-neutral-600 dark:text-neutral-400 mt-2">
               {mode === "login"
-                ? "Connectez-vous à votre espace Benaya"
+                ? "Connectez-vous à votre espace Beenaya"
                 : "Rejoignez des milliers d'entrepreneurs"}
             </p>
           </div>
@@ -136,7 +136,7 @@ export default function Auth() {
                     onChange={(e) =>
                       handleInputChange("first_name", e.target.value)
                     }
-                    className="benaya-input"
+                    className="Beenaya-input"
                     required
                   />
                 </div>
@@ -155,7 +155,7 @@ export default function Auth() {
                     onChange={(e) =>
                       handleInputChange("last_name", e.target.value)
                     }
-                    className="benaya-input"
+                    className="Beenaya-input"
                     required
                   />
                 </div>
@@ -181,7 +181,7 @@ export default function Auth() {
                     onChange={(e) =>
                       handleInputChange("company", e.target.value)
                     }
-                    className="pl-10 benaya-input"
+                    className="pl-10 Beenaya-input"
                     required
                   />
                 </div>
@@ -204,7 +204,7 @@ export default function Auth() {
                   placeholder="jean@entreprise.com"
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
-                  className="pl-10 benaya-input"
+                  className="pl-10 Beenaya-input"
                   required
                 />
               </div>
@@ -228,7 +228,7 @@ export default function Auth() {
                   onChange={(e) =>
                     handleInputChange("password", e.target.value)
                   }
-                  className="pl-10 pr-10 benaya-input"
+                  className="pl-10 pr-10 Beenaya-input"
                   required
                 />
                 <Button
@@ -266,7 +266,7 @@ export default function Auth() {
                     onChange={(e) =>
                       handleInputChange("password2", e.target.value)
                     }
-                    className="pl-10 pr-10 benaya-input"
+                    className="pl-10 pr-10 Beenaya-input"
                     required
                   />
                 </div>
@@ -288,11 +288,11 @@ export default function Auth() {
                   className="text-sm text-neutral-600 dark:text-neutral-400"
                 >
                   J'accepte les{" "}
-                  <a href="#" className="text-benaya-900 hover:underline">
+                  <a href="#" className="text-Beenaya-900 hover:underline">
                     conditions d'utilisation
                   </a>{" "}
                   et la{" "}
-                  <a href="#" className="text-benaya-900 hover:underline">
+                  <a href="#" className="text-Beenaya-900 hover:underline">
                     politique de confidentialité
                   </a>
                 </Label>
@@ -302,7 +302,7 @@ export default function Auth() {
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full benaya-button-primary text-lg py-6"
+              className="w-full Beenaya-button-primary text-lg py-6"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -326,7 +326,7 @@ export default function Auth() {
                 <Button
                   type="button"
                   variant="link"
-                  className="text-benaya-900 hover:underline p-1 ml-1"
+                  className="text-Beenaya-900 hover:underline p-1 ml-1"
                   onClick={() => {
                     setMode(mode === "login" ? "signup" : "login");
                   }}

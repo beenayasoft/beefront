@@ -144,7 +144,7 @@ export function LibraryItemsList({
     // Détecter un ouvrage (a des composants)
     if ("components" in item) {
       return (
-        <Badge className="benaya-badge-success gap-1">
+        <Badge className="Beenaya-badge-success gap-1">
           <Hammer className="w-3 h-3" />
           Ouvrage
         </Badge>
@@ -154,7 +154,7 @@ export function LibraryItemsList({
     // Détecter un matériau (a obligatoirement vatRate selon notre interface)
     if ("vatRate" in item) {
       return (
-        <Badge className="benaya-badge-primary gap-1">
+        <Badge className="Beenaya-badge-primary gap-1">
           <Package className="w-3 h-3" />
           Matériau
         </Badge>
@@ -163,7 +163,7 @@ export function LibraryItemsList({
     
     // Par défaut, c'est de la main d'œuvre
     return (
-      <Badge className="benaya-badge-warning gap-1">
+      <Badge className="Beenaya-badge-warning gap-1">
         <Clock className="w-3 h-3" />
         Main d'œuvre
       </Badge>
@@ -219,7 +219,7 @@ export function LibraryItemsList({
 
       {/* Items list */}
       <div className="overflow-hidden border border-neutral-200 dark:border-neutral-700 rounded-lg">
-        <Table key={`table-page-${currentPage}`} className="benaya-table">
+        <Table key={`table-page-${currentPage}`} className="Beenaya-table">
           <TableHeader>
             <TableRow>
               <TableHead>TYPE</TableHead>
@@ -235,7 +235,7 @@ export function LibraryItemsList({
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8">
                   <div className="flex justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-benaya-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-Beenaya-600"></div>
                   </div>
                   <div className="mt-2 text-sm text-neutral-500">Chargement...</div>
                 </TableCell>

@@ -63,7 +63,7 @@ export function Header({ className }: HeaderProps) {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neo-gray-400" />
           <Input
             placeholder="Rechercher partout..."
-            className="pl-10 bg-neo-gray-50 dark:bg-neo-gray-800 border-neo-gray-200 dark:border-neo-gray-700 focus:ring-benaya-500 focus:border-benaya-500"
+            className="pl-10 bg-neo-gray-50 dark:bg-neo-gray-800 border-neo-gray-200 dark:border-neo-gray-700 focus:ring-Beenaya-500 focus:border-Beenaya-500"
           />
         </div>
       </div>
@@ -121,7 +121,7 @@ export function Header({ className }: HeaderProps) {
         </Button>
 
         {/* Starter badge */}
-        <div className="px-3 py-1 bg-benaya-100 dark:bg-benaya-900 text-benaya-700 dark:text-benaya-300 text-xs font-medium rounded-full">
+        <div className="px-3 py-1 bg-Beenaya-100 dark:bg-Beenaya-900 text-Beenaya-700 dark:text-Beenaya-300 text-xs font-medium rounded-full">
           Starter
         </div>
 
@@ -130,8 +130,8 @@ export function Header({ className }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="/avatars/01.png" alt={user?.username || "@user"} />
-                <AvatarFallback className="bg-benaya-100 dark:bg-benaya-900 text-benaya-700 dark:text-benaya-300">
+                <AvatarImage src={user?.avatar || ""} alt={user?.username || "@user"} />
+                <AvatarFallback className="bg-Beenaya-100 dark:bg-Beenaya-900 text-Beenaya-700 dark:text-Beenaya-300">
                   {getInitials()}
                 </AvatarFallback>
               </Avatar>
@@ -144,7 +144,7 @@ export function Header({ className }: HeaderProps) {
                   {user ? `${user.first_name} ${user.last_name}` : "Utilisateur"}
                 </p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  {user?.email || "utilisateur@benaya.fr"}
+                  {user?.email || "utilisateur@Beenaya.fr"}
                 </p>
               </div>
             </DropdownMenuLabel>

@@ -45,35 +45,35 @@ export function InvoiceList({
     switch (status) {
       case "draft":
         return (
-          <Badge className="benaya-badge-neutral gap-1">
+          <Badge className="Beenaya-badge-neutral gap-1">
             <div className="w-2 h-2 bg-neutral-400 rounded-full"></div>
             Brouillon
           </Badge>
         );
       case "sent":
         return (
-          <Badge className="benaya-badge-primary gap-1">
+          <Badge className="Beenaya-badge-primary gap-1">
             <Send className="w-3 h-3" />
             Émise
           </Badge>
         );
       case "overdue":
         return (
-          <Badge className="benaya-badge-error gap-1">
+          <Badge className="Beenaya-badge-error gap-1">
             <AlertCircle className="w-3 h-3" />
             En retard
           </Badge>
         );
       case "partially_paid":
         return (
-          <Badge className="benaya-badge-warning gap-1">
+          <Badge className="Beenaya-badge-warning gap-1">
             <Clock className="w-3 h-3" />
             Partiellement payée
           </Badge>
         );
       case "paid":
         return (
-          <Badge className="benaya-badge-success gap-1">
+          <Badge className="Beenaya-badge-success gap-1">
             <CheckCircle className="w-3 h-3" />
             Payée
           </Badge>
@@ -81,19 +81,19 @@ export function InvoiceList({
       case "cancelled":
       case "cancelled_by_credit_note":
         return (
-          <Badge className="benaya-badge-neutral gap-1">
+          <Badge className="Beenaya-badge-neutral gap-1">
             <XCircle className="w-3 h-3" />
             Annulée
           </Badge>
         );
       default:
-        return <Badge className="benaya-badge-neutral">—</Badge>;
+        return <Badge className="Beenaya-badge-neutral">—</Badge>;
     }
   };
 
   return (
     <div className="overflow-hidden border border-neutral-200 dark:border-neutral-700 rounded-lg">
-      <Table className="benaya-table">
+      <Table className="Beenaya-table">
         <TableHeader>
           <TableRow>
             <TableHead>STATUT</TableHead>
@@ -120,7 +120,7 @@ export function InvoiceList({
                 <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                 <TableCell className="font-medium">{invoice.number}</TableCell>
                 <TableCell>
-                  <Badge className="benaya-badge-primary text-xs">
+                  <Badge className="Beenaya-badge-primary text-xs">
                     {invoice.clientName}
                   </Badge>
                 </TableCell>
@@ -162,7 +162,7 @@ export function InvoiceList({
                         </svg>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="benaya-glass">
+                    <DropdownMenuContent align="end" className="Beenaya-glass">
                       <DropdownMenuItem onClick={() => onView && onView(invoice)}>
                         <Eye className="mr-2 h-4 w-4" />
                         Voir

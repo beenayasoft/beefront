@@ -108,7 +108,7 @@ export const useAuthForm = (initialMode: AuthMode = 'login'): UseAuthFormReturn 
     try {
       if (mode === 'login') {
         await login({ email: formData.email, password: formData.password });
-        toast({ title: 'Connexion réussie', description: 'Bienvenue sur votre espace Benaya' });
+        toast({ title: 'Connexion réussie', description: 'Bienvenue sur votre espace Beenaya' });
         navigate(from);
       } else {
         if (formData.password !== formData.password2) {

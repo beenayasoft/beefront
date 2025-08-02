@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TenantInfo } from "../types/tenant";
+import { TenantInfo } from "@/lib/types/tenant";
 
 interface LegalFinancialFormProps {
   tenantData: TenantInfo;
@@ -48,7 +48,7 @@ export function LegalFinancialForm({ tenantData, onChange }: LegalFinancialFormP
               value={tenantData.legal?.legal_form || ""} 
               onValueChange={(value) => handleLegalChange("legal_form", value)}
             >
-              <SelectTrigger className="benaya-input">
+              <SelectTrigger className="Beenaya-input">
                 <SelectValue placeholder="Sélectionner une forme juridique" />
               </SelectTrigger>
               <SelectContent>
@@ -73,18 +73,18 @@ export function LegalFinancialForm({ tenantData, onChange }: LegalFinancialFormP
               value={tenantData.legal?.siret || ""}
               onChange={(e) => handleLegalChange("siret", e.target.value)}
               placeholder="12345678901234"
-              className="benaya-input"
+              className="Beenaya-input"
             />
           </div>
           
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="ice">ICE (Identifiant Commun de l'Entreprise)</Label>
+            <Label htmlFor="vatNumber">Numéro de TVA intracommunautaire</Label>
             <Input
-              id="ice"
-              value={tenantData.legal?.ice || ""}
-              onChange={(e) => handleLegalChange("ice", e.target.value)}
-              placeholder="000123456000789"
-              className="benaya-input"
+              id="vatNumber"
+              value={tenantData.legal?.vat_number || ""}
+              onChange={(e) => handleLegalChange("vat_number", e.target.value)}
+              placeholder="FR12345678901"
+              className="Beenaya-input"
             />
           </div>
         </div>
@@ -104,7 +104,7 @@ export function LegalFinancialForm({ tenantData, onChange }: LegalFinancialFormP
               value={tenantData.bank_info?.iban || ""}
               onChange={(e) => handleBankChange("iban", e.target.value)}
               placeholder="FR76 1234 5678 9012 3456 7890 123"
-              className="benaya-input"
+              className="Beenaya-input"
             />
           </div>
           
@@ -115,7 +115,7 @@ export function LegalFinancialForm({ tenantData, onChange }: LegalFinancialFormP
               value={tenantData.bank_info?.bic || ""}
               onChange={(e) => handleBankChange("bic", e.target.value)}
               placeholder="ABCDEFGHIJK"
-              className="benaya-input"
+              className="Beenaya-input"
             />
           </div>
           
@@ -126,7 +126,7 @@ export function LegalFinancialForm({ tenantData, onChange }: LegalFinancialFormP
               value={tenantData.bank_info?.bank_name || ""}
               onChange={(e) => handleBankChange("bank_name", e.target.value)}
               placeholder="Nom de votre banque"
-              className="benaya-input"
+              className="Beenaya-input"
             />
           </div>
         </div>

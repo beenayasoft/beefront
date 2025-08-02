@@ -95,7 +95,7 @@ export function CreateInvoiceFromQuoteModal({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CreditCard className="w-5 h-5 text-benaya-600" />
+            <CreditCard className="w-5 h-5 text-Beenaya-600" />
             ✨ Créer une facture
           </DialogTitle>
           <DialogDescription>
@@ -116,7 +116,7 @@ export function CreateInvoiceFromQuoteModal({
             </div>
             <div className="flex justify-between font-semibold border-t border-neutral-200 dark:border-neutral-700 pt-2">
               <span>Montant total:</span>
-              <span className="text-benaya-900 dark:text-benaya-200">{formatCurrency(quote.totalTTC)} MAD</span>
+              <span className="text-Beenaya-900 dark:text-Beenaya-200">{formatCurrency(quote.totalTTC)} MAD</span>
             </div>
           </div>
 
@@ -173,7 +173,7 @@ export function CreateInvoiceFromQuoteModal({
                   max="99"
                   value={advancePercentage}
                   onChange={(e) => setAdvancePercentage(parseInt(e.target.value))}
-                  className={`benaya-input ${errors.advancePercentage ? "border-red-500" : ""}`}
+                  className={`Beenaya-input ${errors.advancePercentage ? "border-red-500" : ""}`}
                 />
                 {errors.advancePercentage && (
                   <div className="flex items-center text-xs text-red-500">
@@ -186,7 +186,7 @@ export function CreateInvoiceFromQuoteModal({
               <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
                 <div className="flex justify-between font-semibold">
                   <span>Montant de l'acompte:</span>
-                  <span className="text-benaya-900 dark:text-benaya-200">
+                  <span className="text-Beenaya-900 dark:text-Beenaya-200">
                     {formatCurrency(calculateAdvanceAmount())} MAD
                   </span>
                 </div>

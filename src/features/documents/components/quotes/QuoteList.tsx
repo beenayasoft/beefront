@@ -70,62 +70,62 @@ const QuoteList: React.FC<QuoteListProps> = ({
     switch (status) {
       case 'draft':
         return (
-          <Badge className="benaya-badge-neutral gap-1">
+          <Badge className="Beenaya-badge-neutral gap-1">
             <div className="w-2 h-2 bg-neutral-400 rounded-full"></div>
             Brouillon
           </Badge>
         );
       case 'pending_validation':
         return (
-          <Badge className="benaya-badge-warning gap-1">
+          <Badge className="Beenaya-badge-warning gap-1">
             <Clock className="w-3 h-3" />
             En attente
           </Badge>
         );
       case 'validated':
         return (
-          <Badge className="benaya-badge-primary gap-1">
+          <Badge className="Beenaya-badge-primary gap-1">
             <CheckCircle className="w-3 h-3" />
             Validé
           </Badge>
         );
       case 'sent':
         return (
-          <Badge className="benaya-badge-primary gap-1">
+          <Badge className="Beenaya-badge-primary gap-1">
             <Send className="w-3 h-3" />
             Envoyé
           </Badge>
         );
       case 'accepted':
         return (
-          <Badge className="benaya-badge-success gap-1">
+          <Badge className="Beenaya-badge-success gap-1">
             <CheckCircle className="w-3 h-3" />
             Accepté
           </Badge>
         );
       case 'rejected':
         return (
-          <Badge className="benaya-badge-error gap-1">
+          <Badge className="Beenaya-badge-error gap-1">
             <XCircle className="w-3 h-3" />
             Refusé
           </Badge>
         );
       case 'expired':
         return (
-          <Badge className="benaya-badge-warning gap-1">
+          <Badge className="Beenaya-badge-warning gap-1">
             <AlertTriangle className="w-3 h-3" />
             Expiré
           </Badge>
         );
       case 'cancelled':
         return (
-          <Badge className="benaya-badge-neutral gap-1">
+          <Badge className="Beenaya-badge-neutral gap-1">
             <XCircle className="w-3 h-3" />
             Annulé
           </Badge>
         );
       default:
-        return <Badge className="benaya-badge-neutral">—</Badge>;
+        return <Badge className="Beenaya-badge-neutral">—</Badge>;
     }
   };
 
@@ -143,7 +143,7 @@ const QuoteList: React.FC<QuoteListProps> = ({
 
   return (
     <div className="overflow-hidden border border-neutral-200 dark:border-neutral-700 rounded-lg">
-      <Table className="benaya-table">
+      <Table className="Beenaya-table">
         <TableHeader>
           <TableRow>
             <TableHead>STATUT</TableHead>
@@ -167,7 +167,7 @@ const QuoteList: React.FC<QuoteListProps> = ({
                 <TableCell>{getStatusBadge(quote.status)}</TableCell>
                 <TableCell className="font-medium">{quote.number}</TableCell>
                 <TableCell>
-                  <Badge className="benaya-badge-primary text-xs">
+                  <Badge className="Beenaya-badge-primary text-xs">
                     {quote.clientName}
                   </Badge>
                 </TableCell>
@@ -197,7 +197,7 @@ const QuoteList: React.FC<QuoteListProps> = ({
                         </svg>
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="benaya-glass">
+                    <DropdownMenuContent align="end" className="Beenaya-glass">
                       <DropdownMenuItem onClick={() => onView && onView(quote)}>
                         <Eye className="mr-2 h-4 w-4" />
                         Voir

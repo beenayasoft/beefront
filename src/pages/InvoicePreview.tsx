@@ -122,8 +122,8 @@ export default function InvoicePreview() {
   if (loading) {
     return (
       <div className="p-6">
-        <div className="benaya-card p-8 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-benaya-600 mx-auto"></div>
+        <div className="Beenaya-card p-8 text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-Beenaya-600 mx-auto"></div>
           <p className="mt-4">Chargement de l'aperçu...</p>
         </div>
       </div>
@@ -133,7 +133,7 @@ export default function InvoicePreview() {
   if (error || !invoice) {
     return (
       <div className="p-6">
-        <div className="benaya-card p-8 text-center">
+        <div className="Beenaya-card p-8 text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-4">{error || "Facture non trouvée"}</h2>
           <Button onClick={() => navigate("/factures")}>
@@ -148,7 +148,7 @@ export default function InvoicePreview() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="benaya-card benaya-gradient text-white print:hidden">
+      <div className="Beenaya-card Beenaya-gradient text-white print:hidden">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button 
@@ -164,7 +164,7 @@ export default function InvoicePreview() {
               <h1 className="text-2xl font-bold">
                 Aperçu de la facture
               </h1>
-              <p className="text-benaya-100 mt-1">
+              <p className="text-Beenaya-100 mt-1">
                 {invoice.number || "Brouillon"} - {invoice.clientName}
               </p>
             </div>
@@ -200,7 +200,7 @@ export default function InvoicePreview() {
             </Button>
             
             <Button 
-              className="bg-white text-benaya-900 hover:bg-white/90"
+              className="bg-white text-Beenaya-900 hover:bg-white/90"
               onClick={handleSendEmail}
             >
               <Send className="w-4 h-4 mr-2" />

@@ -278,7 +278,7 @@ export function RecordPaymentModal({
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CreditCard className="w-5 h-5 text-benaya-600" />
+            <CreditCard className="w-5 h-5 text-Beenaya-600" />
             Enregistrer un paiement
           </DialogTitle>
           <DialogDescription>
@@ -311,7 +311,7 @@ export function RecordPaymentModal({
                 </div>
                 <div>
                   <span className="text-neutral-600 text-sm">Reste à payer:</span>
-                  <div className="font-bold text-benaya-600">
+                  <div className="font-bold text-Beenaya-600">
                     {formatCurrency(invoice.remainingAmount)} MAD
                   </div>
                 </div>
@@ -440,7 +440,7 @@ export function RecordPaymentModal({
             <Card>
               <CardContent className="py-6">
                 <div className="text-center">
-                  <div className="w-6 h-6 animate-spin rounded-full border-2 border-neutral-300 border-t-benaya-600 mx-auto" />
+                  <div className="w-6 h-6 animate-spin rounded-full border-2 border-neutral-300 border-t-Beenaya-600 mx-auto" />
                   <div className="text-neutral-500 mt-2">Calcul de l'impact...</div>
                 </div>
               </CardContent>

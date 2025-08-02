@@ -86,7 +86,7 @@ export function OpportunityLossForm({
                 }
               }}
             >
-              <SelectTrigger className={`benaya-input ${errors.lossReason ? "border-red-500" : ""}`}>
+              <SelectTrigger className={`Beenaya-input ${errors.lossReason ? "border-red-500" : ""}`}>
                 <SelectValue placeholder="Sélectionner une raison" />
               </SelectTrigger>
               <SelectContent>
@@ -115,7 +115,7 @@ export function OpportunityLossForm({
               id="lossDescription"
               value={lossDescription}
               onChange={(e) => setLossDescription(e.target.value)}
-              className="benaya-input resize-none"
+              className="Beenaya-input resize-none"
               placeholder="Détails supplémentaires sur la raison de la perte"
               rows={3}
             />
@@ -126,7 +126,7 @@ export function OpportunityLossForm({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
-          <Button onClick={handleSubmit} className="benaya-button-primary">
+          <Button onClick={handleSubmit} className="Beenaya-button-primary">
             <Check className="mr-2 h-4 w-4" />
             Confirmer
           </Button>
