@@ -22,7 +22,7 @@ const configs: Record<string, EnvironmentConfig> = {
   },
   
   production: {
-    API_BASE_URL: import.meta.env.VITE_API_URL || 'https://api.votre-domaine.com/api',
+    API_BASE_URL: import.meta.env.VITE_API_URL || 'https://api.votre-domaine.com/api' || 'https://api-gateway-ten-gamma.vercel.app/',
     ENABLE_API_MODE: true,
     ENABLE_FALLBACK: true, // Garder le fallback même en prod pour la résilience
     ENABLE_CACHE: true,
