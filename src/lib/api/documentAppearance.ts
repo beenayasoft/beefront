@@ -3,7 +3,6 @@ import { apiClient } from './client';
 export interface DocumentAppearanceSettings {
   primaryColor: string;
   fontFamily?: string;
-  fontSize?: number;
   showLogo: boolean;
   logoSize: number; // Taille du logo en pixels (8-30)
   // Nouveaux champs pour la gestion avancée du logo
@@ -26,7 +25,6 @@ export interface DocumentAppearanceSettings {
   showBankDetails: boolean;
   showSignatureArea: boolean;
   logoPosition?: 'left' | 'center' | 'right'; // Maintenu pour compatibilité
-  fontFamily?: string;
   fontSize?: number;
   lineSpacing?: number;
   marginTop?: number;
@@ -193,6 +191,12 @@ class DocumentAppearanceAPI {
     console.log('📥 DocumentAppearanceAPI.getAppearanceSettings - URL:', `${this.baseUrl}/document_appearance/`);
     console.log('📥 DocumentAppearanceAPI.getAppearanceSettings - Tenant ID from localStorage:', localStorage.getItem('tenantId'));
     
+    // Vérification simple du tenant ID
+    const rawTenantId = localStorage.getItem('tenantId');
+    if (rawTenantId) {
+      console.log('📥 Tenant ID actuel:', rawTenantId);
+    }
+    
     const response = await apiClient.get(`${this.baseUrl}/document_appearance/`);
     
     console.log('📥 DocumentAppearanceAPI.getAppearanceSettings - Response status:', response.status);
@@ -357,3 +361,5 @@ class DocumentAppearanceAPI {
 }
 
 export const documentAppearanceAPI = new DocumentAppearanceAPI();
+
+// L'intercepteur principal dans client.ts gère déjà le nettoyage des headers

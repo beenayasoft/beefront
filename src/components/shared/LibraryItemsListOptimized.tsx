@@ -32,12 +32,12 @@ const LibraryItemsListOptimized = memo(function LibraryItemsListOptimized({
   // Badge type optimisé
   const getItemTypeBadge = useCallback((item: Work | Material | Labor) => {
     if ("components" in item) {
-      return <Badge className="benaya-badge-success gap-1"><Hammer className="w-3 h-3" />Ouvrage</Badge>;
+      return <Badge className="Beenaya-badge-success gap-1"><Hammer className="w-3 h-3" />Ouvrage</Badge>;
     }
     if ("vatRate" in item) {
-      return <Badge className="benaya-badge-primary gap-1"><Package className="w-3 h-3" />Matériau</Badge>;
+      return <Badge className="Beenaya-badge-primary gap-1"><Package className="w-3 h-3" />Matériau</Badge>;
     }
-    return <Badge className="benaya-badge-warning gap-1"><Clock className="w-3 h-3" />Main d'œuvre</Badge>;
+    return <Badge className="Beenaya-badge-warning gap-1"><Clock className="w-3 h-3" />Main d'œuvre</Badge>;
   }, []);
 
   // Prix formaté optimisé
@@ -53,7 +53,7 @@ const LibraryItemsListOptimized = memo(function LibraryItemsListOptimized({
   if (isLoading) {
     return (
       <div className="text-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-benaya-600 mx-auto"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-Beenaya-600 mx-auto"></div>
         <div className="mt-2 text-sm text-neutral-500">Chargement...</div>
       </div>
     );
@@ -69,7 +69,7 @@ const LibraryItemsListOptimized = memo(function LibraryItemsListOptimized({
 
   return (
     <div className="overflow-hidden border border-neutral-200 dark:border-neutral-700 rounded-lg">
-      <Table className="benaya-table">
+      <Table className="Beenaya-table">
         <TableHeader>
           <TableRow>
             <TableHead>TYPE</TableHead>

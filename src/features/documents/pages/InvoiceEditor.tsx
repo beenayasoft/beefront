@@ -62,7 +62,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Invoice, InvoiceItem, VATRate, InvoiceStatus } from "../types/invoices.types";
 import { getInvoiceById, updateInvoice, validateInvoice, changeInvoiceStatus, deleteInvoice } from "../api/invoices";
-import { tiersApi } from "@/features/crm/api/tiers";
+import { tiersApi } from "@/features/crm/api";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import { DndContext, DragEndEvent, closestCenter } from "@dnd-kit/core";

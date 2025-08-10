@@ -1,5 +1,6 @@
 import { Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,9 @@ import { WorkLibraryFilters } from "../components/WorkLibraryFilters";
 const ITEMS_PER_PAGE = 10;
 
 export default function WorkLibrary() {
+  // 🏷️ Définir le titre de la page
+  usePageTitle('Bibliothèque d\'ouvrages');
+  
   // Utilisation des hooks personnalisés
   const libraryData = useLibraryData();
   const { materials, labor, works, loading, error } = libraryData;
@@ -108,7 +112,7 @@ export default function WorkLibrary() {
       />
 
       {/* Main Content */}
-      <div className="benaya-card">
+      <div className="Beenaya-card">
         <div className="grid grid-cols-1 gap-6">
           <div>
             <LibraryItemsList
@@ -162,7 +166,7 @@ export default function WorkLibrary() {
           {/* CORRECTION: Vérifier que les données sont chargées avant d'afficher le formulaire */}
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-benaya-600" />
+              <Loader2 className="w-8 h-8 animate-spin text-Beenaya-600" />
               <span className="ml-3 text-sm text-neutral-600">
                 Chargement des éléments de la bibliothèque...
               </span>

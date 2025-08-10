@@ -16,6 +16,9 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Building2,
+  TrendingUp,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +38,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Opportunity, OpportunityStatus } from "../../types/opportunity";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 
 type SortField = 'name' | 'tierName' | 'estimatedAmount' | 'probability' | 'expectedCloseDate' | 'stage' | 'createdAt';
 type SortOrder = 'asc' | 'desc';
@@ -135,45 +138,21 @@ export function OpportunityList({
     setCurrentPage(prev => Math.min(totalPages, prev + 1));
   };
 
-  // Obtenir le badge de statut
+  // Obtenir le badge de statut modernisé avec les classes Beenaya
   const getStatusBadge = (status: OpportunityStatus) => {
     switch (status) {
       case "new":
-        return (
-          <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-            Nouvelle
-          </Badge>
-        );
+        return <Badge className="Beenaya-badge-info">Nouvelle</Badge>;
       case "needs_analysis":
-        return (
-          <Badge variant="secondary" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-            Analyse
-          </Badge>
-        );
+        return <Badge className="Beenaya-badge-warning">Analyse</Badge>;
       case "negotiation":
-        return (
-          <Badge variant="secondary" className="bg-orange-50 text-orange-700 border-orange-200">
-            Négociation
-          </Badge>
-        );
+        return <Badge className="Beenaya-badge-primary">Négociation</Badge>;
       case "won":
-        return (
-          <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
-            Gagnée
-          </Badge>
-        );
+        return <Badge className="Beenaya-badge-success">Gagnée</Badge>;
       case "lost":
-        return (
-          <Badge variant="secondary" className="bg-red-50 text-red-700 border-red-200">
-            Perdue
-          </Badge>
-        );
+        return <Badge className="Beenaya-badge-neutral">Perdue</Badge>;
       default:
-        return (
-          <Badge variant="secondary">
-            {status}
-          </Badge>
-        );
+        return <Badge className="Beenaya-badge-neutral">{status}</Badge>;
     }
   };
 
@@ -199,223 +178,235 @@ export function OpportunityList({
   };
 
   return (
-    <div className="border border-neutral-200 dark:border-neutral-700 rounded-lg overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-neutral-50 dark:bg-neutral-800/50">
-            <TableHead className="w-[300px]">
-              <Button
-                variant="ghost"
-                className="h-8 p-0 font-semibold hover:bg-transparent"
-                onClick={() => handleSort('name')}
-              >
-                Opportunité
-                {getSortIcon('name')}
-              </Button>
-            </TableHead>
-            <TableHead>
-              <Button
-                variant="ghost"
-                className="h-8 p-0 font-semibold hover:bg-transparent"
-                onClick={() => handleSort('tierName')}
-              >
-                Client
-                {getSortIcon('tierName')}
-              </Button>
-            </TableHead>
-            <TableHead>
-              <Button
-                variant="ghost"
-                className="h-8 p-0 font-semibold hover:bg-transparent"
-                onClick={() => handleSort('stage')}
-              >
-                Statut
-                {getSortIcon('stage')}
-              </Button>
-            </TableHead>
-            <TableHead className="text-right">
-              <Button
-                variant="ghost"
-                className="h-8 p-0 font-semibold hover:bg-transparent"
-                onClick={() => handleSort('estimatedAmount')}
-              >
-                Montant
-                {getSortIcon('estimatedAmount')}
-              </Button>
-            </TableHead>
-            <TableHead className="text-center">
-              <Button
-                variant="ghost"
-                className="h-8 p-0 font-semibold hover:bg-transparent"
-                onClick={() => handleSort('probability')}
-              >
-                Probabilité
-                {getSortIcon('probability')}
-              </Button>
-            </TableHead>
-            <TableHead className="text-right">
-              Montant pondéré
-            </TableHead>
-            <TableHead>
-              <Button
-                variant="ghost"
-                className="h-8 p-0 font-semibold hover:bg-transparent"
-                onClick={() => handleSort('expectedCloseDate')}
-              >
-                Date de clôture
-                {getSortIcon('expectedCloseDate')}
-              </Button>
-            </TableHead>
-            <TableHead>
-              <Button
-                variant="ghost"
-                className="h-8 p-0 font-semibold hover:bg-transparent"
-                onClick={() => handleSort('createdAt')}
-              >
-                Créée le
-                {getSortIcon('createdAt')}
-              </Button>
-            </TableHead>
-            <TableHead className="w-[50px]"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {paginatedOpportunities.length === 0 ? (
+    <div className="space-y-4">
+      <div className="overflow-hidden border border-neutral-200 dark:border-neutral-700 rounded-lg">
+        <Table className="Beenaya-table">
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={9} className="text-center py-8 text-neutral-500">
-                {opportunities.length === 0 ? "Aucune opportunité trouvée" : `Aucun résultat sur la page ${currentPage}`}
-              </TableCell>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  className="h-8 p-0 font-medium hover:bg-transparent text-left justify-start"
+                  onClick={() => handleSort('name')}
+                >
+                  OPPORTUNITÉ
+                  <span className="ml-1">{getSortIcon('name')}</span>
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  className="h-8 p-0 font-medium hover:bg-transparent text-left justify-start"
+                  onClick={() => handleSort('tierName')}
+                >
+                  CLIENT
+                  <span className="ml-1">{getSortIcon('tierName')}</span>
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  className="h-8 p-0 font-medium hover:bg-transparent text-left justify-start"
+                  onClick={() => handleSort('stage')}
+                >
+                  STATUT
+                  <span className="ml-1">{getSortIcon('stage')}</span>
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  className="h-8 p-0 font-medium hover:bg-transparent text-left justify-start"
+                  onClick={() => handleSort('estimatedAmount')}
+                >
+                  MONTANT
+                  <span className="ml-1">{getSortIcon('estimatedAmount')}</span>
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  className="h-8 p-0 font-medium hover:bg-transparent text-left justify-start"
+                  onClick={() => handleSort('probability')}
+                >
+                  PROBABILITÉ
+                  <span className="ml-1">{getSortIcon('probability')}</span>
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  className="h-8 p-0 font-medium hover:bg-transparent text-left justify-start"
+                  onClick={() => handleSort('expectedCloseDate')}
+                >
+                  DATE CLÔTURE
+                  <span className="ml-1">{getSortIcon('expectedCloseDate')}</span>
+                </Button>
+              </TableHead>
+              <TableHead className="w-[50px]"></TableHead>
             </TableRow>
-          ) : (
-            paginatedOpportunities.map((opportunity) => (
-              <TableRow 
-                key={opportunity.id}
-                className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer"
-                onClick={() => onView(opportunity)}
-              >
-                <TableCell className="font-medium">
-                  <div>
-                    <div className="font-semibold text-neutral-900 dark:text-neutral-100">
-                      {opportunity.name}
-                    </div>
-                    {opportunity.description && (
-                      <div className="text-sm text-neutral-500 dark:text-neutral-400 truncate max-w-[250px]">
-                        {opportunity.description}
+          </TableHeader>
+          <TableBody>
+            {paginatedOpportunities.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center">
+                  {opportunities.length === 0 ? "Aucune opportunité trouvée." : "Aucun élément sur cette page."}
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginatedOpportunities.map((opportunity) => (
+                <TableRow 
+                  key={opportunity.id}
+                  className={cn(
+                    "cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800/50",
+                    "transition-colors duration-150"
+                  )}
+                  onClick={() => onView(opportunity)}
+                >
+                  <TableCell className="font-medium">
+                    <div className="space-y-1">
+                      <div className="font-semibold text-neutral-900 dark:text-neutral-100">
+                        {opportunity.name}
                       </div>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-neutral-400" />
-                    <span>{opportunity.tierName || '—'}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {getStatusBadge(opportunity.stage)}
-                </TableCell>
-                <TableCell className="text-right font-medium">
-                  {opportunity.estimatedAmount ? formatCurrency(opportunity.estimatedAmount) : '—'}
-                </TableCell>
-                <TableCell className="text-center">
-                  <div className="flex items-center justify-center">
-                    <Badge variant="outline" className="text-xs">
-                      {opportunity.probability || 0}%
-                    </Badge>
-                  </div>
-                </TableCell>
-                <TableCell className="text-right font-medium text-Beenaya-600">
-                  {formatCurrency(getWeightedAmount(opportunity))}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-neutral-400" />
-                    <span>{formatDate(opportunity.expectedCloseDate)}</span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-neutral-500 text-sm">
-                  {formatDate(opportunity.createdAt)}
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem onClick={(e) => {
-                        e.stopPropagation();
-                        onView(opportunity);
-                      }}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Voir les détails
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={(e) => {
-                        e.stopPropagation();
-                        onEdit(opportunity);
-                      }}>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Modifier
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={(e) => {
-                        e.stopPropagation();
-                        onCreateQuote(opportunity);
-                      }}>
-                        <FileText className="h-4 w-4 mr-2" />
-                        Créer un devis
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      {opportunity.stage !== 'won' && (
-                        <DropdownMenuItem 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onMarkAsWon(opportunity);
-                          }}
-                          className="text-green-600"
-                        >
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Marquer comme gagnée
-                        </DropdownMenuItem>
+                      {opportunity.description && (
+                        <div className="text-sm text-neutral-500 dark:text-neutral-400 truncate max-w-[280px]">
+                          {opportunity.description}
+                        </div>
                       )}
-                      {opportunity.stage !== 'lost' && (
+                    </div>
+                  </TableCell>
+                  
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-neutral-400" />
+                      <span className="font-medium">{opportunity.tierName || '—'}</span>
+                    </div>
+                  </TableCell>
+                  
+                  <TableCell>
+                    {getStatusBadge(opportunity.stage)}
+                  </TableCell>
+                  
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-emerald-600" />
+                      <span className="font-semibold text-emerald-900 dark:text-emerald-100">
+                        {opportunity.estimatedAmount ? formatCurrency(opportunity.estimatedAmount) : '—'}
+                      </span>
+                    </div>
+                  </TableCell>
+                  
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-blue-600" />
+                      <div className="flex flex-col">
+                        <span className="font-medium">{opportunity.probability || 0}%</span>
+                        <div className="w-16 bg-neutral-200 rounded-full h-1.5 mt-1">
+                          <div 
+                            className={cn(
+                              "h-1.5 rounded-full transition-all duration-300",
+                              (opportunity.probability || 0) >= 75 ? "bg-green-500" :
+                              (opportunity.probability || 0) >= 50 ? "bg-blue-500" :
+                              (opportunity.probability || 0) >= 25 ? "bg-amber-500" :
+                              "bg-red-500"
+                            )}
+                            style={{ width: `${opportunity.probability || 0}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-neutral-400" />
+                      <span>{formatDate(opportunity.expectedCloseDate)}</span>
+                    </div>
+                  </TableCell>
+                  
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          onView(opportunity);
+                        }}>
+                          <Eye className="h-4 w-4 mr-2" />
+                          Voir les détails
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(opportunity);
+                        }}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Modifier
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={(e) => {
+                          e.stopPropagation();
+                          onCreateQuote(opportunity);
+                        }}>
+                          <FileText className="h-4 w-4 mr-2" />
+                          Créer un devis
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {opportunity.stage !== 'won' && (
+                          <DropdownMenuItem 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onMarkAsWon(opportunity);
+                            }}
+                            className="text-green-600"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Marquer comme gagnée
+                          </DropdownMenuItem>
+                        )}
+                        {opportunity.stage !== 'lost' && (
+                          <DropdownMenuItem 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onMarkAsLost(opportunity);
+                            }}
+                            className="text-red-600"
+                          >
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Marquer comme perdue
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           onClick={(e) => {
                             e.stopPropagation();
-                            onMarkAsLost(opportunity);
+                            onDelete(opportunity);
                           }}
                           className="text-red-600"
                         >
-                          <XCircle className="h-4 w-4 mr-2" />
-                          Marquer comme perdue
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Supprimer
                         </DropdownMenuItem>
-                      )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete(opportunity);
-                        }}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Supprimer
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
-      {/* Contrôles de pagination */}
+      {/* Contrôles de pagination modernisés */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-200 dark:border-neutral-700">
-          <div className="flex items-center text-sm text-neutral-500">
-            Affichage de {startIndex + 1} à {Math.min(endIndex, sortedOpportunities.length)} sur {sortedOpportunities.length} opportunités
+        <div className="flex items-center justify-between px-4 py-4 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg">
+          <div className="flex items-center text-sm text-neutral-600 dark:text-neutral-400">
+            <span className="font-medium">
+              Affichage de {startIndex + 1}-{Math.min(endIndex, sortedOpportunities.length)} sur {sortedOpportunities.length} opportunités
+            </span>
           </div>
           
           <div className="flex items-center gap-2">
@@ -424,7 +415,7 @@ export function OpportunityList({
               size="sm"
               onClick={goToPrevious}
               disabled={currentPage === 1}
-              className="h-8 w-8 p-0"
+              className="h-9 w-9 p-0 border-neutral-300 hover:bg-neutral-50 disabled:opacity-50"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -432,7 +423,6 @@ export function OpportunityList({
             <div className="flex items-center gap-1">
               {Array.from({ length: totalPages }, (_, i) => i + 1)
                 .filter((page) => {
-                  // Afficher la première page, la dernière page et les pages autour de la page courante
                   return (
                     page === 1 ||
                     page === totalPages ||
@@ -440,19 +430,23 @@ export function OpportunityList({
                   );
                 })
                 .map((page, index, array) => {
-                  // Ajouter des ellipses si nécessaire
                   const shouldShowEllipsis = index > 0 && page > array[index - 1] + 1;
                   
                   return (
                     <div key={page} className="flex items-center">
                       {shouldShowEllipsis && (
-                        <span className="px-2 py-1 text-sm text-neutral-500">...</span>
+                        <span className="px-2 py-1 text-sm text-neutral-400">...</span>
                       )}
                       <Button
                         variant={currentPage === page ? "default" : "outline"}
                         size="sm"
                         onClick={() => goToPage(page)}
-                        className="h-8 w-8 p-0"
+                        className={cn(
+                          "h-9 w-9 p-0 font-medium",
+                          currentPage === page 
+                            ? "bg-Beenaya-600 text-white hover:bg-Beenaya-700"
+                            : "border-neutral-300 hover:bg-neutral-50"
+                        )}
                       >
                         {page}
                       </Button>
@@ -466,7 +460,7 @@ export function OpportunityList({
               size="sm"
               onClick={goToNext}
               disabled={currentPage === totalPages}
-              className="h-8 w-8 p-0"
+              className="h-9 w-9 p-0 border-neutral-300 hover:bg-neutral-50 disabled:opacity-50"
             >
               <ChevronRight className="h-4 w-4" />
             </Button>

@@ -72,8 +72,8 @@ export function WorkLibraryStats({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div className="benaya-card text-center">
-        <div className="text-2xl font-bold text-benaya-900 dark:text-benaya-200">
+      <div className="Beenaya-card text-center">
+        <div className="text-2xl font-bold text-Beenaya-900 dark:text-Beenaya-200">
           {filteredItemsCount}
           {filteredItemsCount !== totalItems && (
             <span className="text-sm text-neutral-500 ml-1">
@@ -85,7 +85,7 @@ export function WorkLibraryStats({
           {filteredItemsCount !== totalItems ? "Éléments filtrés" : "Éléments total"}
         </div>
       </div>
-      <div className="benaya-card text-center">
+      <div className="Beenaya-card text-center">
         <div className="text-2xl font-bold text-green-600">
           {(() => {
             const totalValue = getTotalValue();
@@ -113,7 +113,7 @@ export function WorkLibraryStats({
           Valeur catalogue
         </div>
       </div>
-      <div className="benaya-card text-center">
+      <div className="Beenaya-card text-center">
         <div className="text-2xl font-bold text-amber-600">
           {getRecentlyUpdated()}
         </div>

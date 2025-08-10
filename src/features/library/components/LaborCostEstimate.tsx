@@ -12,7 +12,7 @@ export function LaborCostEstimate({ labor }: LaborCostEstimateProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Clock className="w-5 h-5 text-benaya-600" />
+          <Clock className="w-5 h-5 text-Beenaya-600" />
           Coût estimé
         </CardTitle>
       </CardHeader>

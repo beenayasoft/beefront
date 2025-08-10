@@ -1,10 +1,12 @@
 import { useParams } from "react-router-dom";
 import { useMaterialDetail } from "@/features/library/hooks/useMaterialDetail";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { MaterialDetailHeader } from "@/features/library/components/MaterialDetailHeader";
 import { MaterialGeneralInfo } from "@/features/library/components/MaterialGeneralInfo";
-import { MaterialSupplier } from "@/features/library/components/MaterialSupplier";
+import { SupplierDisplay } from "@/features/library/components/SupplierDisplay";
 import { MaterialSummary } from "@/features/library/components/MaterialSummary";
 import { LoadingState, ErrorState, ErrorAlert } from "@/features/library/components/WorkDetailStates";
+import { DeleteConfirmDialog } from "@/features/library/components/DeleteConfirmDialog";
 
 export default function MaterialDetail() {
   const { id } = useParams<{ id: string }>();
@@ -14,10 +16,18 @@ export default function MaterialDetail() {
     error,
     showEditDialog,
     setShowEditDialog,
+    showDeleteDialog,
+    setShowDeleteDialog,
+    isDeleting,
     handleEdit,
     handleDelete,
+    confirmDelete,
     navigate
   } = useMaterialDetail(id);
+
+  // 🏷️ Titre dynamique basé sur le nom du matériau
+  const pageTitle = material ? `${material.name}` : 'Détail matériau';
+  usePageTitle(pageTitle);
 
   if (loading) {
     return <LoadingState message="Chargement du matériau..." />;
@@ -49,12 +59,30 @@ export default function MaterialDetail() {
         </div>
 
         <div className="space-y-6">
-          <MaterialSupplier material={material} />
+          <SupplierDisplay 
+            material={material as any} 
+            showDetails={true}
+            showContactInfo={true}
+            showActions={true}
+            onViewInCRM={(supplierId) => {
+              // Navigation vers la fiche détails du tiers fournisseur dans le CRM
+              navigate(`/tiers/${supplierId}`);
+            }}
+          />
           <MaterialSummary material={material} />
         </div>
       </div>
 
       {error && <ErrorAlert error={error} />}
+
+      <DeleteConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={confirmDelete}
+        item={material ? { name: material.name } : null}
+        loading={isDeleting}
+        itemType="ce matériau"
+      />
     </div>
   );
 } 

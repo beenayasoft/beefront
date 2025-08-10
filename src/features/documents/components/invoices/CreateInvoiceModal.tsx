@@ -24,7 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createInvoice, CreateInvoiceRequest } from "../../api/invoices";
-import { tiersApi, TierData } from "@/features/crm/api/tiers";
+import { tiersApi, TierData } from "@/features/crm/api";
 import { Invoice } from "../../types/invoices.types";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";

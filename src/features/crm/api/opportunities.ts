@@ -35,6 +35,12 @@ const adaptOpportunityFromApi = (opportunityApi: any): Opportunity => {
     source: opportunityApi.source,
     description: opportunityApi.description,
     assignedTo: opportunityApi.assigned_to || opportunityApi.assignedTo,
+    assignedToName: opportunityApi.assigned_to_name || 
+                    opportunityApi.assignedToName || 
+                    opportunityApi.assigned_to_display || 
+                    opportunityApi.creator_name || 
+                    opportunityApi.created_by_name ||
+                    null,
     createdAt: opportunityApi.created_at || opportunityApi.createdAt,
     updatedAt: opportunityApi.updated_at || opportunityApi.updatedAt,
     closedAt: opportunityApi.closed_at || opportunityApi.closedAt,
@@ -49,54 +55,70 @@ const adaptOpportunityFromApi = (opportunityApi: any): Opportunity => {
 
 // Adapter les données du frontend vers le format backend
 const adaptOpportunityToApi = (opportunity: Partial<Opportunity>): any => {
+  // 🔧 CORRECTIF : Gérer les arrays qui arrivent parfois du formulaire
+  console.log('🔍 Debug adaptOpportunityToApi - données reçues:', opportunity);
+  
+  // Helper pour extraire une valeur d'un array si nécessaire
+  const extractValue = (value: any) => {
+    if (Array.isArray(value)) {
+      console.log('⚠️ Valeur en array détectée:', value, '-> extraction de:', value[0]);
+      return value[0];
+    }
+    return value;
+  };
+  
   // S'assurer que les valeurs numériques sont des nombres et non des chaînes
-  const estimatedAmount = typeof opportunity.estimatedAmount === 'string' 
-    ? parseFloat(opportunity.estimatedAmount) 
-    : opportunity.estimatedAmount || 1; // Le backend exige un montant > 0
+  const rawEstimatedAmount = extractValue(opportunity.estimatedAmount);
+  const estimatedAmount = typeof rawEstimatedAmount === 'string' 
+    ? parseFloat(rawEstimatedAmount) 
+    : rawEstimatedAmount || 1; // Le backend exige un montant > 0
   
   // S'assurer que la probabilité est un nombre
-  const probability = typeof opportunity.probability === 'string'
-    ? parseInt(opportunity.probability, 10)
-    : opportunity.probability || 0;
+  const rawProbability = extractValue(opportunity.probability);
+  const probability = typeof rawProbability === 'string'
+    ? parseInt(rawProbability, 10)
+    : rawProbability || 0;
   
   // Vérifier si assigned_to est un UUID valide ou "none"
+  const rawAssignedTo = extractValue(opportunity.assignedTo);
   let assignedTo = null;
-  if (opportunity.assignedTo && opportunity.assignedTo !== "" && opportunity.assignedTo !== "none") {
+  if (rawAssignedTo && rawAssignedTo !== "" && rawAssignedTo !== "none") {
     // Regex pour valider un UUID
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (uuidRegex.test(opportunity.assignedTo)) {
-      assignedTo = opportunity.assignedTo;
+    if (uuidRegex.test(rawAssignedTo)) {
+      assignedTo = rawAssignedTo;
     } else {
       console.warn('⚠️ assigned_to n\'est pas un UUID valide, il sera défini à null');
     }
   }
   
   // S'assurer que la date est au bon format
-  const expectedCloseDate = opportunity.expectedCloseDate || 
+  const rawExpectedCloseDate = extractValue(opportunity.expectedCloseDate);
+  const expectedCloseDate = rawExpectedCloseDate || 
     new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-  // Construire l'objet à envoyer au backend
+  // Construire l'objet à envoyer au backend (le serializer Django attend camelCase)
   const apiData = {
-    name: opportunity.name,
-    tier: opportunity.tierId || opportunity.tier, // Le backend attend 'tier', pas 'tierId'
-    stage: opportunity.stage,
-    estimated_amount: estimatedAmount,
+    name: extractValue(opportunity.name),
+    tierId: extractValue(opportunity.tierId || opportunity.tier), // Le serializer Django attend 'tierId'
+    stage: extractValue(opportunity.stage),
+    estimatedAmount: estimatedAmount, // Le serializer Django attend 'estimatedAmount'
     probability: probability,
-    expected_close_date: expectedCloseDate, // Assurer qu'il y a toujours une date
-    source: opportunity.source || 'website', // Valeur par défaut si non fournie
-    description: opportunity.description || '',
-    assigned_to: assignedTo, // Utiliser la valeur validée ou null
-    loss_reason: opportunity.lossReason || null,
-    loss_description: opportunity.lossDescription || '',
-    project_id: opportunity.projectId || null
+    expectedCloseDate: expectedCloseDate, // Le serializer Django attend 'expectedCloseDate'
+    source: extractValue(opportunity.source) || 'website', // Valeur par défaut si non fournie
+    description: extractValue(opportunity.description) || '',
+    assignedTo: assignedTo, // Le serializer Django attend 'assignedTo'
+    lossReason: extractValue(opportunity.lossReason) || null,
+    lossDescription: extractValue(opportunity.lossDescription) || '',
+    projectId: extractValue(opportunity.projectId) || null
   };
   
   // Filtrer les valeurs null/undefined pour éviter les erreurs de validation
   // MAIS garder les champs obligatoires même s'ils sont vides
   const cleanedData = Object.fromEntries(
     Object.entries(apiData).filter(([key, value]) => {
-      // Toujours garder les champs obligatoires
-      const requiredFields = ['name', 'tier', 'stage', 'estimated_amount', 'expected_close_date', 'source'];
+      // Toujours garder les champs obligatoires (noms en camelCase pour le serializer Django)
+      const requiredFields = ['name', 'tierId', 'stage', 'estimatedAmount', 'expectedCloseDate', 'source'];
       if (requiredFields.includes(key)) {
         return true;
       }
@@ -104,6 +126,7 @@ const adaptOpportunityToApi = (opportunity: Partial<Opportunity>): any => {
     })
   );
   
+  console.log('✅ Données finales envoyées à l\'API:', cleanedData);
   return cleanedData;
 };
 
@@ -115,9 +138,9 @@ export const opportunitiesApi = {
   getOpportunities: async (filters?: OpportunityFilters): Promise<Opportunity[]> => {
     try {
       // Log pour déboguer les appels API
-      console.log('📞 Appel API: GET /api/opportunities/ avec filtres:', filters);
+      console.log('📞 Appel API: GET /opportunities/ avec filtres:', filters);
       
-      const response = await apiClient.get('/api/opportunities/', { params: filters });
+      const response = await apiClient.get('/opportunities/', { params: filters });
       console.log('📊 Réponse API opportunités:', {
         total: response.data.count || 'N/A',
         returned: response.data.results?.length || response.data.result?.length || response.data.length || 0,
@@ -135,8 +158,8 @@ export const opportunitiesApi = {
   // Récupérer une opportunité par ID
   getOpportunity: async (id: string): Promise<Opportunity> => {
     try {
-      console.log(`📞 Appel API: GET /api/opportunities/${id}/`);
-      const response = await apiClient.get(`/api/opportunities/${id}/`);
+      console.log(`📞 Appel API: GET /opportunities/${id}/`);
+      const response = await apiClient.get(`/opportunities/${id}/`);
       return adaptOpportunityFromApi(response.data);
     } catch (error) {
       console.error(`Error fetching opportunity ${id}:`, error);
@@ -150,7 +173,7 @@ export const opportunitiesApi = {
       const apiData = adaptOpportunityToApi(data);
       
       // Logs détaillés pour débogage
-      console.log('📞 Appel API: POST /api/opportunities/ avec données:', data);
+      console.log('📞 Appel API: POST /opportunities/ avec données:', data);
       console.log('📦 Données adaptées pour API:', apiData);
       console.log('🔍 Vérification des champs obligatoires:');
       console.log(' - name:', apiData.name ? '✅' : '❌', apiData.name);
@@ -160,7 +183,14 @@ export const opportunitiesApi = {
       console.log(' - expected_close_date:', apiData.expected_close_date ? '✅' : '❌', apiData.expected_close_date);
       console.log(' - source:', apiData.source ? '✅' : '❌', apiData.source);
       
-      const response = await apiClient.post('/api/opportunities/', apiData);
+      console.log('🔍 DERNIÈRE VÉRIFICATION - Données exactes envoyées à apiClient.post:');
+      console.log('JSON.stringify(apiData):', JSON.stringify(apiData, null, 2));
+      console.log('Type check apiData:', typeof apiData, Array.isArray(apiData) ? 'ARRAY!' : 'OBJECT');
+      Object.entries(apiData).forEach(([key, value]) => {
+        console.log(`   apiData.${key}:`, typeof value, Array.isArray(value) ? 'ARRAY!' : '', value);
+      });
+      
+      const response = await apiClient.post('/opportunities/', apiData);
       return adaptOpportunityFromApi(response.data);
     } catch (error) {
       console.error('Error creating opportunity:', error);
@@ -185,9 +215,9 @@ export const opportunitiesApi = {
   // Mettre à jour une opportunité existante
   updateOpportunity: async (id: string, data: Partial<Opportunity>): Promise<Opportunity> => {
     try {
-      console.log(`📞 Appel API: PATCH /api/opportunities/${id}/ avec données:`, data);
+      console.log(`📞 Appel API: PATCH /opportunities/${id}/ avec données:`, data);
       const apiData = adaptOpportunityToApi(data);
-      const response = await apiClient.patch(`/api/opportunities/${id}/`, apiData);
+      const response = await apiClient.patch(`/opportunities/${id}/`, apiData);
       return adaptOpportunityFromApi(response.data);
     } catch (error) {
       console.error(`Error updating opportunity ${id}:`, error);
@@ -198,8 +228,8 @@ export const opportunitiesApi = {
   // Supprimer une opportunité
   deleteOpportunity: async (id: string): Promise<void> => {
     try {
-      console.log(`📞 Appel API: DELETE /api/opportunities/${id}/`);
-      await apiClient.delete(`/api/opportunities/${id}/`);
+      console.log(`📞 Appel API: DELETE /opportunities/${id}/`);
+      await apiClient.delete(`/opportunities/${id}/`);
     } catch (error) {
       console.error(`Error deleting opportunity ${id}:`, error);
       throw error;
@@ -209,11 +239,23 @@ export const opportunitiesApi = {
   // Mettre à jour le statut d'une opportunité
   updateOpportunityStage: async (id: string, stage: string): Promise<Opportunity> => {
     try {
-      console.log(`📞 Appel API: PATCH /api/opportunities/${id}/update_stage/ avec stage:`, stage);
-      const response = await apiClient.patch(`/api/opportunities/${id}/update_stage/`, { stage });
+      console.log(`📞 Appel API: PATCH /opportunities/${id}/update_stage/ avec stage:`, stage);
+      const response = await apiClient.patch(`/opportunities/${id}/update_stage/`, { stage });
       return adaptOpportunityFromApi(response.data);
-    } catch (error) {
-      console.error(`Error updating opportunity ${id} stage:`, error);
+    } catch (error: any) {
+      console.log(`🔍 Erreur interceptée dans updateOpportunityStage:`, {
+        status: error?.response?.status,
+        code: error?.response?.data?.code,
+        detail: error?.response?.data?.detail
+      });
+      
+      // Si l'erreur indique qu'il faut créer un devis pour passer en négociation
+      if (error?.response?.status === 400 && error?.response?.data?.code === 'QUOTE_REQUIRED_FOR_NEGOTIATION') {
+        console.log(`💡 Suggestion: créer un devis avant de passer en négociation pour l'opportunité ${id}`);
+        // On laisse l'erreur remonter avec toutes les informations pour que le frontend puisse l'afficher correctement
+      }
+      
+      console.error(`❌ Erreur lors de la mise à jour du stage pour l'opportunité ${id}:`, error);
       throw error;
     }
   },
@@ -221,11 +263,40 @@ export const opportunitiesApi = {
   // Marquer une opportunité comme gagnée
   markAsWon: async (id: string, data?: { project_id?: string }): Promise<Opportunity> => {
     try {
-      console.log(`📞 Appel API: POST /api/opportunities/${id}/mark_won/ avec données:`, data || {});
-      const response = await apiClient.post(`/api/opportunities/${id}/mark_won/`, data || {});
+      console.log(`📞 Appel API: POST /opportunities/${id}/mark_won/ avec données:`, data || {});
+      const response = await apiClient.post(`/opportunities/${id}/mark_won/`, data || {});
       return adaptOpportunityFromApi(response.data.opportunity || response.data);
-    } catch (error) {
-      console.error(`Error marking opportunity ${id} as won:`, error);
+    } catch (error: any) {
+      console.log(`🔍 Erreur interceptée dans markAsWon:`, {
+        status: error?.response?.status,
+        code: error?.response?.data?.code,
+        detail: error?.response?.data?.detail
+      });
+      
+      // Si l'erreur indique qu'il faut passer par négociation, on fait le workflow automatique
+      if (error?.response?.status === 400 && error?.response?.data?.code === 'NEGOTIATION_REQUIRED_FOR_WON') {
+        console.log(`🔄 DÉMARRAGE du workflow automatique: passage par négociation puis marquage gagnée pour ${id}`);
+        try {
+          // Étape 1: Forcer le passage en négociation
+          console.log(`📞 Étape 1: PATCH /opportunities/${id}/update_stage/ avec force:true`);
+          await apiClient.patch(`/opportunities/${id}/update_stage/`, { 
+            stage: 'negotiation', 
+            force: true 
+          });
+          console.log(`✅ Étape 1 réussie: opportunité ${id} passée en négociation`);
+          
+          // Étape 2: Marquer comme gagnée
+          console.log(`📞 Étape 2: POST /opportunities/${id}/mark_won/`);
+          const wonResponse = await apiClient.post(`/opportunities/${id}/mark_won/`, data || {});
+          console.log(`✅ Workflow automatique réussi pour ${id}!`);
+          return adaptOpportunityFromApi(wonResponse.data.opportunity || wonResponse.data);
+        } catch (workflowError) {
+          console.error(`❌ Erreur dans le workflow automatique pour ${id}:`, workflowError);
+          throw workflowError;
+        }
+      }
+      
+      console.error(`❌ Erreur non gérée par le workflow pour ${id}:`, error);
       throw error;
     }
   },
@@ -233,8 +304,8 @@ export const opportunitiesApi = {
   // Marquer une opportunité comme perdue
   markAsLost: async (id: string, data: { loss_reason: string; loss_description?: string }): Promise<Opportunity> => {
     try {
-      console.log(`📞 Appel API: POST /api/opportunities/${id}/mark_lost/ avec données:`, data);
-      const response = await apiClient.post(`/api/opportunities/${id}/mark_lost/`, data);
+      console.log(`📞 Appel API: POST /opportunities/${id}/mark_lost/ avec données:`, data);
+      const response = await apiClient.post(`/opportunities/${id}/mark_lost/`, data);
       return adaptOpportunityFromApi(response.data.opportunity || response.data);
     } catch (error) {
       console.error(`Error marking opportunity ${id} as lost:`, error);
@@ -245,8 +316,8 @@ export const opportunitiesApi = {
   // Obtenir les données Kanban
   getKanbanData: async (): Promise<any> => {
     try {
-      console.log('📞 Appel API: GET /api/opportunities/kanban/');
-      const response = await apiClient.get('/api/opportunities/kanban/');
+      console.log('📞 Appel API: GET /opportunities/kanban/');
+      const response = await apiClient.get('/opportunities/kanban/');
       return response.data;
     } catch (error) {
       console.error('Error fetching kanban data:', error);
@@ -257,8 +328,8 @@ export const opportunitiesApi = {
   // Obtenir les statistiques des opportunités
   getOpportunityStats: async (): Promise<any> => {
     try {
-      console.log('📞 Appel API: GET /api/opportunities/stats/');
-      const response = await apiClient.get('/api/opportunities/stats/');
+      console.log('📞 Appel API: GET /opportunities/stats/');
+      const response = await apiClient.get('/opportunities/stats/');
       return response.data;
     } catch (error) {
       console.error('Error fetching opportunity stats:', error);

@@ -5,4 +5,6 @@ export { NumberingFormatForm } from './NumberingFormatForm';
 export { NumberingFormatFormAdvanced } from './NumberingFormatFormAdvanced';
 export { PaymentTermsManagement } from './PaymentTermsManagement';
 export { ServiceConnectionTest } from './ServiceConnectionTest';
-export { VatRatesManagement } from './VatRatesManagement'; 
+export { VatRatesManagement } from './VatRatesManagement';
+export { TenantSetupWizard } from './TenantSetupWizard';
+export { TenantSetupProgress } from './TenantSetupProgress'; 

@@ -1,9 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Suspense, lazy, ReactNode } from "react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { AuthProvider, useAuth } from "@/features/auth/hooks/useAuth";
 import { PageLoader } from "@/components/ui/PageLoader";
+import { crmQueryClient } from "@/features/crm/config/queryClient";
+import { PageTitleProvider } from "@/components/common/PageTitleProvider";
 
 // Import statique uniquement pour Auth (nécessaire au démarrage)
 import Auth from "@/features/auth/pages/Auth";
@@ -14,7 +17,7 @@ const Agenda = lazy(() => import("@/pages/Agenda"));
 const Chantiers = lazy(() => import("@/pages/Chantiers"));
 const Interventions = lazy(() => import("@/pages/Interventions"));
 const Stock = lazy(() => import("@/pages/Stock"));
-const Settings = lazy(() => import("@/pages/Settings"));
+const Settings = lazy(() => import("@/features/settings/pages/Settings"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 // ✅ FEATURES - Documents (optimisé)
@@ -30,6 +33,7 @@ const InvoicePreview = lazy(() => import("@/features/documents/pages/InvoicePrev
 
 // ✅ FEATURES - CRM (optimisé)
 const Tiers = lazy(() => import("@/features/crm/pages/Tiers"));
+const TiersWithReactQuery = lazy(() => import("@/features/crm/pages/TiersWithReactQuery"));
 const TierDetail = lazy(() => import("@/features/crm/pages/TierDetail"));
 const Opportunities = lazy(() => import("@/features/crm/pages/Opportunities"));
 const OpportunityDetail = lazy(() => import("@/features/crm/pages/OpportunityDetail"));
@@ -84,8 +88,10 @@ const AuthRoute = ({ children }: { children: ReactNode }) => {
 export default function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <AuthProvider>
-        <BrowserRouter>
+      <QueryClientProvider client={crmQueryClient}>
+        <AuthProvider>
+          <BrowserRouter>
+            <PageTitleProvider />
           <Routes>
             {/* Auth routes - rediriger si déjà connecté */}
             <Route path="/auth" element={
@@ -237,8 +243,9 @@ export default function App() {
               </Suspense>
             } />
           </Routes>
-        </BrowserRouter>
-      </AuthProvider>
+          </BrowserRouter>
+        </AuthProvider>
+      </QueryClientProvider>
     </ThemeProvider>
   );
 }

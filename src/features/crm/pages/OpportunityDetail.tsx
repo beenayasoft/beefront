@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import {
   ArrowLeft,
   Edit,
@@ -15,10 +16,12 @@ import {
   AlertCircle,
   Plus,
   Loader2,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -26,10 +29,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { OpportunityForm } from "@/features/crm/components/opportunities/OpportunityForm";
 import { OpportunityLossForm } from "@/features/crm/components/opportunities/OpportunityLossForm";
 import { Opportunity, OpportunityStatus, LossReason } from "@/features/crm/types/opportunities.types";
-import { opportunityService } from "@/features/crm/services/opportunityService";
+import { opportunitiesApi } from "@/features/crm/api/opportunities";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { syncService, useSyncListener } from "@/lib/services/syncService";
@@ -37,11 +50,18 @@ import { syncService, useSyncListener } from "@/lib/services/syncService";
 export default function OpportunityDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [lossFormOpen, setLossFormOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // 🏷️ Titre dynamique basé sur le nom de l'opportunité
+  const pageTitle = opportunity ? `${opportunity.name}` : 'Détail opportunité';
+  usePageTitle(pageTitle);
 
   // ✅ NOUVELLE FONCTION : Rechargement de l'opportunité
   const reloadOpportunity = async () => {
@@ -49,14 +69,14 @@ export default function OpportunityDetail() {
 
     try {
       console.log(`🔄 Rechargement de l'opportunité ${id}...`);
-      const opportunityData = await opportunityService.getOpportunity(id);
+      const opportunityData = await opportunitiesApi.getOpportunity(id);
       
       if (opportunityData) {
         setOpportunity(opportunityData);
         console.log(`✅ Opportunité ${id} rechargée avec succès:`, opportunityData);
       }
-    } catch (err) {
-      console.error(`❌ Erreur lors du rechargement de l'opportunité ${id}:`, err);
+    } catch (error) {
+      console.error(`❌ Erreur lors du rechargement:`, error);
     }
   };
 
@@ -134,91 +154,33 @@ export default function OpportunityDetail() {
         setError(null);
         
         console.log(`🔍 Chargement de l'opportunité ${id}...`);
-        const opportunityData = await opportunityService.getOpportunityById(id);
+        const opportunityData = await opportunitiesApi.getOpportunity(id);
         
         if (opportunityData) {
           setOpportunity(opportunityData);
           console.log(`✅ Opportunité ${id} chargée avec succès:`, opportunityData);
         } else {
-          setError("Opportunité non trouvée");
+          throw new Error("Opportunité non trouvée");
         }
-      } catch (err) {
-        console.error(`❌ Erreur lors du chargement de l'opportunité ${id}:`, err);
-        setError(err instanceof Error ? err.message : "Erreur lors du chargement de l'opportunité");
+      } catch (error: any) {
+        console.error(`❌ Erreur lors du chargement de l'opportunité ${id}:`, error);
         
-        toast({
-          title: "Erreur de chargement",
-          description: "Impossible de charger les détails de l'opportunité. Veuillez réessayer.",
-          variant: "destructive",
-        });
+        if (error?.response?.status === 404) {
+          setError("Opportunité non trouvée");
+        } else if (error?.response?.status === 401) {
+          setError("Non autorisé à accéder à cette opportunité");
+        } else if (error?.response?.status === 403) {
+          setError("Accès refusé à cette opportunité");
+        } else {
+          setError(error instanceof Error ? error.message : "Erreur lors du chargement");
+        }
       } finally {
         setLoading(false);
       }
     };
 
     loadOpportunity();
-  }, [id, toast]);
-
-  // Formater une date
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString('fr-FR');
-  };
-
-  // Obtenir le badge de statut
-  const getStageBadge = (stage: OpportunityStatus) => {
-    switch (stage) {
-      case 'new':
-        return <Badge className="Beenaya-badge-primary">Nouvelle</Badge>;
-      case 'needs_analysis':
-        return <Badge className="Beenaya-badge-primary">Analyse des besoins</Badge>;
-      case 'negotiation':
-        return <Badge className="Beenaya-badge-warning">Négociation</Badge>;
-      case 'won':
-        return <Badge className="Beenaya-badge-success">Gagnée</Badge>;
-      case 'lost':
-        return <Badge className="Beenaya-badge-error">Perdue</Badge>;
-      default:
-        return <Badge className="Beenaya-badge-neutral">—</Badge>;
-    }
-  };
-
-  // Obtenir la couleur de probabilité
-  const getProbabilityColor = (probability: number) => {
-    if (probability >= 75) return "text-green-600 dark:text-green-400";
-    if (probability >= 50) return "text-blue-600 dark:text-blue-400";
-    if (probability >= 25) return "text-amber-600 dark:text-amber-400";
-    return "text-red-600 dark:text-red-400";
-  };
-
-  // Obtenir le libellé de la source
-  const getSourceLabel = (source: string) => {
-    switch (source) {
-      case 'website': return "Site web";
-      case 'referral': return "Recommandation";
-      case 'cold_call': return "Démarchage téléphonique";
-      case 'exhibition': return "Salon/Exposition";
-      case 'partner': return "Partenaire";
-      case 'social_media': return "Réseaux sociaux";
-      case 'other': return "Autre";
-      default: return source;
-    }
-  };
-
-  // Obtenir le libellé de la raison de perte
-  const getLossReasonLabel = (reason?: string) => {
-    if (!reason) return "";
-    switch (reason) {
-      case 'price': return "Prix trop élevé";
-      case 'competitor': return "Concurrent choisi";
-      case 'timing': return "Mauvais timing";
-      case 'no_budget': return "Pas de budget";
-      case 'no_need': return "Pas de besoin réel";
-      case 'no_decision': return "Pas de décision prise";
-      case 'other': return "Autre";
-      default: return reason;
-    }
-  };
+  }, [id]);
 
   // Gérer l'édition de l'opportunité
   const handleEdit = () => {
@@ -226,29 +188,36 @@ export default function OpportunityDetail() {
   };
 
   // Gérer la suppression de l'opportunité
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!opportunity) return;
+    setDeleteDialogOpen(true);
+  };
+
+  // Confirmer la suppression de l'opportunité
+  const confirmDelete = async () => {
+    if (!opportunity || deleteLoading) return;
     
-    if (confirm(`Êtes-vous sûr de vouloir supprimer l'opportunité "${opportunity.name}" ?`)) {
-      try {
-        console.log(`🗑️ Suppression de l'opportunité ${opportunity.id}...`);
-        const success = await opportunityService.deleteOpportunity(opportunity.id);
-        
-        if (success) {
-          toast({
-            title: "Opportunité supprimée",
-            description: "L'opportunité a été supprimée avec succès",
-          });
-          navigate("/opportunities");
-        }
-      } catch (error) {
-        console.error(`❌ Erreur lors de la suppression de l'opportunité ${opportunity.id}:`, error);
-        toast({
-          title: "Erreur de suppression",
-          description: error instanceof Error ? error.message : "Impossible de supprimer l'opportunité",
-          variant: "destructive",
-        });
-      }
+    try {
+      setDeleteLoading(true);
+      console.log(`🗑️ Suppression de l'opportunité ${opportunity.id}...`);
+      await opportunitiesApi.deleteOpportunity(opportunity.id);
+      
+      toast({
+        title: "Opportunité supprimée",
+        description: "L'opportunité a été supprimée avec succès",
+      });
+      console.log(`✅ Opportunité ${opportunity.id} supprimée`);
+      setDeleteDialogOpen(false);
+      navigate("/opportunities");
+    } catch (error) {
+      console.error(`❌ Erreur lors de la suppression de l'opportunité ${opportunity.id}:`, error);
+      toast({
+        title: "Erreur de suppression",
+        description: error instanceof Error ? error.message : "Impossible de supprimer l'opportunité",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -257,119 +226,21 @@ export default function OpportunityDetail() {
     if (!opportunity) return;
     
     try {
-      console.log(`📄 Création d'un devis à partir de l'opportunité ${opportunity.id}...`);
-      const result = await opportunityService.createQuote(opportunity.id, {
-        title: `Devis pour ${opportunity.name}`,
-        description: opportunity.description || "",
-      });
+      console.log(`📄 Redirection vers création de devis pour l'opportunité ${opportunity.id}...`);
+      // TODO: Implémenter createQuote dans opportunitiesApi quand le endpoint sera disponible
+      navigate(`/quotes/new?opportunityId=${opportunity.id}&tierId=${opportunity.tierId}`);
       
-      if (result && result.quote_id) {
-        toast({
-          title: "Devis créé",
-          description: "Un nouveau devis a été créé à partir de cette opportunité",
-        });
-        console.log(`✅ Devis ${result.quote_id} créé avec succès`);
-        
-        // ✅ SYNCHRONISATION AUTOMATIQUE : Notifier la création du devis
-        console.log(`🔄 Notification de création de devis pour l'opportunité ${opportunity.id}...`);
-        syncService.notifyQuoteCreated(result.quote_id, opportunity.id, result.quote);
-        
-        // Rediriger vers l'édition du devis (la synchronisation se fera automatiquement)
-        navigate(`/devis/edit/${result.quote_id}`);
-      } else {
-        throw new Error("Réponse invalide du serveur");
-      }
-    } catch (error) {
-      console.error(`❌ Erreur lors de la création du devis:`, error);
-      
-      // 🔍 LOG DE DEBUG - Voir le contenu exact de l'erreur
-      console.log('🔍 DEBUG - error?.response?.status:', error?.response?.status);
-      console.log('🔍 DEBUG - error?.response?.data:', error?.response?.data);
-      console.log('🔍 DEBUG - error complet:', JSON.stringify(error, null, 2));
-      
-      // Gérer les erreurs de validation métier
-      if (error?.response?.status === 400 && error?.response?.data) {
-        const errorData = error.response.data;
-        console.log('🔍 DEBUG - Structure complète errorData:', errorData);
-        
-        // 🔍 DEBUG SUPPLÉMENTAIRE - Voir le contenu du Array(1)
-        if (errorData.description && Array.isArray(errorData.description)) {
-          console.log('🔍 DEBUG - Contenu description array:', errorData.description);
-          console.log('🔍 DEBUG - Premier élément:', errorData.description[0]);
-        }
-        
-        // Gérer les erreurs de serializer Django (plusieurs formats possibles)
-        let detailMessage, reasonMessage, suggestionMessage, allowedStages;
-        
-        if (errorData.non_field_errors && Array.isArray(errorData.non_field_errors)) {
-          // Format d'erreur serializer Django global
-          const firstError = errorData.non_field_errors[0];
-          if (typeof firstError === 'object') {
-            detailMessage = firstError.detail || "Impossible de créer le devis";
-            reasonMessage = firstError.reason || "";
-            suggestionMessage = firstError.suggestion || "";
-            allowedStages = firstError.allowed_stages || [];
-          } else {
-            detailMessage = firstError || "Impossible de créer le devis";
-            reasonMessage = "";
-            suggestionMessage = "";
-            allowedStages = [];
-          }
-        } else if (errorData.description && Array.isArray(errorData.description)) {
-          // Format d'erreur serializer Django sur champ description
-          const firstError = errorData.description[0];
-          if (typeof firstError === 'object') {
-            detailMessage = firstError.detail || "Impossible de créer le devis";
-            reasonMessage = firstError.reason || "";
-            suggestionMessage = firstError.suggestion || "";
-            allowedStages = firstError.allowed_stages || [];
-          } else {
-            detailMessage = firstError || "Impossible de créer le devis";
-            reasonMessage = "";
-            suggestionMessage = "";
-            allowedStages = [];
-          }
-        } else {
-          // Format d'erreur view Django direct
-          detailMessage = errorData.detail || "Impossible de créer le devis";
-          reasonMessage = errorData.reason || "";
-          suggestionMessage = errorData.suggestion || "";
-          allowedStages = errorData.allowed_stages || [];
-        }
-        
-        toast({
-          title: "🚫 Création de devis impossible",
-          description: (
-            <div className="space-y-3">
-              <p className="font-semibold text-sm">{detailMessage}</p>
-              {reasonMessage && (
-                <p className="text-sm">
-                  <span className="font-medium">Raison :</span> {reasonMessage}
-                </p>
-              )}
-              {suggestionMessage && (
-                <p className="text-sm text-blue-600">
-                  <span className="font-medium">💡 Suggestion :</span> {suggestionMessage}
-                </p>
-              )}
-              {allowedStages.length > 0 && (
-                <div className="text-xs bg-blue-50 p-2 rounded">
-                  <span className="font-medium">Statuts autorisés :</span> {allowedStages.join(', ')}
-                </div>
-              )}
-            </div>
-          ),
-          variant: "destructive",
-          duration: 10000, // Plus long pour laisser le temps de lire
-        });
-      } else {
-        // Erreur générique
       toast({
-        title: "Erreur de création",
-        description: error instanceof Error ? error.message : "Impossible de créer le devis",
+        title: "Redirection",
+        description: "Redirection vers la création de devis",
+      });
+    } catch (error) {
+      console.error(`❌ Erreur lors de la redirection:`, error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'accéder à la création de devis",
         variant: "destructive",
       });
-      }
     }
   };
 
@@ -379,7 +250,7 @@ export default function OpportunityDetail() {
     
     try {
       console.log(`🎉 Marquage de l'opportunité ${opportunity.id} comme gagnée...`);
-      const updatedOpportunity = await opportunityService.markAsWon(opportunity.id);
+      const updatedOpportunity = await opportunitiesApi.markAsWon(opportunity.id);
       
       if (updatedOpportunity) {
         setOpportunity(updatedOpportunity);
@@ -410,7 +281,7 @@ export default function OpportunityDetail() {
     
     try {
       console.log(`❌ Marquage de l'opportunité ${opportunity.id} comme perdue...`);
-      const updatedOpportunity = await opportunityService.markAsLost(opportunity.id, {
+      const updatedOpportunity = await opportunitiesApi.markAsLost(opportunity.id, {
         loss_reason: data.lossReason,
         loss_description: data.lossDescription,
       });
@@ -440,25 +311,51 @@ export default function OpportunityDetail() {
     
     try {
       console.log(`📝 Mise à jour de l'opportunité ${opportunity.id}...`);
-      const updatedOpportunity = await opportunityService.updateOpportunity(opportunity.id, formData);
+      const updatedOpportunity = await opportunitiesApi.updateOpportunity(opportunity.id, formData);
       
       if (updatedOpportunity) {
         setOpportunity(updatedOpportunity);
         setFormDialogOpen(false);
         toast({
           title: "Opportunité mise à jour",
-          description: "Les informations de l'opportunité ont été mises à jour",
+          description: "Les modifications ont été enregistrées",
         });
-        console.log(`✅ Opportunité ${opportunity.id} mise à jour avec succès`);
+        console.log(`✅ Opportunité ${opportunity.id} mise à jour`);
       }
     } catch (error) {
-      console.error(`❌ Erreur lors de la mise à jour de l'opportunité:`, error);
+      console.error(`❌ Erreur lors de la mise à jour:`, error);
       toast({
         title: "Erreur de mise à jour",
         description: error instanceof Error ? error.message : "Impossible de mettre à jour l'opportunité",
         variant: "destructive",
       });
     }
+  };
+
+  // Obtenir le badge de statut selon le style Beenaya
+  const getStageBadge = (stage: OpportunityStatus) => {
+    switch (stage) {
+      case 'new':
+        return <Badge variant="secondary" className="bg-blue-100 border border-blue-300 text-blue-800 font-semibold">Nouvelle</Badge>;
+      case 'needs_analysis':
+        return <Badge variant="secondary" className="bg-purple-100 border border-purple-300 text-purple-800 font-semibold">Analyse</Badge>;
+      case 'negotiation':
+        return <Badge variant="secondary" className="bg-amber-100 border border-amber-300 text-amber-800 font-semibold">Négociation</Badge>;
+      case 'won':
+        return <Badge variant="secondary" className="bg-green-100 border border-green-300 text-green-800 font-semibold">Gagnée</Badge>;
+      case 'lost':
+        return <Badge variant="secondary" className="bg-red-100 border border-red-300 text-red-800 font-semibold">Perdue</Badge>;
+      default:
+        return <Badge variant="secondary" className="bg-neutral-100 border border-neutral-300 text-neutral-800 font-semibold">—</Badge>;
+    }
+  };
+
+  // Formater la date
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Date invalide';
+    return date.toLocaleDateString('fr-FR');
   };
 
   if (loading) {
@@ -472,449 +369,427 @@ export default function OpportunityDetail() {
     );
   }
 
-  if (error || !opportunity) {
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="Beenaya-card p-8 text-center text-red-600">
+          <AlertCircle className="w-8 h-8 mx-auto mb-4" />
+          <p className="font-medium">Erreur de chargement</p>
+          <p className="text-sm mt-2">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!opportunity) {
     return (
       <div className="p-6">
         <div className="Beenaya-card p-8 text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-4">{error || "Opportunité non trouvée"}</h2>
-          <Button onClick={() => navigate("/opportunities")}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Retour à la liste
-          </Button>
+          <p>Aucune opportunité trouvée</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="Beenaya-card Beenaya-gradient text-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="bg-white/10 hover:bg-white/20"
-              onClick={() => navigate("/opportunities")}
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold">
-                  {opportunity.name}
-                </h1>
-                {getStageBadge(opportunity.stage)}
-              </div>
-              <p className="text-Beenaya-100 mt-1">
-                Client: {opportunity.tierName}
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              className="bg-white/10 hover:bg-white/20 border-white/20 text-white"
-              onClick={handleEdit}
-            >
-              <Edit className="w-4 h-4 mr-2" />
-              Modifier
-            </Button>
-            
-            {opportunity.stage !== 'won' && opportunity.stage !== 'lost' && (
+    <>
+      <div className="p-6 space-y-6">
+        {/* Header style Beenaya */}
+        <div className="Beenaya-card Beenaya-gradient text-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
               <Button 
-                className="bg-white text-Beenaya-900 hover:bg-white/90"
-                onClick={handleCreateQuote}
+                variant="ghost" 
+                size="icon" 
+                className="bg-white/20 border border-white/30 hover:bg-white/30"
+                onClick={() => navigate("/opportunities")}
               >
-                <FileText className="w-4 h-4 mr-2" />
-                Créer un devis
+                <ArrowLeft className="w-5 h-5" />
               </Button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Details */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Basic Information */}
-          <div className="Beenaya-card">
-            <h3 className="font-medium text-lg mb-4">Informations générales</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <div className="text-sm text-neutral-600 dark:text-neutral-400">Nom</div>
-                  <div className="font-medium text-lg">{opportunity.name}</div>
-                </div>
-                
-                <div>
-                  <div className="text-sm text-neutral-600 dark:text-neutral-400">Client/Prospect</div>
-                  <div className="font-medium">{opportunity.tierName}</div>
-                </div>
-                
-                <div>
-                  <div className="text-sm text-neutral-600 dark:text-neutral-400">Responsable</div>
-                  <div className="font-medium">{opportunity.assignedTo || "Non assigné"}</div>
-                </div>
-              </div>
               
-              <div className="space-y-4">
-                <div>
-                  <div className="text-sm text-neutral-600 dark:text-neutral-400">Statut</div>
-                  <div className="font-medium">{getStageBadge(opportunity.stage)}</div>
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/20 border border-white/30 rounded-lg">
+                  <FileText className="w-8 h-8" />
                 </div>
-                
                 <div>
-                  <div className="text-sm text-neutral-600 dark:text-neutral-400">Source</div>
-                  <div className="font-medium">{getSourceLabel(opportunity.source)}</div>
-                </div>
-                
-                <div>
-                  <div className="text-sm text-neutral-600 dark:text-neutral-400">Date de création</div>
-                  <div className="font-medium">{formatDate(opportunity.createdAt)}</div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold">{opportunity.name}</h1>
+                    <Badge variant="secondary" className="bg-white/20 border border-white/30 text-white">
+                      Opportunité
+                    </Badge>
+                    {getStageBadge(opportunity.stage)}
+                  </div>
+                  <p className="text-white/80 mt-1">
+                    {opportunity.tierName || 'Client non défini'}
+                  </p>
                 </div>
               </div>
             </div>
             
-            {opportunity.description && (
-              <div className="mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-700">
-                <div className="text-sm text-neutral-600 dark:text-neutral-400 mb-2">Description</div>
-                <p className="whitespace-pre-line">{opportunity.description}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Financial Information */}
-          <div className="Beenaya-card">
-            <h3 className="font-medium text-lg mb-4">Informations financières</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <div className="text-sm text-neutral-600 dark:text-neutral-400">Montant estimé</div>
-                <div className="text-2xl font-bold text-Beenaya-900 dark:text-Beenaya-200">
-                  {formatCurrency(opportunity.estimatedAmount)} MAD
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="text-sm text-neutral-600 dark:text-neutral-400">Probabilité</div>
-                <div className={`text-2xl font-bold ${getProbabilityColor(opportunity.probability)}`}>
-                  {opportunity.probability}%
-                </div>
-                <div className="w-full h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full ${
-                      opportunity.probability >= 75 ? "bg-green-500" :
-                      opportunity.probability >= 50 ? "bg-blue-500" :
-                      opportunity.probability >= 25 ? "bg-amber-500" :
-                      "bg-red-500"
-                    }`}
-                    style={{ width: `${opportunity.probability}%` }}
-                  ></div>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <div className="text-sm text-neutral-600 dark:text-neutral-400">Montant pondéré</div>
-                <div className="text-2xl font-bold text-Beenaya-900 dark:text-Beenaya-200">
-                  {formatCurrency(opportunity.estimatedAmount * opportunity.probability / 100)} MAD
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-700">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <div className="text-sm text-neutral-600 dark:text-neutral-400">Date de clôture prévue</div>
-                  <div className="font-medium">{formatDate(opportunity.expectedCloseDate)}</div>
-                </div>
-                
-                {opportunity.closedAt && (
-                  <div>
-                    <div className="text-sm text-neutral-600 dark:text-neutral-400">Date de clôture effective</div>
-                    <div className="font-medium">{formatDate(opportunity.closedAt)}</div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Loss Information (if applicable) */}
-          {opportunity.stage === 'lost' && opportunity.lossReason && (
-            <div className="Beenaya-card border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
-              <h3 className="font-medium text-lg mb-4 text-red-800 dark:text-red-200">Informations sur la perte</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <div className="text-sm text-red-700 dark:text-red-300">Raison de la perte</div>
-                  <div className="font-medium text-red-800 dark:text-red-200">
-                    {getLossReasonLabel(opportunity.lossReason)}
-                  </div>
-                </div>
-                
-                {opportunity.lossDescription && (
-                  <div>
-                    <div className="text-sm text-red-700 dark:text-red-300">Description</div>
-                    <p className="text-red-800 dark:text-red-200 whitespace-pre-line">
-                      {opportunity.lossDescription}
-                    </p>
-                  </div>
-                )}
-                
-                <div>
-                  <div className="text-sm text-red-700 dark:text-red-300">Date de perte</div>
-                  <div className="font-medium text-red-800 dark:text-red-200">
-                    {formatDate(opportunity.closedAt)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ✅ AMÉLIORATION : Devis associés avec données réelles */}
-          <div className="Beenaya-card">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-lg flex items-center gap-2">
-                Devis associés
-                {opportunity.quotes_count && opportunity.quotes_count > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {opportunity.quotes_count}
-                  </Badge>
-                )}
-              </h3>
-              
-              {opportunity.stage !== 'won' && opportunity.stage !== 'lost' && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={handleCreateQuote}
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Créer un devis
-                </Button>
-              )}
-            </div>
-            
-            {opportunity.quotes && opportunity.quotes.length > 0 ? (
-              <div className="space-y-3">
-                {opportunity.quotes.map((quote) => (
-                  <div 
-                    key={quote.id}
-                    className="p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800/50 cursor-pointer transition-colors"
-                    onClick={() => navigate(`/devis/${quote.id}`)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <FileText className="w-4 h-4 text-Beenaya-600" />
-                        <div>
-                          <span className="font-medium">{quote.number}</span>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge 
-                              variant={
-                                quote.status === 'draft' ? 'secondary' :
-                                quote.status === 'sent' ? 'default' :
-                                quote.status === 'accepted' ? 'default' :
-                                quote.status === 'rejected' ? 'destructive' :
-                                'secondary'
-                              }
-                              className={
-                                quote.status === 'accepted' ? 'bg-green-100 text-green-800 border-green-200' :
-                                quote.status === 'sent' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                                ''
-                              }
-                            >
-                              {quote.status_display}
-                            </Badge>
-                            <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                              {formatCurrency(quote.total_ttc)} MAD
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-right">
-                        <div className="text-sm text-neutral-600 dark:text-neutral-400">
-                          {formatDate(quote.created_at)}
-                      </div>
-                      <Button variant="ghost" size="sm">
-                          <ArrowLeft className="w-4 h-4 rotate-180" />
-                      </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-neutral-500">
-                <FileText className="w-12 h-12 mx-auto mb-3 text-neutral-300" />
-                <h4 className="font-medium mb-1">Aucun devis associé</h4>
-                <p className="text-sm">
-                  {opportunity.stage !== 'won' && opportunity.stage !== 'lost' 
-                    ? "Créez un premier devis pour cette opportunité"
-                    : "Aucun devis n'a été créé pour cette opportunité"
-                  }
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right Column - Actions and Timeline */}
-        <div className="space-y-6">
-          {/* Actions */}
-          <div className="Beenaya-card">
-            <h3 className="font-medium text-lg mb-4">Actions</h3>
-            
-            <div className="space-y-3">
+            <div className="flex gap-2">
               <Button 
-                variant="outline" 
-                className="w-full justify-start gap-2"
+                variant="ghost" 
+                size="sm"
+                className="bg-white/20 border border-white/30 hover:bg-white/30 text-white"
                 onClick={handleEdit}
               >
-                <Edit className="w-4 h-4" />
-                Modifier l'opportunité
+                <Edit className="w-4 h-4 mr-2" />
+                Modifier
               </Button>
-              
-              {opportunity.stage !== 'won' && opportunity.stage !== 'lost' && (
-                <>
-                  <Button 
-                    className="w-full justify-start gap-2 Beenaya-button-primary"
-                    onClick={handleCreateQuote}
-                  >
-                    <FileText className="w-4 h-4" />
-                    Créer un devis
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start gap-2 text-green-600 border-green-200 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-900/20"
-                    onClick={handleMarkAsWon}
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Marquer comme gagnée
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start gap-2 text-red-600 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20"
-                    onClick={handleMarkAsLost}
-                  >
-                    <XCircle className="w-4 h-4" />
-                    Marquer comme perdue
-                  </Button>
-                </>
-              )}
-              
               <Button 
-                variant="outline" 
-                className="w-full justify-start gap-2 text-red-600 border-red-200 hover:bg-red-50 dark:border-red-800 dark:hover:bg-red-900/20"
+                variant="ghost" 
+                size="sm"
+                className="bg-red-500/20 border border-red-400/30 hover:bg-red-500/30 text-white"
                 onClick={handleDelete}
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4 mr-2" />
                 Supprimer
               </Button>
             </div>
           </div>
+        </div>
 
-          {/* Project Information (if won) */}
-          {opportunity.stage === 'won' && opportunity.projectId && (
-            <div className="Beenaya-card border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
-              <h3 className="font-medium text-lg mb-4 text-green-800 dark:text-green-200">Projet créé</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <div className="text-sm text-green-700 dark:text-green-300">ID du projet</div>
-                  <div className="font-medium text-green-800 dark:text-green-200">
-                    {opportunity.projectId}
-                  </div>
-                </div>
-                
-                <Button 
-                  className="w-full justify-start gap-2 bg-green-600 hover:bg-green-700 text-white"
-                  onClick={() => navigate(`/chantiers/${opportunity.projectId}`)}
-                >
-                  <Building className="w-4 h-4" />
-                  Voir le projet
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Timeline */}
-          <div className="Beenaya-card">
-            <h3 className="font-medium text-lg mb-4">Chronologie</h3>
+        {/* Layout principal selon TierDetail */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Contenu principal - 3 colonnes */}
+          <div className="lg:col-span-3 space-y-6">
             
-            <div className="space-y-6">
-              <div className="relative pl-6 pb-6 border-l-2 border-Beenaya-200 dark:border-Beenaya-800">
-                <div className="absolute left-[-8px] top-0 w-4 h-4 rounded-full bg-Beenaya-600"></div>
-                <div className="space-y-1">
-                  <div className="font-medium">Opportunité créée</div>
-                  <div className="text-sm text-neutral-600 dark:text-neutral-400">
-                    {formatDate(opportunity.createdAt)}
+            {/* Informations générales */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-Beenaya-600" />
+                  Informations générales
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-medium text-neutral-500 mb-2">Identification</h4>
+                      <div className="space-y-3">
+                        <div>
+                          <div className="text-sm text-neutral-600 mb-1">Nom</div>
+                          <div className="font-bold">{opportunity.name}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-neutral-600 mb-1">Client</div>
+                          <div className="font-bold">{opportunity.tierName || 'Non défini'}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-neutral-600 mb-1">Statut</div>
+                          <div>{getStageBadge(opportunity.stage)}</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              
-              {opportunity.stage === 'won' && opportunity.closedAt && (
-                <div className="relative pl-6 pb-6 border-l-2 border-green-200 dark:border-green-800">
-                  <div className="absolute left-[-8px] top-0 w-4 h-4 rounded-full bg-green-600"></div>
-                  <div className="space-y-1">
-                    <div className="font-medium text-green-800 dark:text-green-200">Opportunité gagnée</div>
-                    <div className="text-sm text-green-700 dark:text-green-300">
-                      {formatDate(opportunity.closedAt)}
+
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-medium text-neutral-500 mb-2">Source et assignation</h4>
+                      <div className="space-y-3">
+                        <div>
+                          <div className="text-sm text-neutral-600 mb-1">Source</div>
+                          <div className="font-bold">{opportunity.source || 'Non définie'}</div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-neutral-600 mb-1">Assigné à</div>
+                          <div className="font-bold">{opportunity.assignedToName || 'Non assigné'}</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              )}
-              
-              {opportunity.stage === 'lost' && opportunity.closedAt && (
-                <div className="relative pl-6 pb-6 border-l-2 border-red-200 dark:border-red-800">
-                  <div className="absolute left-[-8px] top-0 w-4 h-4 rounded-full bg-red-600"></div>
-                  <div className="space-y-1">
-                    <div className="font-medium text-red-800 dark:text-red-200">Opportunité perdue</div>
-                    <div className="text-sm text-red-700 dark:text-red-300">
-                      {formatDate(opportunity.closedAt)}
+
+                {opportunity.description && (
+                  <div>
+                    <h4 className="text-sm font-medium text-neutral-500 mb-2">Description</h4>
+                    <p className="text-neutral-700 bg-neutral-50 p-3 rounded-lg">
+                      {opportunity.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Informations spécifiques aux opportunités perdues */}
+                {opportunity.stage === 'lost' && opportunity.lossReason && (
+                  <div className="pt-4 border-t">
+                    <h4 className="text-sm font-medium text-red-600 mb-2">Informations de perte</h4>
+                    <div className="bg-red-50 p-3 rounded-lg space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-red-600">Raison</span>
+                        <span className="font-medium text-red-800">{opportunity.lossReason}</span>
+                      </div>
+                      {opportunity.lossDescription && (
+                        <div>
+                          <span className="text-red-600 block mb-1">Description</span>
+                          <p className="text-red-800">{opportunity.lossDescription}</p>
+                        </div>
+                      )}
                     </div>
-                    {opportunity.lossReason && (
-                      <div className="text-sm text-red-700 dark:text-red-300">
-                        Raison: {getLossReasonLabel(opportunity.lossReason)}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Informations financières séparées */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-Beenaya-600" />
+                  Informations financières
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <h4 className="text-sm font-medium text-neutral-500 mb-2">Montant estimé</h4>
+                    <div className="text-2xl font-bold text-Beenaya-600">
+                      {formatCurrency(opportunity.estimatedAmount || 0)} MAD
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-sm font-medium text-neutral-500 mb-2">Probabilité</h4>
+                    <div className="space-y-2">
+                      <div className="text-2xl font-bold">{opportunity.probability || 0}%</div>
+                      <div className="w-full bg-neutral-200 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full ${
+                            (opportunity.probability || 0) >= 75 ? "bg-green-500" :
+                            (opportunity.probability || 0) >= 50 ? "bg-blue-500" :
+                            (opportunity.probability || 0) >= 25 ? "bg-amber-500" :
+                            "bg-red-500"
+                          }`}
+                          style={{ width: `${opportunity.probability || 0}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-sm font-medium text-neutral-500 mb-2">Montant pondéré</h4>
+                    <div className="text-2xl font-bold text-green-600">
+                      {formatCurrency((opportunity.estimatedAmount || 0) * (opportunity.probability || 0) / 100)} MAD
+                    </div>
+                    <div className="text-sm text-neutral-500 mt-1">
+                      Valeur attendue
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <h4 className="text-sm font-medium text-neutral-500 mb-2">Dates importantes</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <span className="text-neutral-600 text-sm">Date de clôture prévue</span>
+                      <div className="font-medium">{formatDate(opportunity.expectedCloseDate)}</div>
+                    </div>
+                    <div>
+                      <span className="text-neutral-600 text-sm">Créé le</span>
+                      <div className="font-medium">{formatDate(opportunity.createdAt)}</div>
+                    </div>
+                    {opportunity.closedAt && (
+                      <div>
+                        <span className="text-neutral-600 text-sm">Fermé le</span>
+                        <div className="font-medium">{formatDate(opportunity.closedAt)}</div>
                       </div>
                     )}
                   </div>
                 </div>
-              )}
-              
-              {opportunity.quoteIds && opportunity.quoteIds.length > 0 && (
-                <div className="relative pl-6 pb-6 border-l-2 border-blue-200 dark:border-blue-800">
-                  <div className="absolute left-[-8px] top-0 w-4 h-4 rounded-full bg-blue-600"></div>
-                  <div className="space-y-1">
-                    <div className="font-medium text-blue-800 dark:text-blue-200">Devis créé</div>
-                    <div className="text-sm text-blue-700 dark:text-blue-300">
-                      Devis #{opportunity.quoteIds[0]}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Panneau latéral - 1 colonne */}
+          <div className="space-y-6">
+            {/* Résumé */}
+            <Card className="sticky top-6">
+              <CardHeader>
+                <CardTitle className="text-lg">Résumé</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">Statut:</span>
+                    {getStageBadge(opportunity.stage)}
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">Client:</span>
+                    <span className="font-medium">{opportunity.tierName || 'Non défini'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">Source:</span>
+                    <span className="font-medium">{opportunity.source || 'Non définie'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">Assigné à:</span>
+                    <span className="font-medium">{opportunity.assignedToName || 'Non assigné'}</span>
+                  </div>
+                  
+                  <div className="pt-4 border-t">
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-neutral-500 text-xs">Créé le:</span>
+                        <div className="font-medium text-sm">
+                          {formatDate(opportunity.createdAt)}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-neutral-500 text-xs">Clôture prévue:</span>
+                        <div className="font-medium text-sm">
+                          {formatDate(opportunity.expectedCloseDate)}
+                        </div>
+                      </div>
+                      {opportunity.closedAt && (
+                        <div>
+                          <span className="text-neutral-500 text-xs">Fermé le:</span>
+                          <div className="font-medium text-sm">
+                            {formatDate(opportunity.closedAt)}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
+              </CardContent>
+            </Card>
+
+            {/* Actions rapides */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-Beenaya-600" />
+                  Actions rapides
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {opportunity.stage !== 'won' && opportunity.stage !== 'lost' ? (
+                  <>
+                    <Button 
+                      className="w-full justify-start Beenaya-button-primary"
+                      onClick={handleCreateQuote}
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Créer un devis
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start text-green-600 border-green-200 hover:bg-green-50"
+                      onClick={handleMarkAsWon}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Marquer comme gagnée
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start text-red-600 border-red-200 hover:bg-red-50"
+                      onClick={handleMarkAsLost}
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Marquer comme perdue
+                    </Button>
+                  </>
+                ) : (
+                  <div className={`p-4 rounded-lg text-center ${
+                    opportunity.stage === 'won' 
+                      ? 'bg-green-50 text-green-700' 
+                      : 'bg-red-50 text-red-700'
+                  }`}>
+                    {opportunity.stage === 'won' ? (
+                      <>
+                        <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-600" />
+                        <p className="font-medium">Opportunité gagnée</p>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="w-8 h-8 mx-auto mb-2 text-red-600" />
+                        <p className="font-medium">Opportunité perdue</p>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Lien vers le client */}
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => navigate(`/tiers/${opportunity.tierId}`)}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  Voir la fiche client
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Chronologie */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-Beenaya-600" />
+                  Chronologie
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Événement de création */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">Opportunité créée</div>
+                      <div className="text-xs text-neutral-500">
+                        {formatDate(opportunity.createdAt)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Changements de statut (placeholder) */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 bg-amber-500 rounded-full mt-2"></div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">
+                        Statut actuel: {opportunity.stage === 'new' ? 'Nouvelle' : 
+                                        opportunity.stage === 'needs_analysis' ? 'Analyse' :
+                                        opportunity.stage === 'negotiation' ? 'Négociation' :
+                                        opportunity.stage === 'won' ? 'Gagnée' :
+                                        opportunity.stage === 'lost' ? 'Perdue' : opportunity.stage}
+                      </div>
+                      <div className="text-xs text-neutral-500">En cours</div>
+                    </div>
+                  </div>
+
+                  {/* Événement de clôture si applicable */}
+                  {opportunity.closedAt && (
+                    <div className="flex items-start gap-3">
+                      <div className={`w-2 h-2 rounded-full mt-2 ${
+                        opportunity.stage === 'won' ? 'bg-green-500' : 'bg-red-500'
+                      }`}></div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">
+                          Opportunité {opportunity.stage === 'won' ? 'gagnée' : 'fermée'}
+                        </div>
+                        <div className="text-xs text-neutral-500">
+                          {formatDate(opportunity.closedAt)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Placeholder pour futures intégrations */}
+                  <div className="text-center py-4 text-neutral-400">
+                    <div className="text-xs">Historique détaillé disponible prochainement</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
-
-      {/* Edit Form Dialog */}
+      
+      {/* Formulaires modaux */}
       <Dialog open={formDialogOpen} onOpenChange={setFormDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Modifier l'opportunité</DialogTitle>
-            <DialogDescription>
-              Modifiez les informations de l'opportunité
-            </DialogDescription>
-          </DialogHeader>
-          
+        <DialogContent className="max-w-2xl max-h-[90vh] w-[95vw] sm:w-full mx-auto overflow-y-auto">
           <OpportunityForm
             opportunity={opportunity}
             onSubmit={handleFormSubmit}
@@ -924,12 +799,53 @@ export default function OpportunityDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Loss Reason Form Dialog */}
-      <OpportunityLossForm
-        open={lossFormOpen}
-        onOpenChange={setLossFormOpen}
-        onSubmit={handleConfirmLoss}
-      />
-    </div>
+      <Dialog open={lossFormOpen} onOpenChange={setLossFormOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Marquer comme perdue</DialogTitle>
+            <DialogDescription>
+              Indiquez la raison pour laquelle cette opportunité est perdue.
+            </DialogDescription>
+          </DialogHeader>
+          <OpportunityLossForm
+            onSubmit={handleConfirmLoss}
+            onCancel={() => setLossFormOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Modale de confirmation de suppression - Style cohérent */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="Beenaya-glass">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer <strong>"{opportunity?.name}"</strong> ? Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              disabled={deleteLoading}
+            >
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              disabled={deleteLoading}
+              className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+            >
+              {deleteLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Suppression...
+                </>
+              ) : (
+                'Supprimer'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
-}
+};

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Plus, Pencil, Trash2, Check, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -141,7 +141,7 @@ export function VatRatesManagement({ vatRates, onChange }: VatRatesManagementPro
           </TableHeader>
           <TableBody>
             {vatRates.length === 0 ? (
-              <TableRow>
+              <TableRow key="empty-state">
                 <TableCell colSpan={5} className="text-center py-4 text-neutral-500">
                   Aucun taux de TVA configuré
                 </TableCell>
@@ -218,7 +218,7 @@ export function VatRatesManagement({ vatRates, onChange }: VatRatesManagementPro
                   <TableCell>
                     <div className="flex items-center justify-end gap-1">
                       {editingId === rate.id ? (
-                        <>
+                        <React.Fragment key={`editing-${rate.id}`}>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -235,9 +235,9 @@ export function VatRatesManagement({ vatRates, onChange }: VatRatesManagementPro
                           >
                             <X className="w-4 h-4" />
                           </Button>
-                        </>
+                        </React.Fragment>
                       ) : (
-                        <>
+                        <React.Fragment key={`viewing-${rate.id}`}>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -256,7 +256,7 @@ export function VatRatesManagement({ vatRates, onChange }: VatRatesManagementPro
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
-                        </>
+                        </React.Fragment>
                       )}
                     </div>
                   </TableCell>

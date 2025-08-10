@@ -7,7 +7,7 @@ interface MaterialSupplierProps {
 }
 
 export function MaterialSupplier({ material }: MaterialSupplierProps) {
-  if (!material.supplier) {
+  if (!material.supplier_id) {
     return null;
   }
 
@@ -15,14 +15,14 @@ export function MaterialSupplier({ material }: MaterialSupplierProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Building className="w-5 h-5 text-benaya-600" />
+          <Building className="w-5 h-5 text-Beenaya-600" />
           Fournisseur
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="text-center py-4">
-          <div className="font-medium text-lg">{material.supplier}</div>
-          <div className="text-sm text-neutral-500 mt-1">Fournisseur principal</div>
+          <div className="font-medium text-lg">Fournisseur CRM</div>
+          <div className="text-sm text-neutral-500 mt-1">ID: {material.supplier_id}</div>
         </div>
       </CardContent>
     </Card>

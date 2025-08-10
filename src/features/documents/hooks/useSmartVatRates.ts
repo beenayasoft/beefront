@@ -9,15 +9,49 @@ import { VATRateInfo } from '../types/quotes.types';
 import { tenantVatRatesApi, CreateVatRateData, VatRateCreationResult } from '../api/tenantVatRates';
 import VatRateIntelligenceService, { VatRateTemplate } from '../services/vatRateIntelligence';
 
-// Hook pour récupérer les informations du tenant actuel
-// TODO: À adapter selon votre système d'auth/tenant
+// Hook pour récupérer les informations du tenant actuel depuis l'API
 const useTenantInfo = () => {
-  // Placeholder - à remplacer par votre logique de récupération tenant
-  return {
+  const [tenantInfo, setTenantInfo] = useState({
     country: 'MA', // Maroc par défaut pour Beenaya
     currency: 'MAD',
-    tenantId: localStorage.getItem('tenantId') || ''
-  };
+    tenantId: localStorage.getItem('tenantId') || '',
+    detected_location: null as any
+  });
+
+  useEffect(() => {
+    const fetchTenantInfo = async () => {
+      const tenantId = localStorage.getItem('tenantId');
+      if (!tenantId) return;
+
+      try {
+        // Appeler l'API pour récupérer les informations tenant complètes
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/tenants/current_tenant_info/`, {
+          headers: {
+            'X-Tenant-ID': tenantId,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setTenantInfo({
+            country: data.country || 'MA',
+            currency: data.settings?.currency || 'MAD',
+            tenantId: tenantId,
+            detected_location: data.detected_location,
+            // Inclure toutes les données tenant pour la détection intelligente
+            ...data
+          });
+        }
+      } catch (error) {
+        console.warn('Erreur lors de la récupération des informations tenant:', error);
+      }
+    };
+
+    fetchTenantInfo();
+  }, []);
+
+  return tenantInfo;
 };
 
 export interface SmartVatRatesState {

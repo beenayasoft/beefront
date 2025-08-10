@@ -37,9 +37,12 @@ export interface BackendMaterial {
   prix_achat_ht: string; // Decimal as string from Django
   categorie: number;
   reference: string;
-  supplier: string;
+  supplier_id?: string; // New CRM integration field (UUID)
+  supplier_details?: any; // CRM supplier data from backend
+  effective_supplier_name?: string; // Computed field from backend
   vat_rate: string; // Decimal as string from Django
   type: string;
+  code?: string; // New field
   waste_factor: string; // Decimal as string from Django
   is_recyclable: boolean;
   categorie_nom?: string; // Computed field

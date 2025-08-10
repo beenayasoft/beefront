@@ -33,14 +33,14 @@ export function InvoiceStats({ stats }: InvoiceStatsProps) {
         value={stats.total.toString()}
         change={`${stats.draft} brouillons`}
         changeType="neutral"
-        icon={<FileText className="h-5 w-5 text-benaya-600" />}
+        icon={<FileText className="h-5 w-5 text-Beenaya-600" />}
       />
       <MetricCard
         title="En attente"
         value={stats.sent.toString()}
         change={formatCurrency(stats.remainingAmount - stats.overdueAmount) + " MAD"}
         changeType="neutral"
-        icon={<Clock className="h-5 w-5 text-benaya-600" />}
+        icon={<Clock className="h-5 w-5 text-Beenaya-600" />}
       />
       <MetricCard
         title="En retard"

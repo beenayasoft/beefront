@@ -1,4 +1,4 @@
-import { Tier } from '@/features/crm/types/tier';
+import { Tier } from '@/features/crm/types/crm.types';
 import { tiersApi, TiersFilters } from '../api/tiers';
 import { apiClient } from '../api/client';
 import { getServiceConfig, logger, isProduction } from '../config/environment';

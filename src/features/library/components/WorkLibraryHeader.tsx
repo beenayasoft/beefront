@@ -23,14 +23,14 @@ export function WorkLibraryHeader({
   onAddItem,
 }: WorkLibraryHeaderProps) {
   return (
-    <div className="benaya-card benaya-gradient text-white">
+    <div className="Beenaya-card Beenaya-gradient text-white">
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold">Bibliothèque d'ouvrages</h1>
             {loading && <Loader2 className="w-5 h-5 animate-spin" />}
           </div>
-          <p className="text-benaya-100 mt-1">
+          <p className="text-Beenaya-100 mt-1">
             Gérez vos ouvrages, matériaux et main d'œuvre
             {loading && " - Chargement en cours..."}
           </p>
@@ -46,7 +46,7 @@ export function WorkLibraryHeader({
           <Dialog open={showTypeSelector} onOpenChange={setShowTypeSelector}>
             <DialogTrigger asChild>
               <Button 
-                className="gap-2 bg-white text-benaya-900 hover:bg-white/90"
+                className="gap-2 bg-white text-Beenaya-900 hover:bg-white/90"
                 disabled={loading}
                 onClick={() => setShowTypeSelector(true)}
               >

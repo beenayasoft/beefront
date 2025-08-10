@@ -11,7 +11,7 @@ export const tenantVatRatesApi = {
    */
   getVatRates: async (signal?: AbortSignal): Promise<VATRateInfo[]> => {
     try {
-      const response = await apiClient.get('/vat-rates/', { signal });
+      const response = await apiClient.get('/api/quotes/vat-rates/', { signal });
       return response.data || [];
     } catch (error) {
       console.error('Erreur récupération taux TVA:', error);

@@ -55,16 +55,12 @@ export interface AdresseEntrepriseForm {
 
 // Schéma de validation pour entreprise
 export const entrepriseFormSchema = z.object({
-  // SEUL CHAMP OBLIGATOIRE : Raison sociale
-  raisonSociale: z.string().min(2, "La raison sociale doit contenir au moins 2 caractères"),
+  // SEUL CHAMP OBLIGATOIRE : Nom de l'entreprise
+  nom: z.string().min(2, "Le nom de l'entreprise doit contenir au moins 2 caractères"),
   
   // Champs optionnels pour entreprise
   siret: z.string().optional(),
   tva: z.string().optional(),
-  numeroTVA: z.string().optional(),
-  codeNAF: z.string().optional(),
-  formeJuridique: z.string().optional(),
-  capitalSocial: z.string().optional(),
   
   // Relation commerciale unique (obligatoire)
   flags: z.array(z.string()).min(1, "Sélectionnez une relation commerciale").max(1, "Une seule relation peut être sélectionnée"),
@@ -99,43 +95,27 @@ export type EntrepriseFormValues = z.infer<typeof entrepriseFormSchema>;
 
 // Valeurs par défaut pour une nouvelle entreprise
 export const defaultEntrepriseValues: EntrepriseFormValues = {
-  raisonSociale: "",
+  nom: "",
   siret: "",
-  numeroTVA: "",
-  codeNAF: "",
-  formeJuridique: "",
-  capitalSocial: "",
+  tva: "",
   flags: [], // Démarrer avec aucune sélection - l'utilisateur doit choisir
   status: "active",
   contacts: [],
   adresses: [],
 };
 
-// Types pour les formes juridiques communes
-export const formesJuridiques = [
-  { value: "SARL", label: "SARL - Société à Responsabilité Limitée" },
-  { value: "SAS", label: "SAS - Société par Actions Simplifiée" },
-  { value: "SASU", label: "SASU - Société par Actions Simplifiée Unipersonnelle" },
-  { value: "EURL", label: "EURL - Entreprise Unipersonnelle à Responsabilité Limitée" },
-  { value: "SA", label: "SA - Société Anonyme" },
-  { value: "SNC", label: "SNC - Société en Nom Collectif" },
-  { value: "EI", label: "EI - Entreprise Individuelle" },
-  { value: "Auto-entrepreneur", label: "Auto-entrepreneur / Micro-entreprise" },
-  { value: "Association", label: "Association loi 1901" },
-  { value: "Autre", label: "Autre forme juridique" },
-];
 
 // Fonction pour obtenir les champs obligatoires
 export const getRequiredFieldsEntreprise = (): string[] => {
-  return ["raisonSociale", "flags"];
+  return ["nom", "flags"];
 };
 
 // Fonction pour valider une entreprise
 export const validateEntreprise = (values: EntrepriseFormValues): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
   
-  if (!values.raisonSociale || values.raisonSociale.trim().length === 0) {
-    errors.push("La raison sociale est obligatoire");
+  if (!values.nom || values.nom.trim().length === 0) {
+    errors.push("Le nom de l'entreprise est obligatoire");
   }
   
   if (!values.flags || values.flags.length === 0) {
@@ -153,9 +133,9 @@ export const validateEntreprise = (values: EntrepriseFormValues): { isValid: boo
   }
   
   // Validation TVA si fournie
-  if (values.numeroTVA && values.numeroTVA.trim().length > 0) {
-    if (!/^[A-Z]{2}\d{11}$/.test(values.numeroTVA.replace(/\s/g, ''))) {
-      errors.push("Le numéro de TVA doit être au format FR12345678901");
+  if (values.tva && values.tva.trim().length > 0) {
+    if (!/^[A-Z]{2}\d{9,13}$/.test(values.tva.replace(/\s/g, ''))) {
+      errors.push("Le numéro de TVA doit être au format FR123456789 (2 lettres + 9-13 chiffres)");
     }
   }
   

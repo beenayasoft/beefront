@@ -8,14 +8,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Tier } from "./types";
+import { Tier } from "@/features/crm/types/crm.types";
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 interface DeleteConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>;
   tier: Tier | null;
+  loading?: boolean;
 }
 
 export function DeleteConfirmDialog({
@@ -23,6 +25,7 @@ export function DeleteConfirmDialog({
   onOpenChange,
   onConfirm,
   tier,
+  loading = false,
 }: DeleteConfirmDialogProps) {
   const [tierName, setTierName] = useState<string>("");
 
@@ -30,13 +33,30 @@ export function DeleteConfirmDialog({
   // lorsque la référence du tier est mise à null après la fermeture
   useEffect(() => {
     if (tier && open) {
-      setTierName(tier.name);
+      setTierName(tier.nom); // ✅ Utiliser tier.nom au lieu de tier.name
     }
   }, [tier, open]);
 
-  const handleConfirm = () => {
-    onConfirm();
-    // Assurer que la modale est fermée
+  // Réinitialiser l'état quand la modale se ferme
+  useEffect(() => {
+    if (!open) {
+      setTierName("");
+    }
+  }, [open]);
+
+  const handleConfirm = async () => {
+    if (loading) return;
+    
+    try {
+      await onConfirm();
+      // La fermeture sera gérée par useModalState
+    } catch (error) {
+      console.error('❌ Erreur lors de la confirmation de suppression:', error);
+    }
+  };
+
+  const handleCancel = () => {
+    if (loading) return;
     onOpenChange(false);
   };
 
@@ -57,7 +77,7 @@ export function DeleteConfirmDialog({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => onOpenChange(false)}>
+            <AlertDialogCancel onClick={handleCancel}>
               Fermer
             </AlertDialogCancel>
           </AlertDialogFooter>
@@ -76,14 +96,25 @@ export function DeleteConfirmDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => onOpenChange(false)}>
+          <AlertDialogCancel 
+            onClick={handleCancel}
+            disabled={loading}
+          >
             Annuler
           </AlertDialogCancel>
           <AlertDialogAction 
             onClick={handleConfirm}
-            className="bg-red-600 hover:bg-red-700 text-white"
+            disabled={loading}
+            className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
           >
-            Supprimer
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Suppression...
+              </>
+            ) : (
+              'Supprimer'
+            )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

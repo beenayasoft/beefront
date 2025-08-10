@@ -11,6 +11,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { VatRateSelector } from "../../VatRateSelector";
+import { useVatRates } from "@/features/documents/hooks/useVatRates";
+import { SupplierSelector } from "@/features/library/components/SupplierSelector";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DialogHeader,
   DialogTitle,
@@ -20,7 +23,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Package, Clock, AlertCircle, Loader2 } from "lucide-react";
-import { Material, Labor } from "@/features/library/types";
+import { Material, Labor } from "@/features/library/types/workLibrary";
 import { formatCurrency } from "@/lib/utils";
 
 interface LibraryItemFormProps {
@@ -39,6 +42,7 @@ export function LibraryItemForm({
   isLoading = false,
 }: LibraryItemFormProps) {
   const isEditing = !!item;
+  const { getVatRateByCode, vatRates, defaultVatRate } = useVatRates();
   const [formData, setFormData] = useState<Partial<Material | Labor>>(
     item || {
       id: "",
@@ -46,6 +50,20 @@ export function LibraryItemForm({
       description: "",
       unit: type === "material" ? "unité" : "h",
       unitPrice: 0,
+      categoryId: "",
+      code: "",
+      ...(type === "material" ? {
+        vatRate: 20,
+        reference: "",
+        wasteFactor: 0,
+        isRecyclable: false,
+        supplier_id: null,
+        supplier_details: null,
+        effective_supplier_name: null,
+      } : {
+        skillLevel: "skilled" as const,
+        productivityFactor: 1.0,
+      }),
     }
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -60,6 +78,20 @@ export function LibraryItemForm({
         description: "",
         unit: type === "material" ? "unité" : "h",
         unitPrice: 0,
+        categoryId: "",
+        code: "",
+        ...(type === "material" ? {
+          vatRate: 20,
+          reference: "",
+          wasteFactor: 0,
+          isRecyclable: false,
+          supplier_id: null,
+          supplier_details: null,
+          effective_supplier_name: null,
+        } : {
+          skillLevel: "skilled" as const,
+          productivityFactor: 1.0,
+        }),
       });
     }
   }, [item, type]);
@@ -68,9 +100,16 @@ export function LibraryItemForm({
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
+    let processedValue: any = value;
+    
+    // Handle numeric fields
+    if (['unitPrice', 'vatRate', 'wasteFactor', 'productivityFactor'].includes(name)) {
+      processedValue = parseFloat(value) || 0;
+    }
+    
     setFormData((prev) => ({
       ...prev,
-      [name]: name === "unitPrice" ? parseFloat(value) || 0 : value,
+      [name]: processedValue,
     }));
 
     // Clear error when field is edited
@@ -84,9 +123,18 @@ export function LibraryItemForm({
   };
 
   const handleSelectChange = (name: string, value: string) => {
+    let processedValue: any = value;
+    
+    // Handle numeric fields that come from selects
+    if (name === 'vatRate') {
+      // Le VatRateSelector retourne un code, on doit récupérer le taux numérique
+      const vatRate = getVatRateByCode(value);
+      processedValue = vatRate ? vatRate.rate : parseFloat(value) || 0;
+    }
+    
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: processedValue,
     }));
   };
 
@@ -123,14 +171,15 @@ export function LibraryItemForm({
       if (type === "material") {
         const materialData = {
           ...formData,
-          id: formData.id || `material-${Date.now()}`,
-          vatRate: (formData as Partial<Material>).vatRate || 0,
+          id: formData.id || "", // L'ID sera généré par l'API
+          vatRate: (formData as Partial<Material>).vatRate || 20,
         } as Material;
+        
         onSave(materialData);
       } else {
         const laborData = {
           ...formData,
-          id: formData.id || `labor-${Date.now()}`,
+          id: formData.id || "", // L'ID sera généré par l'API
         } as Labor;
         onSave(laborData);
       }
@@ -184,14 +233,20 @@ export function LibraryItemForm({
       </DialogHeader>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Informations générales */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 border-b border-neutral-200 dark:border-neutral-700 pb-2">
-              Informations générales
-            </h3>
-            
-            <div className="grid grid-cols-1 gap-4">
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Package className="w-4 h-4 text-primary" />
+                Informations générales
+              </CardTitle>
+              <CardDescription>
+                Renseignez les informations principales de l'élément
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+              <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="name" className={`text-sm font-medium ${errors.name ? "text-red-600" : "text-neutral-700 dark:text-neutral-300"}`}>
                   Nom <span className="text-red-500">*</span>
@@ -226,16 +281,23 @@ export function LibraryItemForm({
                   className="Beenaya-input resize-none"
                 />
               </div>
-            </div>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Informations techniques */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 border-b border-neutral-200 dark:border-neutral-700 pb-2">
-              Informations techniques
-            </h3>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-500" />
+                Informations techniques
+              </CardTitle>
+              <CardDescription>
+                Définissez le prix et l'unité de mesure
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-2">
                 <Label htmlFor="unit" className={`text-sm font-medium ${errors.unit ? "text-red-600" : "text-neutral-700 dark:text-neutral-300"}`}>
                   Unité <span className="text-red-500">*</span>
@@ -291,8 +353,14 @@ export function LibraryItemForm({
                     onChange={handleChange}
                     placeholder="0.00"
                     className={`Beenaya-input pr-12 ${errors.unitPrice ? "border-red-500 focus:border-red-500" : ""}`}
+                    aria-describedby="price-currency"
+                    aria-invalid={!!errors.unitPrice}
                   />
-                  <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-neutral-500 text-sm">
+                  <div 
+                    id="price-currency" 
+                    className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-neutral-500 text-sm"
+                    aria-label="Devise en dirhams marocains"
+                  >
                     MAD
                   </div>
                 </div>
@@ -303,24 +371,34 @@ export function LibraryItemForm({
                   </div>
                 )}
               </div>
-            </div>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Informations spécifiques aux matériaux */}
           {type === "material" && (
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 border-b border-neutral-200 dark:border-neutral-700 pb-2">
-                Informations fiscales
-              </h3>
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Package className="w-4 h-4 text-blue-500" />
+                  Informations fiscales
+                </CardTitle>
+                <CardDescription>
+                  Détails spécifiques aux matériaux
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="vatRate" className={`text-sm font-medium ${errors.vatRate ? "text-red-600" : "text-neutral-700 dark:text-neutral-300"}`}>
-                    Taux de TVA <span className="text-red-500">*</span>
-                  </Label>
                   <VatRateSelector
-                    value={((formData as Partial<Material>).vatRate || 0).toString()}
-                    onChange={(value) => handleSelectChange("vatRate", value)}
+                    value={(() => {
+                      const currentVatRate = (formData as Partial<Material>).vatRate || 20;
+                      // Chercher le code correspondant au taux numérique
+                      const matchingRate = vatRates.find(rate => rate.rate === currentVatRate);
+                      return matchingRate?.code || defaultVatRate?.code || currentVatRate.toString();
+                    })()}
+                    onValueChange={(value) => handleSelectChange("vatRate", value)}
                     disabled={isLoading}
                     className={`${errors.vatRate ? "border-red-500" : ""}`}
                   />
@@ -333,30 +411,138 @@ export function LibraryItemForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="supplier" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    Fournisseur
-                  </Label>
-                  <Input
-                    id="supplier"
-                    name="supplier"
-                    value={(formData as Partial<Material>).supplier || ""}
-                    onChange={handleChange}
-                    placeholder="Nom du fournisseur"
+                  <SupplierSelector
+                    value={(formData as Partial<Material>).supplier_id || null}
+                    onChange={(supplierId, supplierData) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        supplier_id: supplierId,
+                        supplier_details: supplierData, // Stockage des données complètes
+                        effective_supplier_name: supplierData?.nom || null
+                      }));
+                    }}
+                    placeholder="Rechercher et sélectionner un fournisseur..."
                     className="Beenaya-input"
                   />
                 </div>
               </div>
-            </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="reference" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    Référence
+                  </Label>
+                  <Input
+                    id="reference"
+                    name="reference"
+                    value={(formData as Partial<Material>).reference || ""}
+                    onChange={handleChange}
+                    placeholder="Référence produit"
+                    className="Beenaya-input"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="code" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    Code
+                  </Label>
+                  <Input
+                    id="code"
+                    name="code"
+                    value={(formData as Partial<Material>).code || ""}
+                    onChange={handleChange}
+                    placeholder="Code produit"
+                    className="Beenaya-input"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="wasteFactor" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  Facteur de perte (%)
+                </Label>
+                <Input
+                  id="wasteFactor"
+                  name="wasteFactor"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  value={(formData as Partial<Material>).wasteFactor || ""}
+                  onChange={handleChange}
+                  placeholder="0.0"
+                  className="Beenaya-input"
+                />
+              </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Informations spécifiques à la main d'œuvre */}
+          {type === "labor" && (
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-500" />
+                  Informations professionnelles
+                </CardTitle>
+                <CardDescription>
+                  Détails spécifiques à la main d'œuvre
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="skillLevel" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    Niveau de qualification
+                  </Label>
+                  <Select
+                    value={(formData as Partial<Labor>).skillLevel || "skilled"}
+                    onValueChange={(value) => handleSelectChange("skillLevel", value)}
+                  >
+                    <SelectTrigger className="Beenaya-input">
+                      <SelectValue placeholder="Sélectionner un niveau" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="apprentice">Apprenti</SelectItem>
+                      <SelectItem value="skilled">Qualifié</SelectItem>
+                      <SelectItem value="expert">Expert</SelectItem>
+                      <SelectItem value="specialist">Spécialiste</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="productivityFactor" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    Facteur de productivité
+                  </Label>
+                  <Input
+                    id="productivityFactor"
+                    name="productivityFactor"
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    max="3.0"
+                    value={(formData as Partial<Labor>).productivityFactor || 1.0}
+                    onChange={handleChange}
+                    placeholder="1.0"
+                    className="Beenaya-input"
+                  />
+                </div>
+              </div>
+              </CardContent>
+            </Card>
           )}
         </div>
 
-        <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-neutral-200 dark:border-neutral-700">
+        <DialogFooter className="flex flex-col-reverse md:flex-row gap-4 pt-6 border-t border-neutral-200 dark:border-neutral-700">
           <Button
             type="button"
             variant="outline"
             onClick={onCancel}
             disabled={isLoading}
-            className="w-full sm:w-auto"
+            className="w-full md:w-auto"
           >
             Annuler
           </Button>

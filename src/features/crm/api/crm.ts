@@ -19,26 +19,82 @@ import {
   OpportunityOption,
   TierRelation,
   OpportunityStatus
-} from '../types/crm.types';
+} from '../types';
+
+// Types legacy pour compatibilité
+export interface TiersFilters {
+  search?: string;
+  relation?: TierRelation;
+  type?: string | string[]; // Peut être une string ou un array
+  status?: 'active' | 'inactive';
+  // Pagination
+  page?: number;
+  page_size?: number;
+}
+export interface PaginationInfo {
+  count: number;
+  num_pages: number;
+  current_page: number;
+  page_size: number;
+  has_next: boolean;
+  has_previous: boolean;
+  next_page: number | null;
+  previous_page: number | null;
+}
+
+export interface TiersGlobalStats {
+  total: number;
+  clients: number;        // ✅ CORRECTION : pluriel comme le backend
+  fournisseurs: number;   // ✅ CORRECTION : pluriel comme le backend
+  prospects: number;      // ✅ CORRECTION : pluriel comme le backend
+  sous_traitants: number; // ✅ CORRECTION : pluriel comme le backend
+}
+
+export interface TierData {
+  id: string;
+  nom: string;
+  type: string;
+  relation: string;
+  siret?: string;
+  tva?: string;
+  adresses: Address[];
+  contacts: Contact[];
+  created_at: string;
+  updated_at: string;
+  is_deleted: boolean;
+}
 
 /**
  * Service API pour les tiers (clients)
  */
-const tiersApi = {
+const tiersApiInternal = {
   /**
    * Récupère une liste paginée de tiers avec filtres
    */
   getTiers: async (
-    page: number = 1,
-    pageSize: number = 20,
+    pageOrFilters?: number | any,
+    pageSize?: number,
     filters?: TierFilters,
     signal?: AbortSignal
   ): Promise<PaginatedTiersResponse> => {
     try {
-      const params = buildQueryParams(page, pageSize, filters);
-      const response = await apiClient.get('/tiers/', { 
+      // Support des deux signatures pour compatibilité
+      let params;
+      let requestSignal;
+      
+      if (typeof pageOrFilters === 'object') {
+        // Signature legacy: getTiers(filters)
+        params = pageOrFilters;
+        requestSignal = pageSize as AbortSignal;
+      } else {
+        // Signature moderne: getTiers(page, pageSize, filters, signal)
+        params = buildQueryParams(pageOrFilters || 1, pageSize || 20, filters);
+        requestSignal = signal;
+      }
+      
+      const response = await apiClient.get('/api/tiers/', { 
         params, 
-        signal
+        signal: requestSignal
       });
       return response.data;
     } catch (error) {
@@ -52,7 +108,7 @@ const tiersApi = {
    */
   getTierDetails: async (id: string, signal?: AbortSignal): Promise<Tier> => {
     try {
-      const response = await apiClient.get(`/tiers/${id}/`, { 
+      const response = await apiClient.get(`/api/tiers/${id}/`, { 
         signal
       });
       return response.data;
@@ -78,7 +134,7 @@ const tiersApi = {
       
       console.log('🌐 API getClients - Paramètres:', { search, params, options });
 
-      const response = await apiClient.get('/tiers/', { 
+      const response = await apiClient.get('/api/tiers/', { 
         params,
         signal: options?.signal
       });
@@ -118,7 +174,7 @@ const tiersApi = {
    */
   createTier: async (data: CreateTierRequest): Promise<Tier> => {
     try {
-      const response = await apiClient.post('/tiers/', data);
+      const response = await apiClient.post('/api/tiers/', data);
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la création du tier:', error);
@@ -131,7 +187,7 @@ const tiersApi = {
    */
   updateTier: async (id: string, data: Partial<CreateTierData>): Promise<Tier> => {
     try {
-      const response = await apiClient.put(`/tiers/${id}/`, data);
+      const response = await apiClient.put(`/api/tiers/${id}/`, data);
       return response.data;
     } catch (error) {
       console.error(`Erreur lors de la mise à jour du tier ${id}:`, error);
@@ -144,11 +200,63 @@ const tiersApi = {
    */
   deleteTier: async (id: string): Promise<void> => {
     try {
-      await apiClient.delete(`/tiers/${id}/`);
+      await apiClient.delete(`/api/tiers/${id}/`);
     } catch (error) {
       console.error(`Erreur lors de l'archivage du tier ${id}:`, error);
       throw error;
     }
+  },
+
+  /**
+   * Récupère les statistiques des tiers
+   */
+  getStats: async (search?: string, signal?: AbortSignal): Promise<any> => {
+    try {
+      const params = search ? { search } : {};
+      const response = await apiClient.get('/api/tiers/stats/', { 
+        params,
+        signal 
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des statistiques des tiers:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Récupère un tier par son ID avec vue détaillée
+   */
+  getTierById: async (id: string, signal?: AbortSignal): Promise<any> => {
+    try {
+      const response = await apiClient.get(`/api/tiers/${id}/vue_360/`, { 
+        signal
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Erreur lors de la récupération du tier ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Méthode legacy pour récupération simple (compatibilité)
+   */
+  getTiersLegacy: async (signal?: AbortSignal): Promise<Tier[]> => {
+    try {
+      const response = await apiClient.get('/api/tiers/', { signal });
+      return response.data.results || [];
+    } catch (error) {
+      console.error('Erreur lors de la récupération legacy des tiers:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Récupère les détails d'un tier (alias pour vue_360)
+   */
+  getTierDetail: async (id: string, signal?: AbortSignal): Promise<any> => {
+    return tiersApiInternal.getTierById(id, signal);
   }
 };
 
@@ -167,7 +275,7 @@ const opportunitiesApi = {
   ): Promise<PaginatedOpportunitiesResponse> => {
     try {
       const params = buildQueryParams(page, pageSize, filters);
-      const response = await apiClient.get('/opportunities/', { 
+      const response = await apiClient.get('/api/opportunities/', { 
         params, 
         signal
       });
@@ -189,7 +297,7 @@ const opportunitiesApi = {
    */
   getOpportunityDetails: async (id: string, signal?: AbortSignal): Promise<Opportunity> => {
     try {
-      const response = await apiClient.get(`/opportunities/${id}/`, { 
+      const response = await apiClient.get(`/api/opportunities/${id}/`, { 
         signal
       });
       return response.data;
@@ -217,20 +325,24 @@ const opportunitiesApi = {
         params.stage__in = status.join(',');
       }
 
-      const response = await apiClient.get('/opportunities/', { 
+      const response = await apiClient.get('/api/opportunities/', { 
         params,
         signal
       });
       
       // Transformer en options simplifiées
-      return response.data.results.map((opp: Opportunity) => ({
+      return response.data.results.map((opp: any) => ({
         id: opp.id,
         name: opp.name,
         stage: opp.stage,
-        estimatedAmount: opp.estimatedAmount,
-        probability: opp.probability,
-        tierId: opp.tier,
-        tierName: opp.tierInfo?.nom || ''
+        estimatedAmount: parseFloat(opp.estimated_amount || opp.estimatedAmount || '0'),
+        probability: parseInt(opp.probability || '0', 10),
+        tierId: opp.tier || opp.tierId,
+        tierName: opp.tierInfo?.nom || opp.tier_name || '',
+        expectedCloseDate: opp.expected_close_date || opp.expectedCloseDate,
+        description: opp.description,
+        createdAt: opp.created_at || opp.createdAt,
+        updatedAt: opp.updated_at || opp.updatedAt
       }));
     } catch (error) {
       console.error(`❌ Erreur lors de la récupération des opportunités du client ${clientId}:`, {
@@ -265,7 +377,7 @@ const opportunitiesApi = {
       // Log des données envoyées pour debug
       console.log('📤 Création opportunité - Données envoyées:', data);
       
-      const response = await apiClient.post('/opportunities/', data);
+      const response = await apiClient.post('/api/opportunities/', data);
       
       console.log('✅ Création opportunité - Réponse:', response.data);
       return response.data;
@@ -286,7 +398,7 @@ const opportunitiesApi = {
    */
   updateOpportunity: async (id: string, data: Partial<CreateOpportunityData>): Promise<Opportunity> => {
     try {
-      const response = await apiClient.put(`/opportunities/${id}/`, data);
+      const response = await apiClient.put(`/api/opportunities/${id}/`, data);
       return response.data;
     } catch (error) {
       console.error(`Erreur lors de la mise à jour de l'opportunité ${id}:`, error);
@@ -300,7 +412,7 @@ const opportunitiesApi = {
   markAsWon: async (id: string, projectId?: string): Promise<Opportunity> => {
     try {
       const data = projectId ? { project_id: projectId } : {};
-      const response = await apiClient.post(`/opportunities/${id}/mark_as_won/`, data);
+      const response = await apiClient.post(`/api/opportunities/${id}/mark_as_won/`, data);
       return response.data;
     } catch (error) {
       console.error(`Erreur lors du marquage comme gagnée de l'opportunité ${id}:`, error);
@@ -314,7 +426,7 @@ const opportunitiesApi = {
   markAsLost: async (id: string, reason: string, description?: string): Promise<Opportunity> => {
     try {
       const data = { reason, description };
-      const response = await apiClient.post(`/opportunities/${id}/mark_as_lost/`, data);
+      const response = await apiClient.post(`/api/opportunities/${id}/mark_as_lost/`, data);
       return response.data;
     } catch (error) {
       console.error(`Erreur lors du marquage comme perdue de l'opportunité ${id}:`, error);
@@ -327,7 +439,7 @@ const opportunitiesApi = {
    */
   updateStage: async (id: string, newStage: OpportunityStatus): Promise<Opportunity> => {
     try {
-      const response = await apiClient.patch(`/opportunities/${id}/`, { stage: newStage });
+      const response = await apiClient.patch(`/api/opportunities/${id}/`, { stage: newStage });
       return response.data;
     } catch (error) {
       console.error(`Erreur lors de la mise à jour du statut de l'opportunité ${id}:`, error);
@@ -340,7 +452,7 @@ const opportunitiesApi = {
    */
   deleteOpportunity: async (id: string): Promise<boolean> => {
     try {
-      await apiClient.delete(`/opportunities/${id}/`);
+      await apiClient.delete(`/api/opportunities/${id}/`);
       return true;
     } catch (error) {
       console.error(`Erreur lors de la suppression de l'opportunité ${id}:`, error);
@@ -358,7 +470,7 @@ const crmStatsApi = {
    */
   getStats: async (signal?: AbortSignal): Promise<any> => {
     try {
-      const response = await apiClient.get('/opportunities/stats/', { 
+      const response = await apiClient.get('/api/opportunities/stats/', { 
         signal
       });
       return response.data;
@@ -373,7 +485,7 @@ const crmStatsApi = {
  * API unifiée pour le CRM
  */
 export const crmApi = {
-  tiers: tiersApi,
+  tiers: tiersApiInternal,
   opportunities: opportunitiesApi,
   stats: crmStatsApi,
   
@@ -383,7 +495,7 @@ export const crmApi = {
   search: async (query: string, signal?: AbortSignal) => {
     try {
       const [tiersResponse, opportunitiesResponse] = await Promise.all([
-        tiersApi.getTiers(1, 10, { search: query }, signal),
+        tiersApiInternal.getTiers(1, 10, { search: query }, signal),
         opportunitiesApi.getOpportunities(1, 10, { search: query }, signal)
       ]);
       
@@ -398,5 +510,8 @@ export const crmApi = {
     }
   }
 };
+
+// Export pour compatibilité avec l'ancien API
+export const tiersApi = crmApi.tiers;
 
 export default crmApi;

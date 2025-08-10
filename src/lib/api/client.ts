@@ -3,12 +3,33 @@
  */
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import config from '../config/environment';
+import TenantService from '../services/tenantService';
+import AuthService from '../services/authService';
 
 /**
  * Crée une instance Axios configurée avec les intercepteurs pour l'authentification
  * et la gestion des erreurs
  */
-const createApiClient = (): AxiosInstance => {
+export const createApiClient = (): AxiosInstance => {
+  // Variables pour éviter les boucles infinies de refresh
+  let isRefreshing = false;
+  let failedQueue: Array<{
+    resolve: (value?: any) => void;
+    reject: (reason?: any) => void;
+  }> = [];
+
+  const processQueue = (error: any, token: string | null = null) => {
+    failedQueue.forEach(({ resolve, reject }) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(token);
+      }
+    });
+    
+    failedQueue = [];
+  };
+
   // Créer l'instance avec la configuration de base
   const client = axios.create({
     baseURL: config.API_BASE_URL,
@@ -20,67 +41,76 @@ const createApiClient = (): AxiosInstance => {
   });
 
   // Intercepteur pour ajouter les en-têtes d'authentification et tenant_id
-  client.interceptors.request.use((config) => {
-    // Récupérer le token JWT depuis le localStorage
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-      
-      // Déboguer le contenu du token JWT en développement
-      if (process.env.NODE_ENV === 'development') {
-        try {
-          const tokenParts = token.split('.');
-          if (tokenParts.length === 3) {
-            const payload = JSON.parse(atob(tokenParts[1]));
-            console.debug('Token JWT payload:', payload);
-            console.debug('Token expiration:', new Date(payload.exp * 1000).toLocaleString());
-            
-            // Vérifier si le token contient un tenant_id
-            if (payload.tenant_id) {
-              console.debug('Token tenant_id:', payload.tenant_id);
-            }
+  client.interceptors.request.use(async (config) => {
+    const url = config.url || '';
+    
+    // Exclure les endpoints de refresh pour éviter les boucles infinies
+    const isRefreshEndpoint = url.includes('/auth/refresh');
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register') || isRefreshEndpoint;
+    
+    // Vérifier et ajouter le token d'authentification
+    if (AuthService.isAuthenticated() && !isAuthEndpoint) {
+      // Si un refresh est en cours, attendre qu'il se termine
+      if (isRefreshing) {
+        console.log('🔄 Attente du refresh en cours...');
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(() => {
+          const { accessToken } = AuthService.getTokens();
+          if (accessToken) {
+            config.headers['Authorization'] = `Bearer ${accessToken}`;
           }
-        } catch (e) {
-          console.error('Erreur lors du décodage du token JWT:', e);
+          return config;
+        });
+      }
+      
+      // Vérifier si le token est expiré
+      if (AuthService.isTokenExpired()) {
+        console.log('🕒 Token expiré détecté, tentative de refresh...');
+        isRefreshing = true;
+        
+        try {
+          const success = await AuthService.refreshAccessToken();
+          if (!success) {
+            processQueue(new Error('Session expirée'), null);
+            return Promise.reject(new Error('Session expirée'));
+          }
+          
+          const { accessToken } = AuthService.getTokens();
+          processQueue(null, accessToken);
+          
+          if (accessToken) {
+            config.headers['Authorization'] = `Bearer ${accessToken}`;
+          }
+        } catch (error) {
+          processQueue(error, null);
+          return Promise.reject(error);
+        } finally {
+          isRefreshing = false;
+        }
+      } else {
+        // Token valide, l'ajouter directement
+        const { accessToken } = AuthService.getTokens();
+        if (accessToken) {
+          config.headers['Authorization'] = `Bearer ${accessToken}`;
         }
       }
     }
 
-    // Ajouter l'en-tête X-Tenant-ID seulement pour les endpoints qui ne passent pas 
-    // par l'authentification JWT du gateway (ex: tenant-service direct)
-    const tenantId = localStorage.getItem('tenantId');
-    if (tenantId) {
-      // Valider que le tenant ID est un UUID valide
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(tenantId)) {
-        console.error('❌ Tenant ID invalide (doit être un UUID):', tenantId);
-        console.warn('🔧 Suppression du tenant ID invalide. Veuillez vous reconnecter.');
-        localStorage.removeItem('tenantId');
-        return config; // Ne pas ajouter le header
-      }
-      
-      const url = config.url || '';
-      
-      // Endpoints qui ont besoin de X-Tenant-ID mais ne passent pas par JWT
-      const needsTenantHeader = [
-        '/tenants/',
-        '/api/tenants/',
-        '/vat-rates/',
-        '/payment-terms/',
-        '/document_appearance/'
-      ].some(endpoint => url.includes(endpoint));
-      
-      // Pour les endpoints library, le gateway ajoute automatiquement X-Tenant-ID depuis JWT
-      const isLibraryEndpoint = url.includes('/api/library/') || 
-                               url.includes('/api/fournitures/') ||
-                               url.includes('/api/main-oeuvre/') ||
-                               url.includes('/api/ouvrages/') ||
-                               url.includes('/api/categories/') ||
-                               url.includes('/api/ingredients/');
-      
-      if (needsTenantHeader && !isLibraryEndpoint) {
-        config.headers['X-Tenant-ID'] = tenantId;
-      }
+    // X-Tenant-ID maintenant géré par l'API Gateway via JWT
+    // Le frontend ne doit JAMAIS envoyer X-Tenant-ID manuellement
+    // Tout passe par : JWT → API Gateway → Services backend
+    
+    // Nettoyer tous les headers X-Tenant-ID au cas où ils seraient présents
+    delete config.headers['X-Tenant-ID'];
+    delete config.headers['x-tenant-id'];
+    delete config.headers['X-TENANT-ID'];
+
+    // OPTIONNEL : Ajouter trace ID personnalisé pour debugging (SOA 100%)
+    if (process.env.NODE_ENV === 'development') {
+      const traceId = `frontend-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      config.headers['X-Trace-ID'] = traceId;
+      console.log(`📊 Trace ID: ${traceId} → ${config.method?.toUpperCase()} ${config.url}`);
     }
 
     return config;
@@ -88,26 +118,16 @@ const createApiClient = (): AxiosInstance => {
     return Promise.reject(error);
   });
 
-  // Intercepteur pour le logging des requêtes en développement
-  if (process.env.NODE_ENV === 'development') {
-    client.interceptors.request.use((config) => {
-      console.debug(`📤 Requête API: ${config.method?.toUpperCase()} ${config.url}`, {
-        headers: config.headers,
-        params: config.params,
-      });
-      return config;
-    });
-  }
 
   // Intercepteur pour le traitement des réponses
   client.interceptors.response.use(
     (response) => {
-      // Logger les réponses en développement
+      // OPTIONNEL : Afficher trace ID de retour pour debugging (SOA 100%)
       if (process.env.NODE_ENV === 'development') {
-        console.debug(`📥 Réponse API: ${response.status} ${response.config.url}`, {
-          data: response.data,
-          headers: response.headers,
-        });
+        const traceId = response.headers['x-trace-id'];
+        if (traceId) {
+          console.log(`📊 Response Trace ID: ${traceId} → ${response.status} ${response.config.method?.toUpperCase()} ${response.config.url}`);
+        }
       }
       return response;
     },
@@ -118,39 +138,44 @@ const createApiClient = (): AxiosInstance => {
         const { status, data } = error.response;
         const url = error.config?.url || '';
 
-        console.error(`🚨 Erreur API ${status}: ${url}`, data);
+        console.error(`API Error ${status}: ${url}`, data);
 
         // Gérer les erreurs d'authentification
         if (status === 401) {
-          console.error('Erreur d\'authentification. Vérifiez votre token JWT et tenant_id.');
+          console.error('🔒 Erreur d\'authentification (401) détectée');
           
-          // Afficher les en-têtes envoyés pour le débogage
-          console.debug('En-têtes envoyés:', error.config?.headers);
-          
-          // Rediriger vers la page de connexion si nécessaire
-          // window.location.href = '/login';
+          // Vérifier si c'est une erreur de token expiré
+          const errorData = data as any;
+          if (errorData?.detail?.includes('expiré') || errorData?.detail?.includes('expired')) {
+            console.warn('🕒 Token expiré détecté dans la réponse');
+            
+            // Importer et utiliser le service d'authentification pour la déconnexion
+            import('../services/authService').then(({ default: AuthService }) => {
+              AuthService.logout('Session expirée. Veuillez vous reconnecter.');
+            });
+          }
         }
 
         // Gérer les erreurs de validation
         if (status === 400) {
-          console.error('Erreur de validation:', data);
+          console.error('Validation error:', data);
         }
 
         // Gérer les erreurs d'autorisation
         if (status === 403) {
-          console.error('Accès refusé. Vérifiez vos permissions.');
+          console.error('Access denied. Check your permissions.');
         }
       } else if (error.request) {
         // La requête a été faite mais aucune réponse n'a été reçue
         const url = error.config?.url || '';
         if (error.code === 'ECONNABORTED' && error.message.includes('timeout')) {
-          console.error('⏰ Timeout de la requête après 15s:', url);
+          console.error('Request timeout after 15s:', url);
         } else {
-          console.error('Pas de réponse du serveur:', error.request);
+          console.error('No server response:', error.request);
         }
       } else {
         // Une erreur s'est produite lors de la configuration de la requête
-        console.error('Erreur de configuration de la requête:', error.message);
+        console.error('Request configuration error:', error.message);
       }
 
       // Propager l'erreur pour que les composants puissent la gérer

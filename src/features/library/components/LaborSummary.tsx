@@ -12,7 +12,7 @@ export function LaborSummary({ labor }: LaborSummaryProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <BarChart3 className="w-5 h-5 text-benaya-600" />
+          <BarChart3 className="w-5 h-5 text-Beenaya-600" />
           Résumé
         </CardTitle>
       </CardHeader>

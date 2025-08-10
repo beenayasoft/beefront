@@ -11,7 +11,7 @@ export function LoadingState({ message = "Chargement de l'ouvrage..." }: Loading
     <div className="p-6">
       <div className="flex items-center justify-center py-12">
         <div className="text-center space-y-4">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto text-benaya-600" />
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-Beenaya-600" />
           <div className="text-lg font-medium">{message}</div>
         </div>
       </div>

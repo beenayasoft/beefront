@@ -19,10 +19,12 @@ import {
   BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useSidebarStats } from "@/hooks/useSidebarStats";
 
-const mainNavItems = [
+const getMainNavItems = (stats: any) => [
   {
     name: "Dashboard",
     href: "/",
@@ -32,37 +34,37 @@ const mainNavItems = [
     name: "Agenda",
     href: "/agenda",
     icon: Calendar,
-    badge: "5",
+    // Badge supprimé - service non disponible
   },
   {
     name: "Opportunités",
     href: "/opportunities",
     icon: BarChart3,
-    badge: "6",
+    badge: stats.opportunities ? stats.opportunities.toString() : undefined,
   },
   {
     name: "Chantiers",
     href: "/chantiers",
     icon: Building,
-    badge: "8",
+    // Badge supprimé - service non disponible
   },
   {
     name: "Devis",
     href: "/devis",
     icon: FileText,
-    badge: "12",
+    // Badge supprimé - service non disponible
   },
   {
     name: "Factures",
     href: "/factures",
     icon: Receipt,
-    badge: "7",
+    // Badge supprimé - service non disponible
   },
   {
     name: "Interventions",
     href: "/interventions",
     icon: Wrench,
-    badge: "3",
+    // Badge supprimé - service non disponible
   },
   {
     name: "Stock",
@@ -78,6 +80,7 @@ const mainNavItems = [
     name: "Tiers",
     href: "/tiers",
     icon: Building2,
+    badge: stats.tiers ? stats.tiers.toString() : undefined,
   },
   {
     name: "Paramètres",
@@ -88,9 +91,16 @@ const mainNavItems = [
 
 export function SimpleSidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [actionModalOpen, setActionModalOpen] = useState(false);
+  const [actionModalContent, setActionModalContent] = useState<{
+    title: string;
+    message: string;
+    icon: React.ReactNode;
+  } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { stats, loading: statsLoading, error: statsError } = useSidebarStats();
 
   const isActive = (href: string) => location.pathname === href;
 
@@ -98,6 +108,16 @@ export function SimpleSidebar() {
   const handleLogout = () => {
     logout();
     navigate("/auth");
+  };
+
+  // Fonction pour gérer l'action nouveau devis
+  const handleNewQuoteAction = () => {
+    setActionModalContent({
+      title: "Fonction de création de devis en développement",
+      message: "Cette fonctionnalité sera bientôt disponible ! Nous travaillons actuellement sur l'intégration complète des devis dans Beenaya. En attendant, vous pouvez créer des opportunités depuis la section CRM qui serviront de base pour vos futurs devis.",
+      icon: <FileText className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+    });
+    setActionModalOpen(true);
   };
 
   return (
@@ -183,7 +203,7 @@ export function SimpleSidebar() {
 
         {/* Navigation Items */}
         <div className="p-4 space-y-1 flex-1 overflow-y-auto Beenaya-scrollbar">
-          {mainNavItems.map((item) => {
+          {getMainNavItems(stats).map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
 
@@ -234,7 +254,10 @@ export function SimpleSidebar() {
         {/* Quick Action */}
         {!isCollapsed && (
           <div className="p-4 border-t border-neutral-200 dark:border-neutral-700">
-            <Button className="w-full Beenaya-button-primary gap-2">
+            <Button 
+              className="w-full Beenaya-button-primary gap-2"
+              onClick={handleNewQuoteAction}
+            >
               <Plus className="w-4 h-4" />
               Nouveau devis
             </Button>
@@ -283,6 +306,33 @@ export function SimpleSidebar() {
           )}
         </div>
       </nav>
+      
+      {/* Modale informative pour les actions */}
+      <Dialog open={actionModalOpen} onOpenChange={setActionModalOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg font-semibold">
+              {actionModalContent?.title}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="text-center py-4">
+            {actionModalContent?.icon}
+            <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed">
+              {actionModalContent?.message}
+            </p>
+          </div>
+          
+          <div className="flex justify-center pt-4">
+            <Button 
+              onClick={() => setActionModalOpen(false)}
+              className="px-8"
+            >
+              Compris
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

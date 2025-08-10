@@ -468,7 +468,7 @@ export function DocumentAppearanceForm({ appearanceSettings, onChange }: Documen
   return (
     <div className="h-full">
       {/* Layout principal : responsive avec aperçu sticky sur mobile */}
-      <div className="flex flex-col lg:grid lg:grid-cols-[400px_1fr] gap-6 h-full">
+      <div className="flex flex-col lg:grid lg:grid-cols-[380px_1fr] xl:grid-cols-[420px_1fr] gap-6 h-full">
         
         {/* Aperçu mobile sticky (visible uniquement sur mobile) */}
         <div className="lg:hidden order-first">
@@ -496,7 +496,7 @@ export function DocumentAppearanceForm({ appearanceSettings, onChange }: Documen
                       <div className="text-xs text-neutral-500">Chargement...</div>
                     </div>
                   ) : (
-                    <div className="scale-50 origin-top-left w-[200%] h-[200%]">
+                    <div className="scale-50 origin-top-left w-full h-full overflow-hidden" style={{ width: "200%", height: "200%" }}>
                       <DocumentPreview 
                         document={previewType === "invoice" ? getDynamicSampleData().baseInvoice : getDynamicSampleData().baseQuote} 
                         documentType={previewType} 

@@ -12,6 +12,7 @@ import {
 } from "../../../components/ui/select";
 import { VatRateSelector } from "../../documents/components/VatRateSelector";
 import { useVatRates } from "../../documents/hooks/useVatRates";
+import { SupplierSelector } from "./SupplierSelector";
 import {
   DialogHeader,
   DialogTitle,
@@ -20,6 +21,7 @@ import {
 } from "../../../components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
 import { Badge } from "../../../components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Package, Clock, AlertCircle, Loader2 } from "lucide-react";
 import { Material, Labor } from "../types/workLibrary";
 import { formatCurrency } from "../../../lib/utils";
@@ -52,7 +54,6 @@ export function LibraryItemForm({
       code: "",
       ...(type === "material" ? {
         vatRate: 20,
-        supplier: "",
         reference: "",
         wasteFactor: 0,
         isRecyclable: false,
@@ -78,8 +79,7 @@ export function LibraryItemForm({
         code: "",
         ...(type === "material" ? {
           vatRate: 20,
-          supplier: "",
-          reference: "",
+            reference: "",
           wasteFactor: 0,
           isRecyclable: false,
         } : {
@@ -168,6 +168,7 @@ export function LibraryItemForm({
           id: formData.id || "", // L'ID sera généré par l'API
           vatRate: (formData as Partial<Material>).vatRate || 20,
         } as Material;
+        
         onSave(materialData);
       } else {
         const laborData = {
@@ -226,14 +227,20 @@ export function LibraryItemForm({
       </DialogHeader>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Informations générales */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 border-b border-neutral-200 dark:border-neutral-700 pb-2">
-              Informations générales
-            </h3>
-            
-            <div className="grid grid-cols-1 gap-4">
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Package className="w-4 h-4 text-primary" />
+                Informations générales
+              </CardTitle>
+              <CardDescription>
+                Renseignez les informations principales de l'élément
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="name" className={`text-sm font-medium ${errors.name ? "text-red-600" : "text-neutral-700 dark:text-neutral-300"}`}>
                   Nom <span className="text-red-500">*</span>
@@ -268,16 +275,23 @@ export function LibraryItemForm({
                   className="Beenaya-input resize-none"
                 />
               </div>
-            </div>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Informations techniques */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 border-b border-neutral-200 dark:border-neutral-700 pb-2">
-              Informations techniques
-            </h3>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-500" />
+                Informations techniques
+              </CardTitle>
+              <CardDescription>
+                Définissez le prix et l'unité de mesure
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="unit" className={`text-sm font-medium ${errors.unit ? "text-red-600" : "text-neutral-700 dark:text-neutral-300"}`}>
                   Unité <span className="text-red-500">*</span>
@@ -333,8 +347,14 @@ export function LibraryItemForm({
                     onChange={handleChange}
                     placeholder="0.00"
                     className={`Beenaya-input pr-12 ${errors.unitPrice ? "border-red-500 focus:border-red-500" : ""}`}
+                    aria-describedby="price-currency"
+                    aria-invalid={!!errors.unitPrice}
                   />
-                  <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-neutral-500 text-sm">
+                  <div 
+                    id="price-currency" 
+                    className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-neutral-500 text-sm"
+                    aria-label="Devise en dirhams marocains"
+                  >
                     MAD
                   </div>
                 </div>
@@ -345,21 +365,26 @@ export function LibraryItemForm({
                   </div>
                 )}
               </div>
-            </div>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Informations spécifiques aux matériaux */}
           {type === "material" && (
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 border-b border-neutral-200 dark:border-neutral-700 pb-2">
-                Informations fiscales
-              </h3>
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Package className="w-4 h-4 text-blue-500" />
+                  Informations fiscales
+                </CardTitle>
+                <CardDescription>
+                  Détails spécifiques aux matériaux
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="vatRate" className={`text-sm font-medium ${errors.vatRate ? "text-red-600" : "text-neutral-700 dark:text-neutral-300"}`}>
-                    Taux de TVA <span className="text-red-500">*</span>
-                  </Label>
                   <VatRateSelector
                     value={(() => {
                       const currentVatRate = (formData as Partial<Material>).vatRate || 20;
@@ -380,21 +405,22 @@ export function LibraryItemForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="supplier" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    Fournisseur
-                  </Label>
-                  <Input
-                    id="supplier"
-                    name="supplier"
-                    value={(formData as Partial<Material>).supplier || ""}
-                    onChange={handleChange}
-                    placeholder="Nom du fournisseur"
+                  <SupplierSelector
+                    value={(formData as any).supplier_id || null}
+                    onChange={(supplierId, supplierData) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        supplier_id: supplierId,
+                        supplier: supplierData // Stocker aussi les données complètes si nécessaire
+                      }));
+                    }}
+                    placeholder="Rechercher et sélectionner un fournisseur..."
                     className="Beenaya-input"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="reference" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                     Référence
@@ -405,39 +431,61 @@ export function LibraryItemForm({
                     value={(formData as Partial<Material>).reference || ""}
                     onChange={handleChange}
                     placeholder="Référence produit"
-                    className="benaya-input"
+                    className="Beenaya-input"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="wasteFactor" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    Facteur de perte (%)
+                  <Label htmlFor="code" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    Code
                   </Label>
                   <Input
-                    id="wasteFactor"
-                    name="wasteFactor"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="100"
-                    value={(formData as Partial<Material>).wasteFactor || ""}
+                    id="code"
+                    name="code"
+                    value={(formData as Partial<Material>).code || ""}
                     onChange={handleChange}
-                    placeholder="0.0"
-                    className="benaya-input"
+                    placeholder="Code produit"
+                    className="Beenaya-input"
                   />
                 </div>
               </div>
-            </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="wasteFactor" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  Facteur de perte (%)
+                </Label>
+                <Input
+                  id="wasteFactor"
+                  name="wasteFactor"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  value={(formData as Partial<Material>).wasteFactor || ""}
+                  onChange={handleChange}
+                  placeholder="0.0"
+                  className="Beenaya-input"
+                />
+              </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Informations spécifiques à la main d'œuvre */}
           {type === "labor" && (
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100 border-b border-neutral-200 dark:border-neutral-700 pb-2">
-                Informations professionnelles
-              </h3>
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-500" />
+                  Informations professionnelles
+                </CardTitle>
+                <CardDescription>
+                  Détails spécifiques à la main d'œuvre
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="skillLevel" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
                     Niveau de qualification
@@ -446,7 +494,7 @@ export function LibraryItemForm({
                     value={(formData as Partial<Labor>).skillLevel || "skilled"}
                     onValueChange={(value) => handleSelectChange("skillLevel", value)}
                   >
-                    <SelectTrigger className="benaya-input">
+                    <SelectTrigger className="Beenaya-input">
                       <SelectValue placeholder="Sélectionner un niveau" />
                     </SelectTrigger>
                     <SelectContent>
@@ -472,21 +520,22 @@ export function LibraryItemForm({
                     value={(formData as Partial<Labor>).productivityFactor || 1.0}
                     onChange={handleChange}
                     placeholder="1.0"
-                    className="benaya-input"
+                    className="Beenaya-input"
                   />
                 </div>
               </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
         </div>
 
-        <DialogFooter className="flex flex-col-reverse sm:flex-row gap-3 pt-6 border-t border-neutral-200 dark:border-neutral-700">
+        <DialogFooter className="flex flex-col-reverse md:flex-row gap-4 pt-6 border-t border-neutral-200 dark:border-neutral-700">
           <Button
             type="button"
             variant="outline"
             onClick={onCancel}
             disabled={isLoading}
-            className="w-full sm:w-auto"
+            className="w-full md:w-auto"
           >
             Annuler
           </Button>

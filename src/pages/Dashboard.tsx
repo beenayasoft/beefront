@@ -8,10 +8,16 @@ import {
   Clock,
   CheckCircle,
   Plus,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { DashboardSkeleton } from "@/components/ui/skeletons";
+import { TierCreationDialog } from "@/features/crm/components/tiers/TierCreationDialog";
+import { OpportunityForm } from "@/features/crm/components/opportunities/OpportunityForm";
+import { toast } from "@/hooks/use-toast";
+import { crmApi } from "@/features/crm/api";
 
 // Simple metric card component
 const MetricCard = ({
@@ -22,7 +28,7 @@ const MetricCard = ({
   icon: Icon,
   changeType,
 }: any) => (
-  <div className="benaya-card">
+  <div className="Beenaya-card">
     <div className="flex items-center justify-between">
       <div className="space-y-2">
         <p className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
@@ -52,8 +58,8 @@ const MetricCard = ({
           </p>
         )}
       </div>
-      <div className="p-3 bg-benaya-100 dark:bg-benaya-900/30 rounded-xl">
-        <Icon className="w-6 h-6 text-benaya-900 dark:text-benaya-200" />
+      <div className="p-3 bg-Beenaya-100 dark:bg-Beenaya-900/30 rounded-xl">
+        <Icon className="w-6 h-6 text-Beenaya-900 dark:text-Beenaya-200" />
       </div>
     </div>
   </div>
@@ -68,8 +74,8 @@ const ActivityItem = ({
   status,
 }: any) => (
   <div className="flex items-start gap-4 p-4 rounded-xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
-    <div className="p-2 bg-benaya-100 dark:bg-benaya-900/30 rounded-lg">
-      <Icon className="w-4 h-4 text-benaya-900 dark:text-benaya-200" />
+    <div className="p-2 bg-Beenaya-100 dark:bg-Beenaya-900/30 rounded-lg">
+      <Icon className="w-4 h-4 text-Beenaya-900 dark:text-Beenaya-200" />
     </div>
     <div className="flex-1 space-y-1">
       <h4 className="font-medium text-neutral-900 dark:text-white">{title}</h4>
@@ -80,10 +86,10 @@ const ActivityItem = ({
     </div>
     <span
       className={cn(
-        "benaya-badge text-xs",
-        status === "success" && "benaya-badge-success",
-        status === "warning" && "benaya-badge-warning",
-        status === "primary" && "benaya-badge-primary",
+        "Beenaya-badge text-xs",
+        status === "success" && "Beenaya-badge-success",
+        status === "warning" && "Beenaya-badge-warning",
+        status === "primary" && "Beenaya-badge-primary",
       )}
     >
       {status === "success" && "Terminé"}
@@ -95,6 +101,16 @@ const ActivityItem = ({
 
 export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
+  
+  // États pour les modales
+  const [tierCreationOpen, setTierCreationOpen] = useState(false);
+  const [opportunityFormOpen, setOpportunityFormOpen] = useState(false);
+  const [actionModalOpen, setActionModalOpen] = useState(false);
+  const [actionModalContent, setActionModalContent] = useState<{
+    title: string;
+    message: string;
+    icon: React.ReactNode;
+  } | null>(null);
 
   // Simuler le chargement des données
   useEffect(() => {
@@ -104,6 +120,59 @@ export default function Dashboard() {
 
     return () => clearTimeout(timer);
   }, []);
+  
+  // Gestionnaires d'actions
+  const handleQuoteAction = () => {
+    setActionModalContent({
+      title: "Fonction de devis en développement",
+      message: "Cette fonctionnalité sera bientôt disponible ! Nous travaillons actuellement sur l'intégration complète des devis dans Beenaya. En attendant, vous pouvez créer des opportunités qui serviront de base pour vos futurs devis.",
+      icon: <FileText className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+    });
+    setActionModalOpen(true);
+  };
+  
+  const handleClientAction = () => {
+    setTierCreationOpen(true);
+  };
+  
+  const handleOpportunityAction = () => {
+    setOpportunityFormOpen(true);
+  };
+  
+  const handleTierCreationSuccess = (createdTierId?: string) => {
+    console.log('🎉 Tier créé avec succès:', createdTierId);
+    toast({
+      title: "Client ajouté",
+      description: "Le nouveau client a été créé avec succès",
+    });
+    setTierCreationOpen(false);
+  };
+  
+  const handleOpportunitySubmit = async (formData: any) => {
+    try {
+      console.log("Création d'opportunité via Dashboard:", formData);
+      
+      const createdOpportunity = await crmApi.opportunities.createOpportunity(formData);
+      
+      console.log("✅ Opportunité créée:", createdOpportunity);
+      
+      toast({
+        title: "Opportunité créée",
+        description: `L'opportunité "${createdOpportunity.name}" a été créée avec succès`,
+      });
+      
+      setOpportunityFormOpen(false);
+      
+    } catch (error) {
+      console.error("❌ Erreur création opportunité:", error);
+      
+      toast({
+        title: "Erreur de création",
+        description: error instanceof Error ? error.message : "Une erreur est survenue",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -116,24 +185,24 @@ export default function Dashboard() {
   return (
     <div className="p-6 space-y-8">
       {/* Welcome Header */}
-      <div className="benaya-card benaya-gradient text-white">
+      <div className="Beenaya-card Beenaya-gradient text-white">
         <div className="space-y-4">
           <div>
-            <h1 className="text-3xl font-bold">Bienvenue Jean 👋</h1>
-            <p className="text-benaya-100 text-lg mt-2">
+            <h1 className="text-3xl font-bold text-white">Bienvenue Jean 👋</h1>
+            <p className="text-white/90 text-lg mt-2">
               Voici un aperçu de vos activités de construction
             </p>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white/20 rounded-lg backdrop-blur-sm">
+            <div className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-lg">
               <span className="text-sm">HT</span>
-              <div className="w-10 h-5 bg-white/20 rounded-full relative">
+              <div className="w-10 h-5 bg-white/10 border border-white/20 rounded-full relative">
                 <div className="absolute right-0 top-0 w-5 h-5 bg-white rounded-full shadow-sm"></div>
               </div>
               <span className="text-sm font-medium">TTC</span>
             </div>
-            <div className="px-4 py-2 bg-white/20 rounded-lg backdrop-blur-sm">
+            <div className="px-4 py-2 bg-white/10 border border-white/20 rounded-lg">
               <span className="text-sm">01/04/2025 - 12/06/2025</span>
             </div>
           </div>
@@ -177,7 +246,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Chart Area */}
         <div className="lg:col-span-2">
-          <div className="benaya-card">
+          <div className="Beenaya-card">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
@@ -193,7 +262,7 @@ export default function Dashboard() {
             </div>
 
             <div className="space-y-4">
-              <div className="text-3xl font-bold text-benaya-900 dark:text-benaya-200">
+              <div className="text-3xl font-bold text-Beenaya-900 dark:text-Beenaya-200">
                 0,00 MAD
               </div>
 
@@ -210,18 +279,33 @@ export default function Dashboard() {
 
         {/* Quick Actions */}
         <div className="space-y-6">
-          <div className="benaya-card">
+          <div className="Beenaya-card">
             <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">
               Actions rapides
             </h3>
             <div className="space-y-3">
-              <Button className="w-full justify-start gap-3 benaya-button-primary">
+              <Button 
+                className="w-full justify-start gap-3 Beenaya-button-primary"
+                onClick={handleQuoteAction}
+              >
                 <Plus className="w-4 h-4" />
                 Nouveau devis
               </Button>
-              <Button variant="outline" className="w-full justify-start gap-3">
+              <Button 
+                variant="outline" 
+                className="w-full justify-start gap-3"
+                onClick={handleClientAction}
+              >
                 <Users className="w-4 h-4" />
                 Ajouter client
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full justify-start gap-3"
+                onClick={handleOpportunityAction}
+              >
+                <BarChart3 className="w-4 h-4" />
+                Nouvelle opportunité
               </Button>
               <Button variant="outline" className="w-full justify-start gap-3">
                 <Building className="w-4 h-4" />
@@ -231,7 +315,7 @@ export default function Dashboard() {
           </div>
 
           {/* Tasks Widget */}
-          <div className="benaya-card">
+          <div className="Beenaya-card">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
                 Tâches
@@ -249,7 +333,7 @@ export default function Dashboard() {
       </div>
 
       {/* Recent Activity */}
-      <div className="benaya-card">
+      <div className="Beenaya-card">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
             Activité récente
@@ -283,6 +367,52 @@ export default function Dashboard() {
           />
         </div>
       </div>
+      
+      {/* Modale de création de tier */}
+      <TierCreationDialog
+        open={tierCreationOpen}
+        onOpenChange={setTierCreationOpen}
+        onSuccess={handleTierCreationSuccess}
+      />
+      
+      {/* Modale de création d'opportunité */}
+      <Dialog open={opportunityFormOpen} onOpenChange={setOpportunityFormOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] w-[95vw] sm:w-full mx-auto overflow-y-auto">
+          <OpportunityForm
+            opportunity={{}}
+            onSubmit={handleOpportunitySubmit}
+            onCancel={() => setOpportunityFormOpen(false)}
+            isEditing={false}
+          />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Modale informative pour les actions */}
+      <Dialog open={actionModalOpen} onOpenChange={setActionModalOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg font-semibold">
+              {actionModalContent?.title}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="text-center py-4">
+            {actionModalContent?.icon}
+            <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed">
+              {actionModalContent?.message}
+            </p>
+          </div>
+          
+          <div className="flex justify-center pt-4">
+            <Button 
+              onClick={() => setActionModalOpen(false)}
+              className="px-8"
+            >
+              Compris
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

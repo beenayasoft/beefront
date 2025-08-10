@@ -15,7 +15,6 @@ interface OpportunityKanbanColumnProps {
   opportunities: Opportunity[];
   count: number;
   onView?: (opportunity: Opportunity) => void;
-  onEdit?: (opportunity: Opportunity) => void;
   onDelete?: (opportunity: Opportunity) => void;
   onStageChange?: (opportunity: Opportunity, newStage: OpportunityStatus) => void;
   onCreateQuote?: (opportunity: Opportunity) => void;
@@ -23,6 +22,8 @@ interface OpportunityKanbanColumnProps {
   onMarkAsLost?: (opportunity: Opportunity) => void;
   onAddNew?: (stage: OpportunityStatus) => void;
   activeId?: string | null;
+  isDragOver?: boolean;
+  canAcceptDrop?: boolean;
 }
 
 export function OpportunityKanbanColumn({
@@ -31,7 +32,6 @@ export function OpportunityKanbanColumn({
   opportunities,
   count,
   onView,
-  onEdit,
   onDelete,
   onStageChange,
   onCreateQuote,
@@ -39,6 +39,8 @@ export function OpportunityKanbanColumn({
   onMarkAsLost,
   onAddNew,
   activeId,
+  isDragOver = false,
+  canAcceptDrop = true,
 }: OpportunityKanbanColumnProps) {
   const { setNodeRef } = useDroppable({
     id: stage,
@@ -117,7 +119,12 @@ export function OpportunityKanbanColumn({
       {/* Column Content */}
       <div 
         ref={setNodeRef}
-        className="flex-1 space-y-3 min-h-[200px] overflow-y-auto max-h-[calc(100vh-300px)] p-1"
+        className={cn(
+          "flex-1 space-y-3 min-h-[200px] overflow-y-auto max-h-[calc(100vh-300px)] p-1 rounded-lg transition-all duration-200",
+          isDragOver && canAcceptDrop && "bg-green-50 dark:bg-green-950/10 border-2 border-green-300 border-dashed",
+          isDragOver && !canAcceptDrop && "bg-red-50 dark:bg-red-950/10 border-2 border-red-300 border-dashed",
+          !isDragOver && "border-2 border-transparent"
+        )}
       >
         <SortableContext 
           items={currentOpportunities.map(o => o.id)} 
@@ -128,7 +135,6 @@ export function OpportunityKanbanColumn({
               key={opportunity.id}
               opportunity={opportunity}
               onView={onView}
-              onEdit={onEdit}
               onDelete={onDelete}
               onStageChange={onStageChange}
               onCreateQuote={onCreateQuote}

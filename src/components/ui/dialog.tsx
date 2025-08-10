@@ -40,7 +40,14 @@ const DialogContent = React.forwardRef<
         className,
       )}
       onCloseAutoFocus={(e) => {
-        e.preventDefault();
+        // Laisser Radix gérer le focus correctement pour éviter les modales figées
+        // e.preventDefault(); // ❌ Cette ligne causait les modales figées
+        
+        // Sécurité : s'assurer que le body scroll est débloqué
+        setTimeout(() => {
+          document.body.style.overflow = '';
+          document.documentElement.style.overflow = '';
+        }, 100);
       }}
       {...props}
     >

@@ -1,196 +1,88 @@
-import { Tier } from "../types";
+import { Tier } from "@/features/crm/types/crm.types";
+import { CreateTierRequest } from "@/features/crm/api/crm";
 import { EntrepriseFormValues } from "../types/entreprise";
 import { ParticulierFormValues } from "../types/particulier";
 
 /**
- * Adaptateur pour transformer EntrepriseFormValues vers l'API Tier
+ * Adaptateur pour transformer EntrepriseFormValues vers l'API CreateTierRequest
  */
-export const transformEntrepriseToTier = (values: EntrepriseFormValues, existingId?: string): Tier => {
+export const transformEntrepriseToTier = (values: EntrepriseFormValues, existingId?: string): CreateTierRequest => {
   console.log("transformEntrepriseToTier: Converting entreprise form to tier", values);
 
-  // Pour une entreprise, utiliser la raison sociale comme nom
-  const name = values.raisonSociale || '';
-  
-  // Récupérer le contact principal (premier contact ou contact principal devis)
-  console.log("🔍 Contacts disponibles:", values.contacts);
-  const contactPrincipal = values.contacts.find(c => c.contactPrincipalDevis) || values.contacts[0];
-  console.log("🔍 Contact principal sélectionné:", contactPrincipal);
-  const contact = contactPrincipal ? `${contactPrincipal.prenom} ${contactPrincipal.nom}`.trim() : '';
-  
-  // Récupérer l'adresse principale (adresse de facturation ou première)
-  console.log("🔍 Adresses disponibles:", values.adresses);
-  const adressePrincipale = values.adresses.find(a => a.facturation) || values.adresses[0];
-  console.log("🔍 Adresse principale sélectionnée:", adressePrincipale);
-  const address = adressePrincipale ? 
-    `${adressePrincipale.rue}, ${adressePrincipale.codePostal} ${adressePrincipale.ville}`.trim() : '';
+  // Convertir les contacts
+  const contacts = values.contacts.map(c => ({
+    nom: c.nom || '',
+    prenom: c.prenom || '',
+    fonction: c.fonction || '',
+    email: c.email || '',
+    telephone: c.telephone || '',
+    is_contact_principal_devis: c.contactPrincipalDevis || false,
+    is_contact_principal_facture: c.contactPrincipalFacture || false
+  }));
 
-  const tier: Tier & { entityType: string } = {
-    id: existingId || '',
-    name,
-    type: values.flags && values.flags.length > 0 ? [values.flags[0]] : ['client'], // Prendre la première relation ou 'client' par défaut
-    contact,
-    email: contactPrincipal?.email || '',
-    phone: contactPrincipal?.telephone || '',
-    address,
-    siret: values.siret || '',
-    status: (values.status === 'inactive' ? 'inactive' : 'active') as 'active' | 'inactive',
-    entityType: 'entreprise', // CRITIQUE : Spécifier explicitement le type d'entité
+  // Convertir les adresses
+  const adresses = values.adresses.map(a => ({
+    libelle: a.libelle || '',
+    rue: a.rue || '',
+    ville: a.ville || '',
+    code_postal: a.codePostal || '',
+    pays: a.pays || 'France',
+    is_facturation: a.facturation || false
+  }));
+
+  const tierData: CreateTierRequest = {
+    nom: values.nom || '',
+    type: 'entreprise',
+    relation: values.flags && values.flags.length > 0 ? values.flags[0] as any : 'prospect',
+    siret: values.siret || undefined,
+    tva: values.tva || undefined,
+    contacts,
+    adresses
   };
 
-  console.log("transformEntrepriseToTier: Converted tier", tier);
-  return tier;
+  console.log("transformEntrepriseToTier: Converted tier", tierData);
+  return tierData;
 };
 
 /**
- * Adaptateur pour transformer ParticulierFormValues vers l'API Tier
+ * Adaptateur pour transformer ParticulierFormValues vers l'API CreateTierRequest
  */
-export const transformParticulierToTier = (values: ParticulierFormValues, existingId?: string): Tier => {
+export const transformParticulierToTier = (values: ParticulierFormValues, existingId?: string): CreateTierRequest => {
   console.log("transformParticulierToTier: Converting particulier form to tier", values);
 
-  // Pour un particulier, utiliser le nom complet comme nom
-  const name = [values.prenom, values.nom].filter(Boolean).join(' ') || values.nom || '';
-  
-  // Le particulier est son propre contact
-  const contact = name;
-  
-  // Récupérer l'adresse principale
-  const adressePrincipale = values.adresses.find(a => a.principale) || values.adresses[0];
-  const address = adressePrincipale ? 
-    `${adressePrincipale.rue}, ${adressePrincipale.codePostal} ${adressePrincipale.ville}`.trim() : '';
-
-  const tier: Tier & { entityType: string } = {
-    id: existingId || '',
-    name,
-    type: values.relation && values.relation.length > 0 ? [values.relation[0]] : ['client'], // Prendre la première relation ou 'client' par défaut
-    contact,
+  // Pour un particulier, créer un contact avec ses informations
+  const contacts = [{
+    nom: values.nom || '',
+    prenom: values.prenom || '',
+    fonction: values.profession || '',
     email: values.email || '',
-    phone: values.telephone || '',
-    address,
-    siret: '', // Pas de SIRET pour un particulier
-    status: (values.status === 'inactive' ? 'inactive' : 'active') as 'active' | 'inactive',
-    entityType: 'particulier', // CRITIQUE : Spécifier explicitement le type d'entité
+    telephone: values.telephone || '',
+    is_contact_principal_devis: true,
+    is_contact_principal_facture: true
+  }];
+
+  // Convertir les adresses
+  const adresses = values.adresses.map(a => ({
+    libelle: a.libelle || 'Domicile',
+    rue: a.rue || '',
+    ville: a.ville || '',
+    code_postal: a.codePostal || '',
+    pays: a.pays || 'France',
+    is_facturation: a.facturation || false
+  }));
+
+  const tierData: CreateTierRequest = {
+    nom: [values.prenom, values.nom].filter(Boolean).join(' ') || values.nom || '',
+    type: 'particulier',
+    relation: values.relation && values.relation.length > 0 ? values.relation[0] as any : 'prospect',
+    contacts,
+    adresses
   };
 
-  console.log("transformParticulierToTier: Converted tier", tier);
-  return tier;
+  console.log("transformParticulierToTier: Converted tier", tierData);
+  return tierData;
 };
 
-/**
- * Adaptateur pour transformer un Tier vers EntrepriseFormValues
- */
-export const transformTierToEntreprise = (tier: Tier): EntrepriseFormValues => {
-  console.log("transformTierToEntreprise: Converting tier to entreprise form", tier);
-
-  // Séparer le contact en prénom/nom s'il existe
-  const contactParts = tier.contact ? tier.contact.trim().split(' ') : [];
-  const prenom = contactParts[0] || '';
-  const nom = contactParts.slice(1).join(' ') || '';
-
-  // Séparer l'adresse en composants
-  const addressParts = tier.address ? tier.address.split(',') : [];
-  const rue = addressParts[0]?.trim() || '';
-  const villeInfo = addressParts[1]?.trim() || '';
-  const codePostalMatch = villeInfo.match(/^(\d{5})\s+(.+)$/);
-  const codePostal = codePostalMatch ? codePostalMatch[1] : '';
-  const ville = codePostalMatch ? codePostalMatch[2] : villeInfo;
-
-  const entrepriseValues: EntrepriseFormValues = {
-    raisonSociale: tier.name || '',
-    siret: tier.siret || '',
-    numeroTVA: '',
-    codeNAF: '',
-    formeJuridique: '',
-    capitalSocial: '',
-    flags: tier.type || [],
-    status: (tier.status === 'inactive' ? 'inactive' : 'active') as 'active' | 'inactive',
-    contacts: tier.contact ? [{
-      nom,
-      prenom,
-      fonction: '',
-      email: tier.email || '',
-      telephone: tier.phone || '',
-      contactPrincipalDevis: true,
-      contactPrincipalFacture: true,
-    }] : [],
-    adresses: tier.address ? [{
-      libelle: 'Siège social',
-      rue,
-      ville,
-      codePostal,
-      pays: 'France',
-      facturation: true,
-    }] : [],
-  };
-
-  console.log("transformTierToEntreprise: Converted entreprise values", entrepriseValues);
-  return entrepriseValues;
-};
-
-/**
- * Adaptateur pour transformer un Tier vers ParticulierFormValues
- */
-export const transformTierToParticulier = (tier: Tier): ParticulierFormValues => {
-  console.log("transformTierToParticulier: Converting tier to particulier form", tier);
-
-  // Séparer le nom complet en prénom/nom
-  const nameParts = tier.name ? tier.name.trim().split(' ') : [];
-  const prenom = nameParts[0] || '';
-  const nom = nameParts.slice(1).join(' ') || nameParts[0] || '';
-
-  // Séparer l'adresse en composants
-  const addressParts = tier.address ? tier.address.split(',') : [];
-  const rue = addressParts[0]?.trim() || '';
-  const villeInfo = addressParts[1]?.trim() || '';
-  const codePostalMatch = villeInfo.match(/^(\d{5})\s+(.+)$/);
-  const codePostal = codePostalMatch ? codePostalMatch[1] : '';
-  const ville = codePostalMatch ? codePostalMatch[2] : villeInfo;
-
-  const particulierValues: ParticulierFormValues = {
-    nom,
-    prenom,
-    email: tier.email || '',
-    telephone: tier.phone || '',
-    relation: tier.type || [],
-    status: (tier.status === 'inactive' ? 'inactive' : 'active') as 'active' | 'inactive',
-    profession: '',
-    dateNaissance: '',
-    adresses: tier.address ? [{
-      libelle: 'Domicile',
-      rue,
-      ville,
-      codePostal,
-      pays: 'France',
-      principale: true,
-    }] : [],
-    notes: '',
-  };
-
-  console.log("transformTierToParticulier: Converted particulier values", particulierValues);
-  return particulierValues;
-};
-
-/**
- * Fonction utilitaire pour déterminer le type d'entité à partir d'un Tier
- */
-export const detectEntityTypeFromTier = (tier: Tier): 'entreprise' | 'particulier' => {
-  // Heuristiques pour déterminer le type :
-  // 1. Si SIRET présent -> entreprise
-  // 2. Si flags contient des termes entreprise -> entreprise
-  // 3. Sinon -> particulier
-  
-  if (tier.siret && tier.siret.trim().length > 0) {
-    return 'entreprise';
-  }
-  
-  const entrepriseFlags = ['fournisseur', 'sous-traitant'];
-  const hasEntrepriseFlag = tier.type?.some(flag => entrepriseFlags.includes(flag.toLowerCase()));
-  
-  if (hasEntrepriseFlag) {
-    return 'entreprise';
-  }
-  
-  return 'particulier';
-};
 
 /**
  * Validation des données avant transformation
@@ -203,8 +95,8 @@ export const validateBeforeTransform = (
   
   if (type === 'entreprise') {
     const entrepriseValues = values as EntrepriseFormValues;
-    if (!entrepriseValues.raisonSociale || entrepriseValues.raisonSociale.trim().length === 0) {
-      errors.push('La raison sociale est obligatoire pour une entreprise');
+    if (!entrepriseValues.nom || entrepriseValues.nom.trim().length === 0) {
+      errors.push('Le nom de l’entreprise est obligatoire');
     }
     if (!entrepriseValues.flags || entrepriseValues.flags.length === 0) {
       errors.push('Sélectionnez au moins un type de relation commerciale');

@@ -10,6 +10,8 @@ export function useMaterialDetail(materialId: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (materialId) {
@@ -45,16 +47,24 @@ export function useMaterialDetail(materialId: string | undefined) {
     }
   };
 
-  const handleDelete = async () => {
-    if (!material || !confirm("Êtes-vous sûr de vouloir supprimer ce matériau ?")) return;
+  const handleDelete = () => {
+    if (!material) return;
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!material) return;
     
     try {
+      setIsDeleting(true);
       await libraryApi.deleteMaterial(material.id);
       invalidateLibraryCache('suppression matériau depuis détail');
+      setShowDeleteDialog(false);
       navigate("/bibliotheque", { replace: true });
     } catch (err) {
       console.error("Erreur lors de la suppression:", err);
       setError("Erreur lors de la suppression du matériau");
+      setIsDeleting(false);
     }
   };
 
@@ -64,8 +74,12 @@ export function useMaterialDetail(materialId: string | undefined) {
     error,
     showEditDialog,
     setShowEditDialog,
+    showDeleteDialog,
+    setShowDeleteDialog,
+    isDeleting,
     handleEdit,
     handleDelete,
+    confirmDelete,
     navigate
   };
 }

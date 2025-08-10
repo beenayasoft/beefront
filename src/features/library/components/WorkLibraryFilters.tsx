@@ -28,7 +28,7 @@ export function WorkLibraryFilters({
   const hasActiveFilters = searchQuery || activeTab !== "all" || sortField !== "name" || sortDirection !== "asc";
 
   return (
-    <div className="benaya-card">
+    <div className="Beenaya-card">
       <div className="flex items-center justify-between gap-4">
         <div className="flex-1 max-w-md">
           <div className="relative">
@@ -38,7 +38,7 @@ export function WorkLibraryFilters({
               value={searchQuery}
               onChange={onSearchChange}
               onKeyDown={(e) => e.key === "Enter" && onSearch(searchQuery)}
-              className="pl-10 benaya-input"
+              className="pl-10 Beenaya-input"
             />
           </div>
         </div>

@@ -16,21 +16,27 @@ export const transformCategory = (backendCategory: BackendCategory): WorkCategor
   position: backendCategory.position || 0,
 });
 
-export const transformMaterial = (backendMaterial: BackendMaterial): Material => ({
-  id: backendMaterial.id.toString(),
-  reference: backendMaterial.reference,
-  name: backendMaterial.nom,
-  description: backendMaterial.description || '',
-  unit: backendMaterial.unite,
-  unitPrice: Number(backendMaterial.unitPrice || backendMaterial.prix_achat_ht),
-  vatRate: Number(backendMaterial.vatRate || backendMaterial.vat_rate),
-  supplier: backendMaterial.supplier,
-  category: backendMaterial.categorie_nom || '',
-  categoryId: backendMaterial.categorie ? backendMaterial.categorie.toString() : null,
-  code: backendMaterial.reference || '',
-  wasteFactor: Number(backendMaterial.wasteFactor || backendMaterial.waste_factor || 0),
-  isRecyclable: backendMaterial.is_recyclable || false,
-});
+export const transformMaterial = (backendMaterial: BackendMaterial): Material => {
+  return {
+    id: backendMaterial.id.toString(),
+    reference: backendMaterial.reference,
+    name: backendMaterial.nom,
+    description: backendMaterial.description || '',
+    unit: backendMaterial.unite,
+    unitPrice: Number(backendMaterial.unitPrice || backendMaterial.prix_achat_ht),
+    vatRate: Number(backendMaterial.vatRate || backendMaterial.vat_rate),
+    category: backendMaterial.categorie_nom || '',
+    categoryId: backendMaterial.categorie ? backendMaterial.categorie.toString() : null,
+    code: backendMaterial.code || backendMaterial.reference || '',
+    wasteFactor: Number(backendMaterial.wasteFactor || backendMaterial.waste_factor || 0),
+    isRecyclable: backendMaterial.is_recyclable || false,
+    
+    // Intégration CRM pour fournisseurs - utilisation cohérente des types
+    supplier_id: backendMaterial.supplier_id || null,
+    supplier_details: backendMaterial.supplier_details || null,
+    effective_supplier_name: backendMaterial.effective_supplier_name || null,
+  };
+};
 
 export const transformLabor = (backendLabor: BackendLabor): Labor => ({
   id: backendLabor.id.toString(),
@@ -88,45 +94,70 @@ export const transformWork = (backendWork: BackendWork): Work => ({
 });
 
 // Fonctions de transformation Frontend → Backend
-export const transformMaterialToBackend = (material: Partial<Material>) => ({
-  nom: material.name,
-  unite: material.unit,
-  prix_achat_ht: material.unitPrice?.toString(),
-  vat_rate: material.vatRate?.toString() || '20.0',
-  description: material.description || '',
-  reference: material.reference || '',
-  supplier: material.supplier || '',
-  categorie: material.categoryId ? Number(material.categoryId) : null,
-  type: 'material',
-  code: material.code || material.reference || '',
-  waste_factor: (material.wasteFactor || 0).toString(),
-  is_recyclable: material.isRecyclable || false,
-});
+export const transformMaterialToBackend = (material: Partial<Material>) => {
+  // Validation des champs requis pour éviter les erreurs 400
+  if (!material.name || !material.unit || (!material.unitPrice && material.unitPrice !== 0)) {
+    throw new Error('Les champs name, unit et unitPrice sont requis');
+  }
 
-export const transformLaborToBackend = (labor: Partial<Labor>) => ({
-  nom: labor.name,
-  cout_horaire: labor.unitPrice?.toString(),
-  unite: labor.unit || 'h',
-  description: labor.description || '',
-  categorie: labor.categoryId ? Number(labor.categoryId) : null,
-  type: 'labor',
-  code: labor.code || labor.name || '',
-  skill_level: labor.skillLevel || 'skilled',
-  productivity_factor: (labor.productivityFactor || 1.0).toString(),
-});
+  return {
+    nom: material.name,
+    unite: material.unit,
+    prix_achat_ht: material.unitPrice?.toString() || '0',
+    vat_rate: material.vatRate?.toString() || '20.0',
+    description: material.description || null,
+    reference: Array.isArray(material.reference) 
+      ? material.reference[0] || null 
+      : material.reference || null,
+    supplier_id: material.supplier_id || null, // CRM integration field
+    categorie: material.categoryId ? Number(material.categoryId) : null,
+    type: 'material',
+    code: Array.isArray(material.code) 
+      ? material.code[0] || null 
+      : material.code || null,  // Ne pas dériver automatiquement de reference
+    waste_factor: (material.wasteFactor || 0).toString(),
+    is_recyclable: material.isRecyclable || false,
+  };
+};
 
-export const transformWorkToBackend = (work: Partial<Work>) => ({
-  nom: work.name,
-  unite: work.unit,
-  description: work.description || '',
-  categorie: work.categoryId ? Number(work.categoryId) : null,
-  code: work.reference || '',
-  prix_recommande: work.recommendedPrice?.toString() || '0.0',
-  marge: work.margin?.toString() || '20.0',
-  complexity: 'medium',
-  efficiency: '1.0',
-  duration_estimate: null,
-  requires_certification: false,
-  type: 'work',
-  is_custom: work.isCustom || true,
-});
+export const transformLaborToBackend = (labor: Partial<Labor>) => {
+  // Validation des champs requis pour éviter les erreurs 400
+  if (!labor.name || (!labor.unitPrice && labor.unitPrice !== 0)) {
+    throw new Error('Les champs name et unitPrice sont requis');
+  }
+
+  return {
+    nom: labor.name,
+    cout_horaire: labor.unitPrice?.toString() || '0',
+    unite: labor.unit || 'h',
+    description: labor.description || null,
+    categorie: labor.categoryId ? Number(labor.categoryId) : null,
+    type: 'labor',
+    code: labor.code || null,
+    skill_level: labor.skillLevel || 'skilled',
+    productivity_factor: (labor.productivityFactor || 1.0).toString(),
+  };
+};
+
+export const transformWorkToBackend = (work: Partial<Work>) => {
+  // Validation des champs requis pour éviter les erreurs 400
+  if (!work.name || !work.unit) {
+    throw new Error('Les champs name et unit sont requis');
+  }
+
+  return {
+    nom: work.name,
+    unite: work.unit,
+    description: work.description || null,
+    categorie: work.categoryId ? Number(work.categoryId) : null,
+    code: work.reference || null,
+    prix_recommande: work.recommendedPrice?.toString() || '0',
+    marge: work.margin?.toString() || '20.0',
+    complexity: work.complexity || 'medium',
+    efficiency: work.efficiency?.toString() || '1.0',
+    duration_estimate: work.durationEstimate?.toString() || null,
+    requires_certification: work.requiresCertification || false,
+    type: 'work',
+    is_custom: work.isCustom || true,
+  };
+};

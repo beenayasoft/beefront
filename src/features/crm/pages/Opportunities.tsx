@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { Plus, Grid, List, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,8 @@ import { OpportunityList } from "@/features/crm/components/opportunities/Opportu
 import { OpportunityFilters } from "@/features/crm/components/opportunities/OpportunityFilters";
 import { OpportunityForm } from "@/features/crm/components/opportunities/OpportunityForm";
 import { OpportunityLossForm } from "@/features/crm/components/opportunities/OpportunityLossForm";
+import { ConfirmationDialog } from "@/features/crm/components/opportunities/ConfirmationDialog";
+import { OpportunityTransitionDialog } from "@/features/crm/components/opportunities/OpportunityTransitionDialog";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +38,6 @@ import { Opportunity, OpportunityStatus, LossReason } from "../types/opportunity
 import { useModalState, createSafeSubmitHandler } from "@/hooks/useModalState";
 import { OpportunitySortableItem } from "@/features/crm/components/opportunities/OpportunitySortableItem";
 import { OpportunityCard } from "@/features/crm/components/opportunities/OpportunityCard";
-import { KanbanColumnSkeleton, ListSkeleton } from "@/components/ui/skeletons";
 
 // Définition des colonnes du Kanban
 const kanbanColumns = [
@@ -49,10 +51,11 @@ const kanbanColumns = [
 export default function Opportunities() {
   const navigate = useNavigate();
   
+  // 🏷️ Définir le titre de la page
+  usePageTitle('Opportunités');
+  
   // États principaux
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({
     total: 0,
     byStage: {} as Record<OpportunityStatus, number>,
@@ -63,18 +66,49 @@ export default function Opportunities() {
     conversionRate: 0,
   });
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // 🔍 États pour les filtres
+  const [dateFilter, setDateFilter] = useState<{from?: string; to?: string}>({});
+  const [stageFilter, setStageFilter] = useState<string[]>([]);
+  const [sortField, setSortField] = useState<'name' | 'estimatedAmount' | 'probability' | 'expectedCloseDate' | 'createdAt'>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [activeId, setActiveId] = useState<string | null>(null);
   const [viewType, setViewType] = useState<'kanban' | 'list'>('kanban');
   
   // 🚀 NOUVEAU : Gestion d'état sécurisée pour les modals
   const opportunityFormModal = useModalState<Opportunity>();
   const lossFormModal = useModalState<Opportunity>();
+  const confirmationModal = useModalState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type?: 'warning' | 'danger';
+  }>();
 
-  // Configuration des capteurs pour le drag and drop
+  // État pour le dialogue de transition d'étapes
+  const [transitionDialog, setTransitionDialog] = useState<{
+    isOpen: boolean;
+    opportunity: Opportunity | null;
+    targetStage: OpportunityStatus;
+    errorCode?: string;
+    suggestion?: string;
+    isLoading: boolean;
+  }>({
+    isOpen: false,
+    opportunity: null,
+    targetStage: 'won',
+    errorCode: undefined,
+    suggestion: undefined,
+    isLoading: false,
+  });
+
+  // Configuration des capteurs pour le drag and drop optimisée
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5, // Distance minimum pour déclencher le drag (réduite)
+        delay: 50,   // Délai réduit pour une meilleure réactivité
+        tolerance: 8, // Tolérance augmentée pour les mouvements
       },
     })
   );
@@ -82,8 +116,6 @@ export default function Opportunities() {
   // 🚀 CHARGEMENT INITIAL DES DONNÉES
   useEffect(() => {
     const loadOpportunities = async () => {
-      setIsLoading(true);
-      setError(null);
       try {
         console.log('📥 Chargement des opportunités...');
         console.log('🏢 Tenant ID actuel:', localStorage.getItem('tenantId'));
@@ -111,24 +143,22 @@ export default function Opportunities() {
         }
         
         const statsData = await crmApi.stats.getStats();
-        setStats(statsData);
+        console.log('📊 Stats brutes reçues du serveur:', statsData);
+        const safeStats = createSafeStats(statsData);
+        console.log('📊 Stats sécurisées appliquées:', safeStats);
+        setStats(safeStats);
         console.log('✅ Chargement terminé');
       } catch (error: any) {
         console.error('❌ Erreur lors du chargement des opportunités:', error);
-        
-        let errorMessage = 'Impossible de charger les opportunités';
         if (error?.response?.status === 401) {
-          errorMessage = 'Session expirée. Veuillez vous reconnecter.';
+          toast.error('Session expirée. Veuillez vous reconnecter.');
         } else if (error?.response?.status === 404) {
-          errorMessage = 'Service d\'opportunités non disponible';
+          toast.error('Service d\'opportunités non disponible');
         } else if (error?.response?.status === 500) {
-          errorMessage = 'Erreur serveur - Vérifiez les logs Django et la base de données';
+          toast.error('Erreur serveur - Vérifiez les logs Django et la base de données');
+        } else {
+          toast.error('Impossible de charger les opportunités');
         }
-        
-        setError(errorMessage);
-        toast.error(errorMessage);
-      } finally {
-        setIsLoading(false);
       }
     };
     
@@ -157,47 +187,259 @@ export default function Opportunities() {
     };
   }, []); // ✅ Tableau de dépendances vide pour éviter la boucle
 
-  // Filtrer les opportunités par statut
+  // 🔍 NOUVELLE LOGIQUE DE FILTRAGE UNIFIÉE
+  const getFilteredOpportunities = () => {
+    let filtered = [...opportunities];
+    
+    // Filtre par recherche textuelle
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(opp => 
+        opp.name.toLowerCase().includes(query) ||
+        (opp.tierName && opp.tierName.toLowerCase().includes(query)) ||
+        (opp.description && opp.description.toLowerCase().includes(query))
+      );
+    }
+    
+    // Filtre par statut
+    if (stageFilter.length > 0) {
+      filtered = filtered.filter(opp => stageFilter.includes(opp.stage));
+    }
+    
+    // Filtre par date
+    if (dateFilter.from || dateFilter.to) {
+      filtered = filtered.filter(opp => {
+        const createdDate = new Date(opp.createdAt);
+        const fromDate = dateFilter.from ? new Date(dateFilter.from) : null;
+        const toDate = dateFilter.to ? new Date(dateFilter.to) : null;
+        
+        if (fromDate && createdDate < fromDate) return false;
+        if (toDate && createdDate > toDate) return false;
+        
+        return true;
+      });
+    }
+    
+    // Tri
+    filtered.sort((a, b) => {
+      let aValue: any = a[sortField];
+      let bValue: any = b[sortField];
+      
+      // Gestion des cas spéciaux
+      if (sortField === 'estimatedAmount') {
+        aValue = a.estimatedAmount || 0;
+        bValue = b.estimatedAmount || 0;
+      } else if (sortField === 'expectedCloseDate' || sortField === 'createdAt') {
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
+      } else if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+      
+      if (sortOrder === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+    
+    return filtered;
+  };
+  
+  // Filtrer les opportunités par statut (pour le Kanban)
   const getOpportunitiesByStatus = (status: OpportunityStatus) => {
-    return opportunities.filter(opportunity => opportunity.stage === status);
+    return getFilteredOpportunities().filter(opportunity => opportunity.stage === status);
   };
 
-  // Gérer le début du glisser-déposer
+  // État pour le feedback visuel du drag & drop
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
+
+  // Fonction utilitaire pour créer des stats sécurisées avec adaptation du format backend
+  const createSafeStats = (statsData: any) => {
+    console.log('🔧 createSafeStats - Données reçues:', statsData);
+    
+    // Adapter les données du nouveau format backend vers le format frontend (comme dans OpportunityStats)
+    let adaptedStats;
+    
+    if (statsData?.total_stats) {
+      // Format backend avec total_stats et stage_stats
+      adaptedStats = {
+        total: statsData.total_stats.count || 0,
+        totalAmount: parseFloat(statsData.total_stats.total_amount || '0'),
+        weightedAmount: parseFloat(statsData.weighted_pipeline?.weighted_total || '0'),
+        wonAmount: 0, // À calculer depuis stage_stats
+        lostAmount: 0, // À calculer depuis stage_stats
+        conversionRate: 0, // À calculer
+        // Initialiser tous les stages par défaut
+        byStage: {
+          new: 0,
+          needs_analysis: 0,
+          negotiation: 0,
+          won: 0,
+          lost: 0
+        } as Record<OpportunityStatus, number>
+      };
+      
+      // Créer byStage depuis stage_stats
+      if (statsData.stage_stats && Array.isArray(statsData.stage_stats)) {
+        statsData.stage_stats.forEach((stage: any) => {
+          const stageKey = stage.stage as OpportunityStatus;
+          adaptedStats.byStage[stageKey] = stage.count || 0;
+          if (stage.stage === 'won') {
+            adaptedStats.wonAmount = parseFloat(stage.total_amount || '0');
+          }
+          if (stage.stage === 'lost') {
+            adaptedStats.lostAmount = parseFloat(stage.total_amount || '0');
+          }
+        });
+      }
+      
+      // Calculer le taux de conversion
+      if (adaptedStats.total > 0) {
+        adaptedStats.conversionRate = ((adaptedStats.byStage.won || 0) / adaptedStats.total) * 100;
+      }
+      
+    } else {
+      // Format déjà adapté ou ancien format
+      adaptedStats = {
+        total: statsData?.total || 0,
+        // Initialiser tous les stages par défaut même pour l'ancien format
+        byStage: {
+          new: 0,
+          needs_analysis: 0,
+          negotiation: 0,
+          won: 0,
+          lost: 0,
+          ...(statsData?.byStage || {})
+        } as Record<OpportunityStatus, number>,
+        totalAmount: statsData?.totalAmount || 0,
+        weightedAmount: statsData?.weightedAmount || 0,
+        wonAmount: statsData?.wonAmount || 0,
+        lostAmount: statsData?.lostAmount || 0,
+        conversionRate: statsData?.conversionRate || 0,
+      };
+    }
+    
+    console.log('🔧 createSafeStats - Stats adaptées:', adaptedStats);
+    return adaptedStats;
+  };
+
+  // Gérer le début du glisser-déposer avec feedback
   const handleDragStart = (event: DragStartEvent) => {
+    console.log('🎯 DRAG START:', event.active.id);
     setActiveId(event.active.id as string);
+    // Ajouter une classe pour le feedback visuel global
+    document.body.style.cursor = 'grabbing';
   };
 
-  // Gérer le survol pendant le glisser-déposer
+  // Gérer le survol pendant le glisser-déposer avec feedback visuel
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
     
-    if (!over) return;
+    if (!over) {
+      setDragOverColumn(null);
+      return;
+    }
     
     const activeId = active.id as string;
     const overId = over.id as string;
     
-    // Nous n'avons pas besoin de faire des changements pendant le survol
-    // mais cette fonction peut être utilisée pour des animations ou des effets visuels
+    // Identifier la colonne survolée pour le feedback visuel
+    let targetColumnId = null;
+    
+    // Vérifier d'abord si c'est directement une colonne
+    const targetColumn = kanbanColumns.find(col => col.id === overId || col.status === overId);
+    if (targetColumn) {
+      targetColumnId = targetColumn.id;
+    } else {
+      // Si on survole une opportunité, identifier sa colonne
+      const overOpportunity = opportunities.find(opp => opp.id === overId);
+      if (overOpportunity) {
+        const overColumn = kanbanColumns.find(col => col.status === overOpportunity.stage);
+        targetColumnId = overColumn?.id || null;
+      }
+    }
+    
+    setDragOverColumn(targetColumnId);
+    
+    // Validation en temps réel pour le feedback visuel
+    const activeOpportunity = opportunities.find(opp => opp.id === activeId);
+    if (activeOpportunity && targetColumn) {
+      const validation = validateTransition(activeOpportunity, targetColumn.status);
+      // Le feedback visuel est géré dans OpportunityKanbanColumn avec canAcceptDrop
+    }
   };
 
-  // Gérer la fin du glisser-déposer
-  const handleDragEnd = (event: DragEndEvent) => {
+  // Valider une transition d'opportunité selon les règles métier
+  const validateTransition = (opportunity: Opportunity, newStage: OpportunityStatus): { isValid: boolean; message?: string; needsConfirmation?: boolean } => {
+    const currentStage = opportunity.stage;
+    
+    // Si pas de changement, toujours valide
+    if (currentStage === newStage) {
+      return { isValid: true };
+    }
+    
+    // Règles métier
+    switch (newStage) {
+      case 'negotiation':
+        // La validation réelle se fait côté backend
+        // Le frontend laisse passer et affiche la modale si nécessaire
+        break;
+        
+      case 'won':
+        // Pour gagner une opportunité, elle doit avoir été en négociation
+        if (currentStage !== 'negotiation') {
+          return {
+            isValid: false,
+            message: "Une opportunité ne peut être gagnée que depuis l'étape de négociation."
+          };
+        }
+        break;
+        
+      case 'new':
+      case 'needs_analysis':
+        // Retour en arrière - nécessite confirmation
+        if (currentStage === 'negotiation' || currentStage === 'won') {
+          return {
+            isValid: true,
+            needsConfirmation: true,
+            message: `Êtes-vous sûr de vouloir faire revenir cette opportunité en "${newStage === 'new' ? 'Nouvelles' : 'Analyse des besoins'}" ?`
+          };
+        }
+        break;
+    }
+    
+    return { isValid: true };
+  };
+
+  // Gérer la fin du glisser-déposer avec validation et confirmation
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     
-    if (!over) return;
+    // Nettoyer le feedback visuel immédiatement
+    setActiveId(null);
+    setDragOverColumn(null);
+    document.body.style.cursor = '';
+    
+    if (!over) {
+      return;
+    }
     
     const activeId = active.id as string;
     const overId = over.id as string;
     
     // Trouver l'opportunité active
     const activeOpportunity = opportunities.find(opp => opp.id === activeId);
-    if (!activeOpportunity) return;
+    if (!activeOpportunity) {
+      return;
+    }
     
     // Déterminer le nouveau statut en fonction de l'endroit où elle a été déposée
     let newStatus: OpportunityStatus = activeOpportunity.stage;
     
-    // Vérifier si elle a été déposée sur une colonne
-    const targetColumn = kanbanColumns.find(col => col.id === overId);
+    // Vérifier si elle a été déposée sur une colonne (par ID ou par status)
+    const targetColumn = kanbanColumns.find(col => col.id === overId || col.status === overId);
     if (targetColumn) {
       newStatus = targetColumn.status;
     } else {
@@ -205,21 +447,50 @@ export default function Opportunities() {
       const overOpportunity = opportunities.find(opp => opp.id === overId);
       if (overOpportunity) {
         newStatus = overOpportunity.stage;
+      } else {
+        // Si aucune correspondance trouvée, annuler le drag
+        console.warn('Zone de drop non reconnue:', overId);
+        return;
       }
     }
     
-    // Mettre à jour le statut de l'opportunité si nécessaire
+    // Mettre à jour le statut si nécessaire
     if (newStatus !== activeOpportunity.stage) {
+      // Valider la transition
+      const validation = validateTransition(activeOpportunity, newStatus);
+      
+      if (!validation.isValid) {
+        // Transition interdite
+        toast.error(validation.message || "Cette transition n'est pas autorisée");
+        return;
+      }
+      
+      if (validation.needsConfirmation) {
+        // Transition nécessitant confirmation
+        confirmationModal.actions.open({
+          title: "Confirmer la transition",
+          message: validation.message || "Êtes-vous sûr de vouloir effectuer cette action ?",
+          type: 'warning',
+          onConfirm: () => {
+            if (newStatus === 'lost') {
+              handleMarkAsLostSecure(activeOpportunity);
+            } else {
+              handleStageChange(activeOpportunity, newStatus);
+            }
+            confirmationModal.actions.close();
+          }
+        });
+        return;
+      }
+      
       // Si on déplace vers "perdu", ouvrir le formulaire de raison de perte
       if (newStatus === 'lost') {
         handleMarkAsLostSecure(activeOpportunity);
       } else {
-        // Sinon, mettre à jour directement
+        // Sinon, mettre à jour directement et immédiatement
         handleStageChange(activeOpportunity, newStatus);
       }
     }
-    
-    setActiveId(null);
   };
 
   // Marquer une opportunité comme perdue - DÉPLACÉ ICI POUR ÉVITER L'ERREUR
@@ -228,22 +499,83 @@ export default function Opportunities() {
     lossFormModal.actions.open(opportunity);
   }, [lossFormModal.actions]);
 
-  // 🚀 MIGRATION: Gérer le changement de statut via le service intelligent
+  // Fonction utilitaire pour calculer la probabilité selon l'étape
+  const getProbabilityByStage = (stage: OpportunityStatus): number => {
+    switch (stage) {
+      case 'new':
+        return 10;
+      case 'needs_analysis':
+        return 30;
+      case 'negotiation':
+        return 60;
+      case 'won':
+        return 100;
+      case 'lost':
+        return 0;
+      default:
+        return 10; // Défaut pour nouvelle
+    }
+  };
+
+  // 🚀 MIGRATION: Gérer le changement de statut avec mise à jour optimiste
   const handleStageChange = async (opportunity: Opportunity, newStage: OpportunityStatus) => {
+    // 1. MISE À JOUR OPTIMISTE IMMÉDIATE (pour l'effet instantané)
+    console.log(`🚀 Mise à jour optimiste: ${opportunity.id} vers ${newStage}`);
+    const newProbability = getProbabilityByStage(newStage);
+    console.log(`🔗 Mise à jour probabilité: ${opportunity.probability}% → ${newProbability}%`);
+    const optimisticOpportunity = { 
+      ...opportunity, 
+      stage: newStage,
+      probability: newProbability
+    };
+    
+    setOpportunities(prev => prev.map(opp => 
+      opp.id === opportunity.id ? optimisticOpportunity : opp
+    ));
+    
+    // 2. Mettre à jour les stats optimistement
+    setStats(prev => {
+      console.log('🔄 Stats AVANT mise à jour optimiste:', prev);
+      
+      const newStats = { 
+        ...prev,
+        byStage: { ...prev.byStage } // S'assurer que byStage est un objet
+      };
+      
+      // Décrémenter l'ancien statut (avec protection)
+      const currentStageCount = newStats.byStage[opportunity.stage] || 0;
+      console.log(`📉 Décrément ${opportunity.stage}: ${currentStageCount} → ${Math.max(0, currentStageCount - 1)}`);
+      newStats.byStage[opportunity.stage] = Math.max(0, currentStageCount - 1);
+      
+      // Incrémenter le nouveau statut (avec protection)
+      const newStageCount = newStats.byStage[newStage] || 0;
+      console.log(`📈 Incrément ${newStage}: ${newStageCount} → ${newStageCount + 1}`);
+      newStats.byStage[newStage] = newStageCount + 1;
+      
+      console.log('🔄 Stats APRÈS mise à jour optimiste:', newStats);
+      return newStats;
+    });
+
     try {
+      // 3. CONFIRMATION VIA L'API (en arrière-plan)
+      console.log(`📡 Confirmation API: ${opportunity.id} vers ${newStage}`);
       const updatedOpportunity = await opportunitiesApi.updateOpportunityStage(opportunity.id, newStage);
       
-      // Mettre à jour la liste des opportunités
+      // 4. Mise à jour avec les vraies données du serveur
       setOpportunities(prev => prev.map(opp => 
         opp.id === updatedOpportunity.id ? updatedOpportunity : opp
       ));
       
-      // Mettre à jour les statistiques
-      const statsData = await crmApi.stats.getStats();
-      setStats(statsData);
+      // 5. Recharger les stats réelles
+      try {
+        const statsData = await crmApi.stats.getStats();
+        setStats(createSafeStats(statsData));
+      } catch (statsError) {
+        console.warn('⚠️ Erreur stats (non critique):', statsError);
+      }
       
-      // Afficher une notification de succès
-      toast.success(`L'opportunité a été déplacée vers "${
+      // 6. Notification de succès
+      toast.success(`Opportunité déplacée vers "${
         newStage === 'new' ? 'Nouvelles' :
         newStage === 'needs_analysis' ? 'Analyse des besoins' :
         newStage === 'negotiation' ? 'Négociation' :
@@ -251,7 +583,7 @@ export default function Opportunities() {
         newStage === 'lost' ? 'Perdues' : 'En attente'
       }"`);
       
-      // Vérifier si un prospect a été converti en client
+      // 7. Vérifier conversion prospect -> client
       if (updatedOpportunity.tier_converted) {
         toast.success(`🎉 Prospect converti en client ! ${updatedOpportunity.tier_converted_message || `${opportunity.tierName} est maintenant un client.`}`, {
           duration: 6000,
@@ -259,17 +591,61 @@ export default function Opportunities() {
       }
       
     } catch (error) {
-      console.error('Erreur lors de la mise à jour:', error);
+      console.error('❌ Erreur lors de la confirmation API:', error);
       
-      // Gérer les erreurs de validation métier
-      if (error?.response?.status === 400 && error?.response?.data) {
+      // 8. ROLLBACK en cas d'erreur - remettre l'état original
+      setOpportunities(prev => prev.map(opp => 
+        opp.id === opportunity.id ? opportunity : opp
+      ));
+      
+      // Rollback des stats
+      setStats(prev => {
+        const rollbackStats = { 
+          ...prev,
+          byStage: { ...prev.byStage } // S'assurer que byStage est un objet
+        };
+        
+        // Remettre l'ancien statut (avec protection)
+        const originalStageCount = rollbackStats.byStage[opportunity.stage] || 0;
+        rollbackStats.byStage[opportunity.stage] = originalStageCount + 1;
+        
+        // Décrémenter le nouveau statut (avec protection)
+        const newStageCount = rollbackStats.byStage[newStage] || 0;
+        rollbackStats.byStage[newStage] = Math.max(0, newStageCount - 1);
+        
+        return rollbackStats;
+      });
+      
+      // 9. Gestion élégante des erreurs selon le type
+      if (error?.response?.status === 400 && error?.response?.data?.code) {
+        const errorData = error.response.data;
+        
+        // Si l'erreur a un code spécifique, ouvrir le dialogue de transition
+        if (errorData.code === 'QUOTE_REQUIRED_FOR_NEGOTIATION' || 
+            errorData.code === 'NEGOTIATION_REQUIRED_FOR_WON') {
+          setTransitionDialog({
+            isOpen: true,
+            opportunity,
+            targetStage: newStage,
+            errorCode: errorData.code,
+            suggestion: errorData.suggestion,
+            isLoading: false,
+          });
+        } else {
+          // Pour les autres erreurs avec code, afficher un toast informatif
+          toast.error(`Transition interdite: ${errorData.detail}${errorData.suggestion ? ` ${errorData.suggestion}` : ''}`, {
+            duration: 8000,
+          });
+        }
+      } else if (error?.response?.status === 400 && error?.response?.data) {
+        // Erreurs sans code spécifique
         const errorData = error.response.data;
         toast.error(`Transition interdite: ${errorData.detail}${errorData.suggestion ? ` ${errorData.suggestion}` : ''}`, {
           duration: 8000,
         });
       } else {
-        // Erreur générique
-        toast.error("Impossible de mettre à jour l'opportunité");
+        // Erreurs techniques générales
+        toast.error("Impossible de mettre à jour l'opportunité - changement annulé");
       }
     }
   };
@@ -292,20 +668,34 @@ export default function Opportunities() {
     }
   };
 
-  // 🚀 MIGRATION: Marquer une opportunité comme gagnée
+  // 🚀 MIGRATION: Marquer une opportunité comme gagnée (avec gestion élégante des transitions)
   const handleMarkAsWon = async (opportunity: Opportunity) => {
     try {
       console.log(`🎉 Marquage de l'opportunité ${opportunity.id} comme gagnée...`);
+      
+      // Mise à jour optimiste immédiate
+      const optimisticOpportunity = { 
+        ...opportunity, 
+        stage: 'won' as OpportunityStatus
+      };
+      setOpportunities(prev => prev.map(opp => 
+        opp.id === opportunity.id ? optimisticOpportunity : opp
+      ));
+      
       const updatedOpportunity = await opportunitiesApi.markAsWon(opportunity.id);
       
-      // Mettre à jour la liste des opportunités
+      // Mettre à jour avec les vraies données du serveur
       setOpportunities(prev => prev.map(opp => 
         opp.id === updatedOpportunity.id ? updatedOpportunity : opp
       ));
       
-      // Mettre à jour les statistiques
-      const statsData = await crmApi.stats.getStats();
-      setStats(statsData);
+      // Recharger les statistiques
+      try {
+        const statsData = await crmApi.stats.getStats();
+        setStats(createSafeStats(statsData));
+      } catch (statsError) {
+        console.warn('⚠️ Erreur stats (non critique):', statsError);
+      }
       
       toast.success('🎉 Opportunité marquée comme gagnée !');
       
@@ -316,10 +706,24 @@ export default function Opportunities() {
         });
       }
       
-      console.log(`✅ Opportunité ${opportunity.id} marquée comme gagnée`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Erreur lors du marquage gagnée:', error);
-      toast.error('Erreur lors du marquage de l\'opportunité comme gagnée');
+      
+      // Gestion élégante des erreurs de transition métier
+      if (error?.response?.status === 400 && error?.response?.data?.code) {
+        const errorData = error.response.data;
+        setTransitionDialog({
+          isOpen: true,
+          opportunity,
+          targetStage: 'won',
+          errorCode: errorData.code,
+          suggestion: errorData.suggestion,
+          isLoading: false,
+        });
+      } else {
+        // Erreur technique générale
+        toast.error('Erreur lors du marquage de l\'opportunité comme gagnée');
+      }
     }
   };
 
@@ -336,56 +740,104 @@ export default function Opportunities() {
 
   // 🚀 MIGRATION: Gérer la suppression via le service intelligent
   const handleDeleteOpportunity = useCallback(async (opportunity: Opportunity) => {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer l'opportunité "${opportunity.name}" ?`)) {
-      try {
-        const success = await opportunitiesApi.deleteOpportunity(opportunity.id);
-        if (success) {
-          // Mettre à jour la liste des opportunités
-          setOpportunities(prev => prev.filter(opp => opp.id !== opportunity.id));
-          
-          // Mettre à jour les statistiques
-          const statsData = await crmApi.stats.getStats();
-          setStats(statsData);
-          
-          // Afficher une notification
-          toast.success('Opportunité supprimée');
+    confirmationModal.actions.open({
+      title: "Supprimer l'opportunité",
+      message: `Êtes-vous sûr de vouloir supprimer l'opportunité "${opportunity.name}" ? Cette action est irréversible.`,
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          const success = await opportunitiesApi.deleteOpportunity(opportunity.id);
+          if (success) {
+            // Mettre à jour la liste des opportunités
+            setOpportunities(prev => prev.filter(opp => opp.id !== opportunity.id));
+            
+            // Mettre à jour les statistiques
+            const statsData = await crmApi.stats.getStats();
+            setStats(statsData);
+            
+            // Afficher une notification
+            toast.success('Opportunité supprimée');
+            
+            // Fermer la modale
+            confirmationModal.actions.close();
+          }
+        } catch (error) {
+          console.error('Erreur lors de la suppression:', error);
+          toast.error('Impossible de supprimer l\'opportunité');
         }
-      } catch (error) {
-        console.error('Erreur lors de la suppression:', error);
-        toast.error('Impossible de supprimer l\'opportunité');
       }
-    }
-  }, []); // Pas de dépendances car on utilise la forme fonctionnelle de setState
+    });
+  }, [confirmationModal.actions]); // Dépendance correcte
 
-  // 🚀 MIGRATION: Confirmer la perte via le service intelligent
+  // 🚀 MIGRATION: Confirmer la perte via le service intelligent (avec mise à jour optimiste)
   const handleConfirmLoss = useCallback(async (data: { lossReason: LossReason; lossDescription?: string }) => {
     if (!lossFormModal.data || lossFormModal.isSubmitting) {
       console.warn('⚠️ Aucune opportunité sélectionnée pour la perte ou traitement en cours');
       return;
     }
+
+    const opportunity = lossFormModal.data;
+    
+    // Mise à jour optimiste immédiate
+    const optimisticOpportunity = { 
+      ...opportunity, 
+      stage: 'lost' as OpportunityStatus,
+      lossReason: data.lossReason,
+      lossDescription: data.lossDescription
+    };
+    setOpportunities(prev => prev.map(opp => 
+      opp.id === opportunity.id ? optimisticOpportunity : opp
+    ));
     
     try {
       lossFormModal.actions.setSubmitting(true);
       
-      console.log(`❌ Marquage de l'opportunité ${lossFormModal.data.id} comme perdue...`);
-      const updatedOpportunity = await opportunitiesApi.markAsLost(lossFormModal.data.id, data.lossReason, data.lossDescription);
+      console.log(`❌ Marquage de l'opportunité ${opportunity.id} comme perdue...`);
+      console.log('🔍 Données reçues du formulaire:', data);
+      console.log('🔍 Type de lossDescription:', typeof data.lossDescription, data.lossDescription);
       
-      // Mettre à jour la liste des opportunités
+      // Préparer les données en filtrant les valeurs undefined
+      const requestData: any = {
+        loss_reason: data.lossReason,
+      };
+      
+      // Ajouter loss_description seulement si elle n'est pas undefined ou null
+      if (data.lossDescription !== undefined && data.lossDescription !== null && data.lossDescription !== '') {
+        requestData.loss_description = Array.isArray(data.lossDescription) 
+          ? data.lossDescription.join(' ') 
+          : data.lossDescription;
+      }
+      
+      console.log('🔍 Données préparées pour envoi:', requestData);
+      const updatedOpportunity = await opportunitiesApi.markAsLost(opportunity.id, requestData);
+      
+      // Mettre à jour avec les vraies données du serveur
       setOpportunities(prev => prev.map(opp => 
         opp.id === updatedOpportunity.id ? updatedOpportunity : opp
       ));
       
-      // Mettre à jour les statistiques
-      const statsData = await crmApi.stats.getStats();
-      setStats(statsData);
+      // Recharger les statistiques
+      try {
+        const statsData = await crmApi.stats.getStats();
+        setStats(createSafeStats(statsData));
+      } catch (statsError) {
+        console.warn('⚠️ Erreur stats (non critique):', statsError);
+      }
       
       toast.success('Opportunité marquée comme perdue');
-      console.log(`✅ Opportunité ${lossFormModal.data.id} marquée comme perdue`);
+      console.log(`✅ Opportunité ${opportunity.id} marquée comme perdue`);
       
-      // Fermer le modal
+      // Fermer la modale APRÈS le succès de l'opération
       lossFormModal.actions.close();
+      
     } catch (error) {
       console.error('❌ Erreur lors du marquage perdue:', error);
+      
+      // Rollback en cas d'erreur
+      setOpportunities(prev => prev.map(opp => 
+        opp.id === opportunity.id ? opportunity : opp
+      ));
+      
       toast.error('Erreur lors du marquage de l\'opportunité comme perdue');
     } finally {
       lossFormModal.actions.setSubmitting(false);
@@ -417,22 +869,12 @@ export default function Opportunities() {
       } else {
         // Mode création
         console.log('🆕 Création d\'une nouvelle opportunité...');
-        
-        // Transformer les données au format attendu par l'API (snake_case)
-        const createData = {
-          name: formData.name!,
-          tier: formData.tierId!,
-          stage: formData.stage!,
-          estimated_amount: formData.estimatedAmount!,
-          probability: formData.probability!,
-          expected_close_date: formData.expectedCloseDate!,
-          source: formData.source! as string,
-          description: formData.description,
-          assigned_to: formData.assignedTo,
-        };
-        
-        console.log('📤 Données envoyées à l\'API:', createData);
-        const newOpportunity = await opportunitiesApi.createOpportunity(createData);
+        console.log('📤 DONNÉES REÇUES DANS OPPORTUNITIES.TSX:', formData);
+        console.log('🚨 ANALYSE DÉTAILLÉE DANS OPPORTUNITIES.TSX:');
+        Object.entries(formData).forEach(([key, value]) => {
+          console.log(`   ${key}:`, typeof value, Array.isArray(value) ? '(ARRAY!)' : '', value);
+        });
+        const newOpportunity = await opportunitiesApi.createOpportunity(formData);
         
         // Ajouter à la liste des opportunités
         setOpportunities(prev => [...prev, newOpportunity]);
@@ -444,7 +886,7 @@ export default function Opportunities() {
       // Recharger les statistiques (séparé de la création pour éviter l'échec total)
       try {
         const statsData = await crmApi.stats.getStats();
-        setStats(statsData);
+        setStats(createSafeStats(statsData));
       } catch (statsError) {
         console.error('⚠️ Erreur lors du rechargement des statistiques (non critique):', statsError);
         // Ne pas faire échouer toute l'opération pour les stats
@@ -481,16 +923,103 @@ export default function Opportunities() {
     }
   }, [lossFormModal.actions]);
 
+  // 🚀 Gestionnaire pour la transition guidée d'étapes
+  const handleConfirmTransition = useCallback(async () => {
+    if (!transitionDialog.opportunity) return;
+
+    setTransitionDialog(prev => ({ ...prev, isLoading: true }));
+
+    try {
+      const opportunity = transitionDialog.opportunity;
+      
+      // Cas spécial : si un devis est requis pour la négociation
+      if (transitionDialog.errorCode === 'QUOTE_REQUIRED_FOR_NEGOTIATION') {
+        console.log(`📄 Redirection vers la création de devis pour l'opportunité ${opportunity.id}`);
+        
+        // Fermer le dialogue et rediriger vers la création de devis
+        setTransitionDialog(prev => ({ 
+          ...prev, 
+          isOpen: false, 
+          isLoading: false,
+          opportunity: null 
+        }));
+        
+        // Rediriger vers la création de devis avec pré-sélection
+        handleCreateQuote(opportunity);
+        
+        toast.success('Vous allez être redirigé vers la création d\'un devis');
+        return;
+      }
+
+      console.log(`🔄 Transition guidée pour ${opportunity.id}: ${opportunity.stage} -> négociation -> ${transitionDialog.targetStage}`);
+
+      // Étape 1: Passer en négociation
+      await handleStageChange(opportunity, 'negotiation');
+      
+      // Attendre un peu pour que la mise à jour se propage
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Étape 2: Passer à l'étape finale
+      const updatedOpportunity = { ...opportunity, stage: 'negotiation' as OpportunityStatus };
+      if (transitionDialog.targetStage === 'won') {
+        await handleMarkAsWon(updatedOpportunity);
+      } else if (transitionDialog.targetStage === 'lost') {
+        // Pour les transitions vers 'lost', ouvrir le formulaire de raison
+        handleMarkAsLostSecure(updatedOpportunity);
+      }
+
+      // Fermer le dialogue
+      setTransitionDialog(prev => ({ 
+        ...prev, 
+        isOpen: false, 
+        isLoading: false,
+        opportunity: null 
+      }));
+
+      toast.success('✨ Transition effectuée avec succès !');
+
+    } catch (error) {
+      console.error('❌ Erreur lors de la transition guidée:', error);
+      toast.error('Erreur lors de la transition guidée');
+      setTransitionDialog(prev => ({ ...prev, isLoading: false }));
+    }
+  }, [transitionDialog.opportunity, transitionDialog.targetStage, transitionDialog.errorCode, handleStageChange, handleMarkAsLostSecure, handleCreateQuote]);
+
+  // 🚀 Fermer le dialogue de transition
+  const handleTransitionDialogClose = useCallback(() => {
+    setTransitionDialog(prev => ({ 
+      ...prev, 
+      isOpen: false, 
+      isLoading: false,
+      opportunity: null 
+    }));
+  }, []);
+
   // 🚀 Gestionnaire d'annulation de formulaire sécurisé
   const handleFormCancel = useCallback(() => {
     console.log('❌ Annulation du formulaire');
     opportunityFormModal.actions.close();
   }, [opportunityFormModal.actions]);
+  
+  // 🔍 GESTIONNAIRES DE FILTRES
+  const handleDateRangeChange = useCallback((from: string, to: string) => {
+    console.log('📅 Changement de plage de dates:', { from, to });
+    setDateFilter({ from, to });
+  }, []);
+  
+  const handleStageFilterChange = useCallback((stages: string[]) => {
+    console.log('🎯 Changement de filtre par statut:', stages);
+    setStageFilter(stages);
+  }, []);
+  
+  const handleSortChange = useCallback((field: string, order: 'asc' | 'desc') => {
+    console.log('🔄 Changement de tri:', { field, order });
+    setSortField(field as any);
+    setSortOrder(order);
+  }, []);
 
   // Obtenir l'opportunité active pour l'overlay de glisser-déposer
   const activeOpportunity = activeId ? opportunities.find(opp => opp.id === activeId) : null;
-
-  // Skeleton loading supprimé - rendu direct du contenu
 
   return (
     <div className="p-6 space-y-6">
@@ -521,6 +1050,9 @@ export default function Opportunities() {
       <OpportunityFilters
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onDateRangeChange={handleDateRangeChange}
+        onStageFilterChange={handleStageFilterChange}
+        onSortChange={handleSortChange}
       />
 
         {/* View Toggle */}
@@ -566,7 +1098,6 @@ export default function Opportunities() {
                 opportunities={getOpportunitiesByStatus(column.status)}
                 count={getOpportunitiesByStatus(column.status).length}
                 onView={handleViewOpportunity}
-                onEdit={handleEditOpportunitySecure}
                 onDelete={handleDeleteOpportunity}
                 onStageChange={handleStageChange}
                 onCreateQuote={handleCreateQuote}
@@ -574,6 +1105,14 @@ export default function Opportunities() {
                 onMarkAsLost={handleMarkAsLostSecure}
                 onAddNew={handleAddNewSecure}
                 activeId={activeId}
+                isDragOver={dragOverColumn === column.id}
+                canAcceptDrop={(() => {
+                  if (!activeId) return true;
+                  const activeOpportunity = opportunities.find(opp => opp.id === activeId);
+                  if (!activeOpportunity) return true;
+                  const validation = validateTransition(activeOpportunity, column.status);
+                  return validation.isValid;
+                })()}
               />
             </div>
           ))}
@@ -593,11 +1132,7 @@ export default function Opportunities() {
         // Vue Liste
         <div className="space-y-4">
           <OpportunityList
-            opportunities={opportunities.filter(opp => 
-              opp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              (opp.tierName && opp.tierName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-              (opp.description && opp.description.toLowerCase().includes(searchQuery.toLowerCase()))
-            )}
+            opportunities={getFilteredOpportunities()}
             onView={handleViewOpportunity}
             onEdit={handleEditOpportunitySecure}
             onDelete={handleDeleteOpportunity}
@@ -610,17 +1145,7 @@ export default function Opportunities() {
 
       {/* Opportunity Form Dialog */}
       <Dialog open={opportunityFormModal.isOpen} onOpenChange={handleFormDialogClose}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>{opportunityFormModal.data ? "Modifier l'opportunité" : "Nouvelle opportunité"}</DialogTitle>
-            <DialogDescription>
-              {opportunityFormModal.data 
-                ? "Modifiez les informations de cette opportunité commerciale."
-                : "Créez une nouvelle opportunité commerciale en remplissant les informations ci-dessous."
-              }
-            </DialogDescription>
-          </DialogHeader>
-          
+        <DialogContent className="max-w-2xl max-h-[90vh] w-[95vw] sm:w-full mx-auto overflow-y-auto">
           <OpportunityForm
             opportunity={opportunityFormModal.data}
             onSubmit={handleFormSubmit}
@@ -636,6 +1161,36 @@ export default function Opportunities() {
         onOpenChange={handleLossFormClose}
         onSubmit={handleConfirmLoss}
       />
+
+      {/* Confirmation Dialog */}
+      {confirmationModal.data && (
+        <ConfirmationDialog
+          isOpen={confirmationModal.isOpen}
+          onClose={() => confirmationModal.actions.close()}
+          onConfirm={confirmationModal.data.onConfirm}
+          title={confirmationModal.data.title}
+          message={confirmationModal.data.message}
+          type={confirmationModal.data.type}
+        />
+      )}
+
+      {/* Transition Dialog */}
+      {transitionDialog.opportunity && (
+        <OpportunityTransitionDialog
+          isOpen={transitionDialog.isOpen}
+          onClose={handleTransitionDialogClose}
+          opportunity={transitionDialog.opportunity}
+          targetStage={transitionDialog.targetStage}
+          errorCode={transitionDialog.errorCode}
+          suggestion={transitionDialog.suggestion}
+          onConfirmTransition={handleConfirmTransition}
+          onDirectAction={() => {
+            // Action directe non implémentée pour l'instant
+            handleTransitionDialogClose();
+          }}
+          isLoading={transitionDialog.isLoading}
+        />
+      )}
     </div>
   );
 }

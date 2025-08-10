@@ -8,9 +8,9 @@ import {
 import { EntrepriseForm } from "./EntrepriseForm";
 import { EntrepriseFormValues } from "./types/entreprise";
 import { useState, useEffect } from "react";
-import { tiersApi } from "@/features/crm/api";
 import { transformEntrepriseToTier, validateBeforeTransform } from "./utils/adaptateurs";
 import { Tier } from "./types";
+import { useTierMutations, useTierDetail } from "../../hooks/useTiers";
 
 interface TierEntrepriseEditDialogProps {
   open: boolean;
@@ -25,31 +25,29 @@ export function TierEntrepriseEditDialog({
   onSuccess,
   tier
 }: TierEntrepriseEditDialogProps) {
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [initialValues, setInitialValues] = useState<EntrepriseFormValues | undefined>(undefined);
+  
+  // ✅ Utiliser les mutations et query React Query
+  const { updateTier } = useTierMutations();
+  const { data: tierDetail, isLoading: loadingDetail } = useTierDetail(tier.id, open);
 
-  // Préparer les valeurs initiales depuis les données du tier
+  // Préparer les valeurs initiales depuis les données React Query
   useEffect(() => {
-    if (tier && open) {
-      console.log("TierEntrepriseEditDialog: Préparation des valeurs initiales pour:", tier);
+    if (tierDetail && open && !loadingDetail) {
+      console.log("TierEntrepriseEditDialog: Préparation des valeurs initiales pour:", tierDetail);
       
-      // Récupérer les données complètes depuis l'API pour avoir tous les contacts et adresses
-      const fetchCompleteData = async () => {
-        try {
-          const response = await fetch(`http://localhost:8000/api/tiers/tiers/${tier.id}/vue_360/`, {
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-              'Content-Type': 'application/json',
-            },
-          });
-          
-          if (!response.ok) {
-            throw new Error(`Erreur ${response.status}: ${response.statusText}`);
-          }
-          
-          const data = await response.json();
+      try {
+        const data = tierDetail;
           console.log("TierEntrepriseEditDialog: Données complètes reçues:", data);
+          console.log("🔍 Analyse des champs entreprise:", {
+            nom: data.nom,
+            siret: data.siret,
+            tva: data.tva,
+            flags: data.flags,
+            is_deleted: data.is_deleted,
+            hasOnglets: !!data.onglets
+          });
           
           // Extraire les contacts et adresses de la structure onglets si nécessaire
           let contacts = data.contacts || [];
@@ -58,25 +56,62 @@ export function TierEntrepriseEditDialog({
           // Si les données sont dans la structure 'onglets', les extraire
           if (data.onglets) {
             console.log("Structure avec onglets détectée, extraction des données...");
+            console.log("🔍 Structure complète data.onglets:", data.onglets);
+            
             if (data.onglets.contacts) {
               contacts = data.onglets.contacts;
+              console.log("📋 Contacts depuis onglets:", contacts);
             }
             if (data.onglets.infos && data.onglets.infos.adresses) {
               adresses = data.onglets.infos.adresses;
+              console.log("🏠 Adresses depuis onglets.infos.adresses:", adresses);
+            }
+            
+            // ✅ CORRECTION : Vérifier aussi dans onglets.adresses au cas où
+            if (data.onglets.adresses && data.onglets.adresses.length > 0) {
+              adresses = data.onglets.adresses;
+              console.log("🏠 Adresses depuis onglets.adresses:", adresses);
+            }
+            
+            // ✅ Vérifier si les infos entreprise sont dans onglets
+            if (data.onglets.infos) {
+              console.log("🏢 Infos entreprise dans onglets:", data.onglets.infos);
             }
           }
           
           console.log("Contacts extraits:", contacts);
           console.log("Adresses extraites:", adresses);
           
+          // ✅ CORRECTION : Récupérer les données d'entreprise depuis onglets si disponibles
+          let siretEntreprise = data.siret || '';
+          let tvaEntreprise = data.tva || '';
+          
+          // ✅ CORRECTION : Récupérer la relation et la convertir en flags
+          const relationEntreprise = data.relation || '';
+          const flagsEntreprise = relationEntreprise ? [relationEntreprise] : [];
+          
+          console.log("🏢 Mapping relation -> flags:", {
+            relation: relationEntreprise,
+            flags: flagsEntreprise
+          });
+          
+          // Vérifier si les infos sont dans onglets.infos
+          if (data.onglets && data.onglets.infos) {
+            const infos = data.onglets.infos;
+            siretEntreprise = infos.siret || siretEntreprise;
+            tvaEntreprise = infos.tva || infos.numeroTVA || tvaEntreprise;
+            console.log("🔧 Données entreprise depuis onglets:", {
+              siret: siretEntreprise,
+              tva: tvaEntreprise
+            });
+          }
+          
           // Transformer les données en format EntrepriseFormValues
           const formValues: EntrepriseFormValues = {
-            raisonSociale: data.nom || '',
-            formeJuridique: '', // Non disponible dans l'API actuelle
-            siret: data.siret || '',
-            numeroTVA: data.tva || '',
-
-            flags: data.flags || [],
+            nom: data.nom || '', // ✅ CORRECTION : 'nom' pas 'raisonSociale'
+            siret: siretEntreprise,
+            tva: tvaEntreprise,
+            flags: flagsEntreprise, // ✅ CORRECTION : Utiliser la relation convertie
             status: data.is_deleted ? 'inactive' : 'active',
             
             // Transformer les contacts
@@ -109,11 +144,8 @@ export function TierEntrepriseEditDialog({
           console.error("TierEntrepriseEditDialog: Erreur lors du chargement des données:", err);
           setError("Erreur lors du chargement des données de l'entreprise");
         }
-      };
-      
-      fetchCompleteData();
     }
-  }, [tier, open]);
+  }, [tierDetail?.id, open, loadingDetail]); // ✅ Utiliser seulement l'ID pour éviter les boucles
 
   const handleSubmit = async (values: EntrepriseFormValues) => {
     console.log("TierEntrepriseEditDialog: Modification entreprise avec valeurs:", values);
@@ -125,15 +157,14 @@ export function TierEntrepriseEditDialog({
       return;
     }
 
-    setLoading(true);
     setError(null);
     
     try {
       // Transformer les données du formulaire vers le format Tier
       const tierData = transformEntrepriseToTier(values, tier.id);
       
-      // Mettre à jour le tier via l'API
-      await tiersApi.updateTier(tier.id, tierData);
+      // ✅ Utiliser la mutation React Query - gère automatiquement le cache
+      await updateTier.mutateAsync({ id: tier.id, data: tierData });
       console.log("TierEntrepriseEditDialog: Entreprise modifiée avec succès");
       
       // Fermer le dialogue et notifier le succès
@@ -154,13 +185,11 @@ export function TierEntrepriseEditDialog({
       }
       
       setError(errorMessage);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleCancel = () => {
-    if (!loading) {
+    if (!updateTier.isPending) {
       setError(null);
       onOpenChange(false);
     }
@@ -174,23 +203,27 @@ export function TierEntrepriseEditDialog({
             🏢 Modifier l'entreprise
           </DialogTitle>
           <DialogDescription>
-            Modifiez les informations de l'entreprise "{tier.name}"
+            Modifiez les informations de l'entreprise "{tier.nom}"
           </DialogDescription>
         </DialogHeader>
         
-        {initialValues ? (
+        {loadingDetail ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3">Chargement des données...</span>
+          </div>
+        ) : initialValues ? (
           <EntrepriseForm
             onSubmit={handleSubmit}
             onCancel={handleCancel}
-            loading={loading}
+            loading={updateTier.isPending}
             error={error}
             initialValues={initialValues}
             isEditing={true}
           />
         ) : (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <span className="ml-3">Chargement des données...</span>
+            <div className="text-red-600">Erreur lors du chargement des données</div>
           </div>
         )}
       </DialogContent>

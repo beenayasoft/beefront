@@ -60,8 +60,8 @@ export function transformBackendToFrontend(backendData: any): TenantInfo {
       },
     },
     
-    vat_rates: (backendData.vat_rates || []).map((rate: any) => ({
-      id: rate.id ? String(rate.id) : undefined,
+    vat_rates: (backendData.vat_rates || []).map((rate: any, index: number) => ({
+      id: rate.id ? String(rate.id) : `vat-rate-${index}-${rate.code || 'default'}`,
       code: rate.code || '',
       name: rate.name || '',
       rate: parseFloat(rate.rate) || 0,

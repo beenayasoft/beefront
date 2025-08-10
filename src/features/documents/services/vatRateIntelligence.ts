@@ -304,14 +304,15 @@ class VatRateIntelligenceService {
 
   /**
    * Détecte le pays probable basé sur les informations du tenant
+   * Priorise les données de géolocalisation IP si disponibles
    */
   static detectCountryFromTenant(tenant: any): string {
-    // Logique de détection basée sur:
-    // 1. Pays explicite du tenant
-    // 2. Code postal/région
-    // 3. Domaine email
-    // 4. Devise par défaut
+    // 1. Priorité: données de géolocalisation IP détectées lors de la création
+    if (tenant?.detected_location?.country_code) {
+      return tenant.detected_location.country_code;
+    }
 
+    // 2. Pays explicite du tenant (modifié par l'utilisateur)
     if (tenant?.country) {
       const countryMappings: Record<string, string> = {
         'France': 'FR',
@@ -320,27 +321,54 @@ class VatRateIntelligenceService {
         'Belgique': 'BE',
         'Belgium': 'BE',
         'Espagne': 'ES',
-        'Spain': 'ES'
+        'Spain': 'ES',
+        'Suisse': 'CH',
+        'Switzerland': 'CH',
+        'Canada': 'CA',
+        'États-Unis': 'US',
+        'United States': 'US',
+        'Royaume-Uni': 'GB',
+        'United Kingdom': 'GB'
       };
       
       return countryMappings[tenant.country] || tenant.country;
     }
 
-    // Détection par code postal (exemples)
+    // 3. Détection par devise (si elle a été configurée intelligemment)
+    if (tenant?.settings?.currency) {
+      const currencyMappings: Record<string, string> = {
+        'EUR': 'FR', // Par défaut France pour EUR
+        'MAD': 'MA',
+        'CHF': 'CH',
+        'CAD': 'CA',
+        'USD': 'US',
+        'GBP': 'GB'
+      };
+      
+      const detectedCountry = currencyMappings[tenant.settings.currency];
+      if (detectedCountry) return detectedCountry;
+    }
+
+    // 4. Détection par code postal (exemples)
     if (tenant?.postal_code) {
       const postalCode = tenant.postal_code.toString();
       if (/^[0-9]{5}$/.test(postalCode)) return 'FR';
       if (/^[0-9]{5}$/.test(postalCode) && parseInt(postalCode) >= 20000) return 'MA';
       if (/^[0-9]{4}$/.test(postalCode)) return 'BE';
+      if (/^[0-9]{4}$/.test(postalCode) && parseInt(postalCode) >= 1000) return 'CH';
     }
 
-    // Détection par email domain
+    // 5. Détection par domaine email
     if (tenant?.email) {
       const domain = tenant.email.split('@')[1]?.toLowerCase();
       if (domain?.endsWith('.fr')) return 'FR';
       if (domain?.endsWith('.ma')) return 'MA';
       if (domain?.endsWith('.be')) return 'BE';
       if (domain?.endsWith('.es')) return 'ES';
+      if (domain?.endsWith('.ch')) return 'CH';
+      if (domain?.endsWith('.ca')) return 'CA';
+      if (domain?.endsWith('.us') || domain?.endsWith('.com')) return 'US';
+      if (domain?.endsWith('.uk') || domain?.endsWith('.co.uk')) return 'GB';
     }
 
     // Défaut: Maroc (contexte Beenaya)

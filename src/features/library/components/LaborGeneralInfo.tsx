@@ -12,7 +12,7 @@ export function LaborGeneralInfo({ labor }: LaborGeneralInfoProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileText className="w-5 h-5 text-benaya-600" />
+          <FileText className="w-5 h-5 text-Beenaya-600" />
           Informations générales
         </CardTitle>
       </CardHeader>

@@ -46,7 +46,7 @@ export const ComponentAddForm = memo(function ComponentAddForm({
             value={newComponent.componentType}
             onValueChange={onComponentTypeChange as (value: string) => void}
           >
-            <SelectTrigger className="benaya-input">
+            <SelectTrigger className="Beenaya-input">
               <SelectValue placeholder="Type" />
             </SelectTrigger>
             <SelectContent>
@@ -77,7 +77,7 @@ export const ComponentAddForm = memo(function ComponentAddForm({
             Élément
           </Label>
           <Select value={newComponent.id} onValueChange={onComponentIdChange}>
-            <SelectTrigger className="benaya-input">
+            <SelectTrigger className="Beenaya-input">
               <SelectValue placeholder="Sélectionner" />
             </SelectTrigger>
             <SelectContent>
@@ -132,7 +132,7 @@ export const ComponentAddForm = memo(function ComponentAddForm({
             value={newComponent.quantity}
             onChange={onComponentQuantityChange}
             placeholder="1"
-            className="benaya-input"
+            className="Beenaya-input"
           />
         </div>
 
@@ -142,7 +142,7 @@ export const ComponentAddForm = memo(function ComponentAddForm({
             type="button"
             onClick={onAddComponent}
             disabled={!newComponent.id || newComponent.quantity <= 0}
-            className="w-full benaya-button"
+            className="w-full Beenaya-button"
           >
             Ajouter
           </Button>

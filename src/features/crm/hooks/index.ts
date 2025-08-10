@@ -3,10 +3,10 @@
  * Gestion des tiers, opportunités et logique métier CRM
  */
 
-// TODO: Ajouter les hooks CRM génériques
-// export { useTiers } from './useTiers';
-// export { useOpportunities } from './useOpportunities';
-// export { useCrmStats } from './useCrmStats';
+// Hooks CRM optimisés avec cache hybride
+export * from './useTiers';
+export * from './useOpportunities';
+export * from './useClientSearchForOpportunities';
 
 // Re-export des hooks spécialisés des sous-composants
 export { useEntrepriseForm, useParticulierForm } from '../components/tiers/hooks';

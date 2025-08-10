@@ -54,7 +54,7 @@ export function OpportunityLossForm({
       // Réinitialiser le formulaire
       setLossReason("");
       setLossDescription("");
-      onOpenChange(false);
+      // NE PAS fermer ici - laisser le parent gérer la fermeture
     }
   };
 

@@ -51,10 +51,10 @@ const WorkRow = memo(function WorkRow({
   }, [onAddToQuote, work]);
 
   const marginBadgeClass = work.margin < 15 
-    ? "benaya-badge-error" 
+    ? "Beenaya-badge-error" 
     : work.margin < 25 
-      ? "benaya-badge-warning" 
-      : "benaya-badge-success";
+      ? "Beenaya-badge-warning" 
+      : "Beenaya-badge-success";
 
   return (
     <TableRow>
@@ -100,7 +100,7 @@ const WorkRow = memo(function WorkRow({
               </svg>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="benaya-glass">
+          <DropdownMenuContent align="end" className="Beenaya-glass">
             <DropdownMenuItem onClick={handleView}>
               <Eye className="mr-2 h-4 w-4" />
               Voir détails

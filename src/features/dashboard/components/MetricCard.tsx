@@ -61,7 +61,7 @@ export function MetricCard({
           </div>
           {icon && (
             <div className="flex-shrink-0">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-benaya-50 dark:bg-benaya-900/20">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-Beenaya-50 dark:bg-Beenaya-900/20">
                 {icon}
               </div>
             </div>

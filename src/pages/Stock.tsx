@@ -47,7 +47,6 @@ type StockItem = {
   unitPrice: number;
   totalValue: number;
   status: StockStatus;
-  supplier: string;
   lastUpdated: string;
   location: string;
 };
@@ -64,7 +63,6 @@ const mockStockItems: StockItem[] = [
     unitPrice: 65,
     totalValue: 5525,
     status: "in_stock",
-    supplier: "Lafarge Maroc",
     lastUpdated: "20/01/2025",
     location: "Entrepôt A",
   },
@@ -79,7 +77,6 @@ const mockStockItems: StockItem[] = [
     unitPrice: 850,
     totalValue: 6800,
     status: "in_stock",
-    supplier: "Bosch Maroc",
     lastUpdated: "18/01/2025",
     location: "Atelier",
   },
@@ -94,7 +91,6 @@ const mockStockItems: StockItem[] = [
     unitPrice: 8500,
     totalValue: 25500,
     status: "low_stock",
-    supplier: "Sonasid",
     lastUpdated: "15/01/2025",
     location: "Entrepôt B",
   },
@@ -109,7 +105,6 @@ const mockStockItems: StockItem[] = [
     unitPrice: 45,
     totalValue: 0,
     status: "out_of_stock",
-    supplier: "3M Maroc",
     lastUpdated: "22/01/2025",
     location: "Bureau",
   },
@@ -124,7 +119,6 @@ const mockStockItems: StockItem[] = [
     unitPrice: 125,
     totalValue: 3000,
     status: "in_stock",
-    supplier: "Peintures du Maroc",
     lastUpdated: "19/01/2025",
     location: "Entrepôt A",
   },
@@ -400,7 +394,7 @@ export default function Stock() {
                   </TableCell>
                   <TableCell>
                     <Badge className="Beenaya-badge-primary text-xs">
-                      {item.supplier}
+                      {item.supplier_id ? 'CRM' : '—'}
                     </Badge>
                   </TableCell>
                   <TableCell>{item.location}</TableCell>

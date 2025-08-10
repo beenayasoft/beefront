@@ -1,3 +1,4 @@
+import React, { memo, useCallback } from "react";
 import { Eye, EyeOff, Mail, Lock, User, Building, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -6,7 +7,21 @@ import { Checkbox } from "../../../components/ui/checkbox";
 import { Alert, AlertDescription } from "../../../components/ui/alert";
 import { useAuthForm } from "../hooks";
 
-export default function Auth() {
+// Composant pour afficher l'erreur d'un champ - Optimisé avec React.memo
+const FieldError = memo(({ error }: { error?: string }) => {
+  if (!error || error.trim() === '') return null;
+  
+  return (
+    <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
+      <AlertCircle className="h-3 w-3" />
+      {error}
+    </p>
+  );
+});
+
+FieldError.displayName = 'FieldError';
+
+const Auth = memo(() => {
   const {
     mode,
     setMode,
@@ -16,9 +31,19 @@ export default function Auth() {
     showPassword,
     toggleShowPassword,
     formError,
+    fieldErrors,
     submit,
     backendError: error,
   } = useAuthForm("login");
+
+  // Optimisation avec useCallback
+  const handleModeToggle = useCallback(() => {
+    setMode(mode === 'login' ? 'signup' : 'login');
+  }, [mode, setMode]);
+
+  const handlePasswordToggle = useCallback(() => {
+    toggleShowPassword();
+  }, [toggleShowPassword]);
 
   return (
     <div className="min-h-screen flex">
@@ -108,10 +133,11 @@ export default function Auth() {
                   placeholder="votre@email.com"
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="pl-10"
+                  className={`pl-10 ${fieldErrors.email ? 'border-red-500' : ''}`}
                   required
                 />
               </div>
+              <FieldError error={fieldErrors.email} />
             </div>
 
             {/* Signup Fields */}
@@ -128,10 +154,11 @@ export default function Auth() {
                         placeholder="Prénom"
                         value={formData.first_name}
                         onChange={(e) => handleInputChange('first_name', e.target.value)}
-                        className="pl-10"
+                        className={`pl-10 ${fieldErrors.first_name ? 'border-red-500' : ''}`}
                         required
                       />
                     </div>
+                    <FieldError error={fieldErrors.first_name} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="last_name">Nom</Label>
@@ -141,8 +168,10 @@ export default function Auth() {
                       placeholder="Nom"
                       value={formData.last_name}
                       onChange={(e) => handleInputChange('last_name', e.target.value)}
+                      className={fieldErrors.last_name ? 'border-red-500' : ''}
                       required
                     />
+                    <FieldError error={fieldErrors.last_name} />
                   </div>
                 </div>
 
@@ -156,10 +185,11 @@ export default function Auth() {
                       placeholder="Nom de votre entreprise"
                       value={formData.company}
                       onChange={(e) => handleInputChange('company', e.target.value)}
-                      className="pl-10"
+                      className={`pl-10 ${fieldErrors.company ? 'border-red-500' : ''}`}
                       required
                     />
                   </div>
+                  <FieldError error={fieldErrors.company} />
                 </div>
               </>
             )}
@@ -175,17 +205,18 @@ export default function Auth() {
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
-                  className="pl-10 pr-10"
+                  className={`pl-10 pr-10 ${fieldErrors.password ? 'border-red-500' : ''}`}
                   required
                 />
                 <button
                   type="button"
-                  onClick={toggleShowPassword}
+                  onClick={handlePasswordToggle}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              <FieldError error={fieldErrors.password} />
             </div>
 
             {/* Confirm Password for Signup */}
@@ -200,10 +231,11 @@ export default function Auth() {
                     placeholder="••••••••"
                     value={formData.password2}
                     onChange={(e) => handleInputChange('password2', e.target.value)}
-                    className="pl-10"
+                    className={`pl-10 ${fieldErrors.password2 ? 'border-red-500' : ''}`}
                     required
                   />
                 </div>
+                <FieldError error={fieldErrors.password2} />
               </div>
             )}
 
@@ -249,7 +281,7 @@ export default function Auth() {
           <div className="mt-6 text-center">
             <button
               type="button"
-              onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+              onClick={handleModeToggle}
               className="text-Beenaya-600 hover:text-Beenaya-700 font-medium"
             >
               {mode === 'login' 
@@ -262,4 +294,8 @@ export default function Auth() {
       </div>
     </div>
   );
-}
+});
+
+Auth.displayName = 'Auth';
+
+export default Auth;

@@ -65,7 +65,6 @@ export interface LibraryFilters {
   minPrice?: number;
   maxPrice?: number;
   unit?: string;
-  supplier?: string;
 }
 
 const LibraryItemsList = memo(function LibraryItemsList({

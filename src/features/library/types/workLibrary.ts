@@ -17,13 +17,16 @@ export interface Material {
   description?: string;
   unit: string;
   unitPrice: number;
-  supplier?: string;
   vatRate: number; // Taux de TVA en pourcentage
   category?: string;
   categoryId?: string;
   code?: string;
   wasteFactor?: number;
   isRecyclable?: boolean;
+  // Intégration CRM pour fournisseurs
+  supplier_id?: string | null; // UUID référence vers CRM
+  supplier_details?: any; // Détails enrichis depuis CRM
+  effective_supplier_name?: string | null; // Nom effectif CRM
 }
 
 // Type de main d'œuvre
@@ -99,8 +102,8 @@ export function getLibraryItemType(item: LibraryItem): 'work' | 'material' | 'la
   // Détecter un ouvrage (a des composants)
   if ('components' in item) return 'work';
   
-  // Détecter un matériau (a vatRate OU supplier)
-  if (('vatRate' in item) || ('supplier' in item)) return 'material';
+  // Détecter un matériau (a vatRate)
+  if ('vatRate' in item) return 'material';
   
   // Par défaut, c'est de la main d'œuvre
   return 'labor';

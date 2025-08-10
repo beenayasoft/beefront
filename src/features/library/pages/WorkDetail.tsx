@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useWorkDetail } from "@/features/library/hooks/useWorkDetail";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { WorkDetailHeader } from "@/features/library/components/WorkDetailHeader";
 import { WorkGeneralInfo } from "@/features/library/components/WorkGeneralInfo";
 import { WorkFinancialAnalysis } from "@/features/library/components/WorkFinancialAnalysis";
@@ -19,6 +20,10 @@ export default function WorkDetail() {
     handleDelete,
     navigate
   } = useWorkDetail(id);
+
+  // 🏷️ Titre dynamique basé sur le nom de l'ouvrage
+  const pageTitle = work ? `${work.name}` : 'Détail ouvrage';
+  usePageTitle(pageTitle);
 
   if (loading) {
     return <LoadingState />;

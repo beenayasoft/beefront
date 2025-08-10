@@ -8,10 +8,9 @@ import {
 import { ParticulierForm } from "./ParticulierForm";
 import { ParticulierFormValues } from "./types/particulier";
 import { useState, useEffect } from "react";
-import { tiersApi } from "../../api/tiers";
 import { transformParticulierToTier, validateBeforeTransform } from "./utils/adaptateurs";
-import { Tier } from "../../types/tiers.types";
-import { apiClient } from "@/lib/api/client"; // Importer apiClient pour utiliser l'intercepteur
+import { Tier } from "../../types/crm.types";
+import { useTierMutations, useTierDetail } from "../../hooks/useTiers";
 
 interface TierParticulierEditDialogProps {
   open: boolean;
@@ -26,20 +25,20 @@ export function TierParticulierEditDialog({
   onSuccess,
   tier
 }: TierParticulierEditDialogProps) {
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [initialValues, setInitialValues] = useState<ParticulierFormValues | undefined>(undefined);
+  
+  // ✅ Utiliser les mutations et query React Query
+  const { updateTier } = useTierMutations();
+  const { data: tierDetail, isLoading: loadingDetail } = useTierDetail(tier.id, open);
 
   // Préparer les valeurs initiales depuis les données du tier
   useEffect(() => {
-    if (tier && open) {
-      console.log("TierParticulierEditDialog: Préparation des valeurs initiales pour:", tier);
+    if (tierDetail && open && !loadingDetail) {
+      console.log("TierParticulierEditDialog: Préparation des valeurs initiales pour:", tierDetail);
       
-      // Récupérer les données complètes depuis l'API pour avoir tous les contacts et adresses
-      const fetchCompleteData = async () => {
-        try {
-          const response = await apiClient.get(`/tiers/${tier.id}/vue_360/`);
-          const data = response.data;
+      try {
+        const data = tierDetail;
           
           console.log("TierParticulierEditDialog: Données complètes reçues:", data);
           
@@ -62,21 +61,44 @@ export function TierParticulierEditDialog({
           console.log("Adresses extraites:", adresses);
           
           // Pour un particulier, le nom principal est dans le champ "nom"
-          // Mais nous devons aussi récupérer le contact principal pour prenom/nom
+          // Nous devons séparer nom/prénom correctement pour éviter la duplication
           const contactPrincipal = contacts.find((c: any) => c.contact_principal_devis) || contacts[0];
           
           // Récupérer la relation du tier (client, prospect, etc.)
-          // La relation est stockée dans le champ 'relation' de l'API
           const relation = data.relation || tier.type?.[0] || '';
           console.log("Relation extraite:", relation);
           
+          // ✅ CORRECTION : Séparer correctement nom et prénom
+          let nomParticulier = '';
+          let prenomParticulier = '';
+          
+          if (contactPrincipal) {
+            // Si on a un contact principal avec prénom/nom séparés
+            prenomParticulier = contactPrincipal.prenom || '';
+            nomParticulier = contactPrincipal.nom || '';
+            console.log("📝 Depuis contact principal:", { prenom: prenomParticulier, nom: nomParticulier });
+          }
+          
+          // Si pas de contact ou données incomplètes, essayer de parser data.nom
+          if (!prenomParticulier && !nomParticulier && data.nom) {
+            const nomComplet = data.nom.trim();
+            const parties = nomComplet.split(' ');
+            if (parties.length >= 2) {
+              prenomParticulier = parties[0];
+              nomParticulier = parties.slice(1).join(' ');
+            } else {
+              nomParticulier = nomComplet;
+            }
+            console.log("📝 Depuis nom complet:", { original: data.nom, prenom: prenomParticulier, nom: nomParticulier });
+          }
+          
           // Transformer les données en format ParticulierFormValues
           const formValues: ParticulierFormValues = {
-            nom: data.nom || '',
-            prenom: contactPrincipal?.prenom || '',
+            nom: nomParticulier,
+            prenom: prenomParticulier,
             email: contactPrincipal?.email || '',
             telephone: contactPrincipal?.telephone || '',
-            relation: relation ? [relation] : [], // Utiliser la relation comme relation
+            relation: relation ? [relation] : [],
             status: data.is_deleted ? 'inactive' : 'active',
             
             // Transformer les adresses
@@ -97,11 +119,8 @@ export function TierParticulierEditDialog({
           console.error("TierParticulierEditDialog: Erreur lors du chargement des données:", err);
           setError("Erreur lors du chargement des données du particulier");
         }
-      };
-      
-      fetchCompleteData();
     }
-  }, [tier, open]);
+  }, [tierDetail?.id, open, loadingDetail]); // ✅ Utiliser seulement l'ID pour éviter les boucles
 
   const handleSubmit = async (values: ParticulierFormValues) => {
     console.log("TierParticulierEditDialog: Modification particulier avec valeurs:", values);
@@ -113,15 +132,14 @@ export function TierParticulierEditDialog({
       return;
     }
 
-    setLoading(true);
     setError(null);
     
     try {
       // Transformer les données du formulaire vers le format Tier
       const tierData = transformParticulierToTier(values, tier.id);
       
-      // Mettre à jour le tier via l'API
-      await tiersApi.updateTier(tier.id, tierData);
+      // ✅ Utiliser la mutation React Query - gère automatiquement le cache
+      await updateTier.mutateAsync({ id: tier.id, data: tierData });
       console.log("TierParticulierEditDialog: Particulier modifié avec succès");
       
       // Fermer le dialogue et notifier le succès
@@ -142,13 +160,11 @@ export function TierParticulierEditDialog({
       }
       
       setError(errorMessage);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleCancel = () => {
-    if (!loading) {
+    if (!updateTier.isPending) {
       setError(null);
       onOpenChange(false);
     }
@@ -162,23 +178,27 @@ export function TierParticulierEditDialog({
             👤 Modifier le particulier
           </DialogTitle>
           <DialogDescription>
-            Modifiez les informations du particulier "{tier.name}"
+            Modifiez les informations du particulier "{tier.nom}"
           </DialogDescription>
         </DialogHeader>
         
-        {initialValues ? (
+        {loadingDetail ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+            <span className="ml-3">Chargement des données...</span>
+          </div>
+        ) : initialValues ? (
           <ParticulierForm
             onSubmit={handleSubmit}
             onCancel={handleCancel}
-            loading={loading}
+            loading={updateTier.isPending}
             error={error}
             initialValues={initialValues}
             isEditing={true}
           />
         ) : (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-            <span className="ml-3">Chargement des données...</span>
+            <div className="text-red-600">Erreur lors du chargement des données</div>
           </div>
         )}
       </DialogContent>

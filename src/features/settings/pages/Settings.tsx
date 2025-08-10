@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Settings as SettingsIcon, User, Building, Mail, Bell, Shield, Palette, Database, DollarSign, Calendar, FileText, Users, Printer, Cloud, Globe, Eye, EyeOff, Save, CreditCard, Receipt, Hash, FileText as FileText2, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -914,7 +914,7 @@ export default function Settings() {
         </div>
       ) : (
         /* Layout normal avec navigation */
-        <div className={`grid grid-cols-1 gap-6 ${isNavCollapsed ? 'lg:grid-cols-[80px_1fr]' : 'lg:grid-cols-[300px_1fr]'}`}>
+        <div className={`grid grid-cols-1 gap-6 ${isNavCollapsed ? 'lg:grid-cols-[4rem_1fr]' : 'lg:grid-cols-[280px_1fr] xl:grid-cols-[320px_1fr]'}`}>
           {/* Settings Navigation */}
           <div className={`transition-all duration-300 ${isNavCollapsed ? 'lg:col-span-1' : 'lg:col-span-1'}`}>
             <div className="Beenaya-card relative">

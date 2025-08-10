@@ -12,8 +12,6 @@ export * from './documentAppearance';
 // Redirections vers les nouvelles APIs dans features/
 export * from '@/features/auth/api/auth';
 export * from '@/features/crm/api/crm';
-export * from '@/features/crm/api/tiers';
-export * from '@/features/crm/api/opportunities';
 export * from '@/features/library/api/composite';
 export * from '@/features/library/api/materials';
 export * from '@/features/library/api/labor';

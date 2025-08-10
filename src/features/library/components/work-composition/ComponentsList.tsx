@@ -27,21 +27,21 @@ export const ComponentsList = memo(function ComponentsList({
     switch (componentType) {
       case "material":
         return (
-          <Badge className="benaya-badge-primary gap-1">
+          <Badge className="Beenaya-badge-primary gap-1">
             <Package className="w-3 h-3" />
             Matériau
           </Badge>
         );
       case "labor":
         return (
-          <Badge className="benaya-badge-warning gap-1">
+          <Badge className="Beenaya-badge-warning gap-1">
             <Clock className="w-3 h-3" />
             Main d'œuvre
           </Badge>
         );
       case "work":
         return (
-          <Badge className="benaya-badge-success gap-1">
+          <Badge className="Beenaya-badge-success gap-1">
             <Hammer className="w-3 h-3" />
             Ouvrage
           </Badge>

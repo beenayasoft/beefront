@@ -19,7 +19,7 @@ export function WorkProfitability({ work }: WorkProfitabilityProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <TrendingUp className="w-5 h-5 text-benaya-600" />
+          <TrendingUp className="w-5 h-5 text-Beenaya-600" />
           Rentabilité
         </CardTitle>
       </CardHeader>

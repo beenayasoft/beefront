@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Tier } from "./types";
+import { Tier } from "../../types"; // ✅ CORRECTION : Utiliser les vrais types CRM
 
 export function useTierUtils() {
   // Générer un badge pour le type de tiers
@@ -35,31 +35,37 @@ export function useTierUtils() {
   const countTiersByType = (tiers: Tier[]) => {
     return {
       tous: tiers.length,
-      clients: tiers.filter((t) => t.type.includes("client")).length,
-      fournisseurs: tiers.filter((t) => t.type.includes("fournisseur")).length,
-
-      "sous_traitants": tiers.filter((t) => t.type.includes("sous_traitant")).length,
-      prospects: tiers.filter((t) => t.type.includes("prospect")).length,
+      clients: tiers.filter((t) => t.relation === "client").length,
+      fournisseurs: tiers.filter((t) => t.relation === "fournisseur").length,
+      "sous_traitants": tiers.filter((t) => t.relation === "sous_traitant").length,
+      prospects: tiers.filter((t) => t.relation === "prospect").length,
     };
   };
 
   // Filtrer les tiers par type et recherche
   const filterTiers = (tiers: Tier[], activeTab: string, searchQuery: string) => {
     return tiers.filter((tier) => {
-      // Filtre par onglet
-      if (activeTab !== "tous" && !tier.type.includes(activeTab.slice(0, -1))) {
-        return false;
+      // Filtre par onglet - mapper l'onglet à la relation backend
+      if (activeTab !== "tous") {
+        const typeMapping: Record<string, string> = {
+          'clients': 'client',
+          'prospects': 'prospect', 
+          'fournisseurs': 'fournisseur',
+          'sous_traitants': 'sous_traitant'
+        };
+        
+        const expectedRelation = typeMapping[activeTab] || activeTab;
+        if (tier.relation !== expectedRelation) {
+          return false;
+        }
       }
 
       // Filtre par recherche
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         return (
-          tier.name.toLowerCase().includes(query) ||
-          tier.contact.toLowerCase().includes(query) ||
-          tier.email.toLowerCase().includes(query) ||
-          tier.phone.toLowerCase().includes(query) ||
-          tier.siret.toLowerCase().includes(query)
+          tier.nom?.toLowerCase().includes(query) ||
+          tier.siret?.toLowerCase().includes(query)
         );
       }
 

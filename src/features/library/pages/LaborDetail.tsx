@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { useLaborDetail } from "@/features/library/hooks/useLaborDetail";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { LaborDetailHeader } from "@/features/library/components/LaborDetailHeader";
 import { LaborGeneralInfo } from "@/features/library/components/LaborGeneralInfo";
 import { LaborCostEstimate } from "@/features/library/components/LaborCostEstimate";
@@ -18,6 +19,10 @@ export default function LaborDetail() {
     handleDelete,
     navigate
   } = useLaborDetail(id);
+
+  // 🏷️ Titre dynamique basé sur le nom de la main d'œuvre
+  const pageTitle = labor ? `${labor.name}` : 'Détail main d\'œuvre';
+  usePageTitle(pageTitle);
 
   if (loading) {
     return <LoadingState message="Chargement de la main d'œuvre..." />;

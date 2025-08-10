@@ -59,7 +59,7 @@ export function LibraryItemDetail({
   const [expandedComponents, setExpandedComponents] = useState<Set<string>>(new Set());
 
   const isWork = "components" in item;
-  const isMaterial = "supplier" in item;
+  const isMaterial = "vatRate" in item;
   const isLabor = !isWork && !isMaterial;
 
   const toggleComponentExpansion = (id: string) => {
@@ -194,8 +194,8 @@ export function LibraryItemDetail({
             <h3 className="text-sm font-medium text-neutral-500">Informations fournisseur</h3>
             <div className="mt-2 space-y-2">
               <div className="flex justify-between">
-                <span className="text-neutral-600">Fournisseur</span>
-                <span>{material.supplier || "—"}</span>
+                <span className="text-neutral-600">Fournisseur CRM</span>
+                <span>{material.supplier_id || "—"}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-neutral-600">Catégorie</span>

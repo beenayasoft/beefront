@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus } from "lucide-react";
+import { usePageTitle } from "@/hooks/usePageTitle";
+import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   TiersList,
@@ -15,24 +16,29 @@ import {
   DeleteConfirmDialog,
   useTierUtils
 } from "@/features/crm/components/tiers";
-import { Tier } from "@/features/crm/types/tiers.types";
+import { Tier } from "@/features/crm/types/crm.types";
 import { tiersApi, TiersFilters, PaginationInfo, TiersGlobalStats } from "../api";
 import { PerformanceMonitor } from "@/components/common/PerformanceMonitor";
+import { useModalState } from "@/hooks/useModalState";
+import { getCrmCachedData, setCrmCachedData, invalidateCrmCache } from "../utils/cacheUtils";
 
 export default function Tiers() {
   const navigate = useNavigate();
+  
+  // 🏷️ Définir le titre de la page
+  usePageTitle('Tiers');
   const [tiers, setTiers] = useState<Tier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("tous");
   const [searchQuery, setSearchQuery] = useState("");
-  const [editingTier, setEditingTier] = useState<Tier | undefined>(undefined);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [tierToDelete, setTierToDelete] = useState<Tier | null>(null);
-  const [forceUpdate, setForceUpdate] = useState(0);
+  const [selectedTypeFilters, setSelectedTypeFilters] = useState<string[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
-  const [editEntrepriseOpen, setEditEntrepriseOpen] = useState(false);
-  const [editParticulierOpen, setEditParticulierOpen] = useState(false);
+  
+  // 🚀 Gestion sécurisée des modales avec useModalState
+  const deleteModal = useModalState<Tier>();
+  const editEntrepriseModal = useModalState<Tier>();
+  const editParticulierModal = useModalState<Tier>();
 
   // 🚀 NOUVEAUX ÉTATS POUR LA PAGINATION OPTIMISÉE
   const [currentPage, setCurrentPage] = useState(1);
@@ -51,10 +57,10 @@ export default function Tiers() {
   // 📊 NOUVEL ÉTAT POUR LES VRAIES STATS GLOBALES
   const [globalStats, setGlobalStats] = useState<TiersGlobalStats>({
     total: 0,
-    client: 0,
-    fournisseur: 0,
-    prospect: 0,
-    sous_traitant: 0
+    clients: 0,
+    fournisseurs: 0,
+    prospects: 0,
+    sous_traitants: 0
   });
 
   const { countTiersByType, filterTiers, generateTabs } = useTierUtils();
@@ -63,10 +69,10 @@ export default function Tiers() {
   // Convertir les stats globales au format attendu par les composants
   const countByType = {
     tous: globalStats.total,
-    clients: globalStats.client,
-    fournisseurs: globalStats.fournisseur,
-    prospects: globalStats.prospect,
-    sous_traitants: globalStats.sous_traitant
+    clients: globalStats.clients,        // ✅ CORRECTION : utiliser les clés du backend (pluriel)
+    fournisseurs: globalStats.fournisseurs,  // ✅ CORRECTION : utiliser les clés du backend (pluriel)
+    prospects: globalStats.prospects,    // ✅ CORRECTION : utiliser les clés du backend (pluriel)
+    sous_traitants: globalStats.sous_traitants // ✅ CORRECTION : utiliser les clés du backend (pluriel)
   };
 
   // Générer les onglets avec les compteurs (maintenant basés sur les vraies stats)
@@ -75,35 +81,66 @@ export default function Tiers() {
   // 🚀 Les tiers sont déjà filtrés côté backend - pas besoin de filtrage frontend
   const displayedTiers = tiers; // Directement les tiers reçus de l'API
 
-  // 🔄 Gestionnaires pour les changements qui nécessitent un rechargement (optimisés)
-  const handleTabChange = useCallback((newTab: string) => {
+  // 🔄 Gestionnaires pour les changements qui nécessitent un rechargement
+  const handleTabChange = (newTab: string) => {
     console.log("🔄 Changement d'onglet:", newTab);
     setActiveTab(newTab);
     setCurrentPage(1); // Remettre à la première page
-    loadTiers(1, searchQuery, newTab); // Recharger avec le nouveau filtre
+    loadTiers(1, searchQuery, newTab, selectedTypeFilters); // Recharger avec le nouveau filtre
     // Note: Les stats ne changent pas selon l'onglet (elles montrent le total global)
-  }, [searchQuery]);
+  };
 
-  const handleSearchChange = useCallback((newSearch: string) => {
+  const handleSearchChange = (newSearch: string) => {
     console.log("🔍 Changement de recherche:", newSearch);
     setSearchQuery(newSearch);
     setCurrentPage(1); // Remettre à la première page
     // Le débounce est géré par useEffect, pas ici
-  }, []);
+  };
 
-  const handlePageChange = useCallback((newPage: number) => {
+  // Nouveau gestionnaire pour les filtres par type
+  const handleTypeFiltersChange = (newTypeFilters: string[]) => {
+    console.log("🎯 Changement de filtres par type:", newTypeFilters);
+    setSelectedTypeFilters(newTypeFilters);
+    setCurrentPage(1); // Remettre à la première page
+    
+    // Recharger immédiatement avec les nouveaux filtres
+    loadTiers(1, searchQuery, activeTab, newTypeFilters);
+    loadGlobalStats(searchQuery); // Recharger les stats si nécessaire
+  };
+
+  const handlePageChange = (newPage: number) => {
     console.log("📄 Changement de page:", newPage);
     setCurrentPage(newPage);
-    loadTiers(newPage, searchQuery, activeTab);
+    loadTiers(newPage, searchQuery, activeTab, selectedTypeFilters);
     // Pas besoin de recharger les stats pour un changement de page
-  }, [searchQuery, activeTab]);
+  };
 
-  // 🚀 FONCTION OPTIMISÉE pour charger les tiers avec pagination
-  const loadTiers = async (page: number = currentPage, search: string = searchQuery, type: string = activeTab) => {
+  // 🚀 FONCTION OPTIMISÉE pour charger les tiers avec pagination et filtres + CACHE
+  const loadTiers = async (
+    page: number = currentPage, 
+    search: string = searchQuery, 
+    type: string = activeTab,
+    typeFilters: string[] = selectedTypeFilters
+  ) => {
+    // Créer une clé de cache unique pour ces paramètres
+    const cacheKey = `tiers_${JSON.stringify({ page, search, type, typeFilters, pageSize })}`;
+    
+    // Vérifier le cache d'abord
+    const cachedData = getCrmCachedData(cacheKey);
+    if (cachedData) {
+      console.log("📦 [CRM CACHE] Cache hit pour les tiers");
+      setTiers(cachedData.results);
+      setPagination(cachedData.pagination);
+      setCurrentPage(cachedData.pagination.current_page);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     const startTime = performance.now(); // 📊 DÉBUT MESURE
     try {
       setLoading(true);
-      console.log("🚀 Tiers.tsx: Chargement OPTIMISÉ des tiers", { page, search, type, pageSize });
+      console.log("🚀 Tiers.tsx: Chargement OPTIMISÉ des tiers", { page, search, type, typeFilters, pageSize });
 
       // Construire les filtres pour l'API
       const filters: TiersFilters = {
@@ -111,9 +148,32 @@ export default function Tiers() {
         page_size: pageSize,
       };
       
-      // Ajouter le filtre de type seulement si ce n'est pas "tous"
+      // ✅ FILTRES PAR TYPE DE TIERS (Particulier vs Entreprise)
+      if (typeFilters && typeFilters.length > 0) {
+        // Utiliser les filtres de type sélectionnés dans le dropdown
+        if (typeFilters.length === 1) {
+          filters.type = typeFilters[0]; // 'particulier' ou 'entreprise'
+        } else if (typeFilters.length === 2) {
+          // Si les deux types sont sélectionnés, ne pas ajouter de filtre type (= tous)
+          console.log("🔄 Tous les types sélectionnés, pas de filtre type");
+        } else {
+          filters.type = typeFilters[0]; // Prendre le premier par défaut
+        }
+        console.log("🎯 Filtre par type de tiers:", filters.type);
+      }
+      
+      // ✅ FILTRES PAR RELATION COMMERCIALE (depuis les onglets)
       if (type && type !== "tous") {
-        filters.type = type;
+        // Fallback : utiliser l'onglet actif si aucun filtre spécifique n'est sélectionné
+        const typeMapping: Record<string, string> = {
+          'clients': 'client',
+          'prospects': 'prospect', 
+          'fournisseurs': 'fournisseur',
+          'sous_traitants': 'sous_traitant'
+        };
+        
+        const backendRelation = typeMapping[type] || type;
+        filters.relation = backendRelation;
       }
       
       // Ajouter la recherche si présente
@@ -125,15 +185,30 @@ export default function Tiers() {
       const response = await tiersApi.getTiers(filters);
       console.log("📊 Tiers.tsx: Réponse paginée reçue", response);
 
+      // Transformer la réponse Django REST en format attendu
+      const paginationInfo = {
+        count: response.count,
+        num_pages: Math.ceil(response.count / (filters.page_size || 10)),
+        current_page: filters.page || 1,
+        page_size: filters.page_size || 10,
+        has_next: !!response.next,
+        has_previous: !!response.previous,
+        next_page: response.next ? (filters.page || 1) + 1 : null,
+        previous_page: response.previous ? (filters.page || 1) - 1 : null
+      };
+
       // Mettre à jour les données et la pagination
       setTiers(response.results);
-      setPagination(response.pagination);
-      setCurrentPage(response.pagination.current_page);
+      setPagination(paginationInfo);
+      setCurrentPage(paginationInfo.current_page);
       setError(null);
+      
+      // Mettre en cache la réponse
+      setCrmCachedData(cacheKey, { results: response.results, pagination: paginationInfo });
       
       const endTime = performance.now(); // 📊 FIN MESURE
       const loadTime = endTime - startTime;
-      console.log(`✅ ${response.results.length} tiers chargés sur ${response.pagination.count} total`);
+      console.log(`✅ ${response.results.length} tiers chargés sur ${paginationInfo.count} total`);
       console.log(`⚡ PERFORMANCE: Chargement terminé en ${loadTime.toFixed(2)}ms`);
     } catch (err) {
       const endTime = performance.now(); // 📊 FIN MESURE (même en cas d'erreur)
@@ -158,13 +233,27 @@ export default function Tiers() {
     }
   };
 
-  // 📊 FONCTION pour charger les vraies stats globales
+  // 📊 FONCTION pour charger les vraies stats globales + CACHE
   const loadGlobalStats = async (search: string = searchQuery) => {
+    // Créer une clé de cache pour les stats
+    const cacheKey = `tiers_stats_${search}`;
+    
+    // Vérifier le cache d'abord
+    const cachedStats = getCrmCachedData(cacheKey);
+    if (cachedStats) {
+      console.log("📦 [CRM CACHE] Cache hit pour les stats");
+      setGlobalStats(cachedStats);
+      return;
+    }
+
     const startTime = performance.now(); // 📊 DÉBUT MESURE STATS
     try {
       console.log("📊 Chargement des stats globales", { search });
       const stats = await tiersApi.getStats(search);
       setGlobalStats(stats);
+      
+      // Mettre en cache les stats
+      setCrmCachedData(cacheKey, stats);
       
       const endTime = performance.now(); // 📊 FIN MESURE STATS
       const loadTime = endTime - startTime;
@@ -196,15 +285,10 @@ export default function Tiers() {
     }
   };
 
-  // Forcer le rafraîchissement de la page après les actions
-  useEffect(() => {
-    // Ce useEffect sera déclenché chaque fois que forceUpdate change
-    // Il ne fait rien directement, mais force React à re-rendre le composant
-  }, [forceUpdate]);
 
   // 🚀 Charger les tiers ET les stats au montage du composant
   useEffect(() => {
-    loadTiers(1, "", "tous"); // Charger la première page, sans recherche, tous les types
+    loadTiers(1, "", "tous", []); // Charger la première page, sans recherche, tous les types, sans filtres
     loadGlobalStats(""); // Charger les stats globales
   }, []);
 
@@ -212,98 +296,137 @@ export default function Tiers() {
   useEffect(() => {
     if (searchQuery !== undefined) { // Vérifier !== undefined pour inclure les chaînes vides
       const timeoutId = setTimeout(() => {
-        loadTiers(1, searchQuery, activeTab);
+        loadTiers(1, searchQuery, activeTab, selectedTypeFilters);
         loadGlobalStats(searchQuery); // Recharger les stats avec la recherche
       }, 300);
       return () => clearTimeout(timeoutId);
     }
   }, [searchQuery]);
 
-  // Gérer la fermeture de la modale d'édition
-  const handleDialogClose = (open: boolean) => {
-    if (!open) {
-      // Fermer les modales d'édition
-      setEditEntrepriseOpen(false);
-      setEditParticulierOpen(false);
-      
-      // Attendre que l'animation de fermeture soit terminée avant de réinitialiser
-      setTimeout(() => {
-        setEditingTier(undefined);
-        // Forcer le rafraîchissement
-        setForceUpdate(prev => prev + 1);
-      }, 100);
+  // Gérer la fermeture des modales d'édition
+  const handleEditDialogClose = (modal: typeof editEntrepriseModal, open: boolean) => {
+    if (!open && !modal.isSubmitting) {
+      console.log('🚪 Fermeture sécurisée de la modale d\'édition');
+      modal.actions.close();
     }
   };
 
-  // Gérer la suppression d'un tiers (optimisé)
-  const handleDelete = useCallback((tier: Tier) => {
-    setTierToDelete({...tier});
-    setDeleteDialogOpen(true);
-  }, []);
+  // Gérer la suppression d'un tiers
+  const handleDelete = (tier: Tier) => {
+    console.log(`🗑️ Ouverture de la modale de suppression pour : ${tier.nom}`);
+    deleteModal.actions.open(tier);
+  };
 
-  // Confirmer la suppression d'un tiers (optimisé)
-  const confirmDelete = useCallback(async () => {
-    if (tierToDelete) {
-      try {
-        setLoading(true);
-        await tiersApi.deleteTier(tierToDelete.id);
-        setTiers(prev => prev.filter(t => t.id !== tierToDelete.id));
-        setDeleteDialogOpen(false);
-        setTierToDelete(null);
-      } catch (err) {
-        setError("Erreur lors de la suppression du tier");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+  // Confirmer la suppression d'un tiers - MÊME LOGIQUE que création/édition
+  const confirmDelete = async () => {
+    if (!deleteModal.data || deleteModal.isSubmitting) {
+      console.warn('⚠️ Suppression déjà en cours ou aucune donnée - ignorée');
+      return;
     }
-  }, [tierToDelete]);
-
-  // Gérer la fermeture de la modale de suppression (optimisé)
-  const handleDeleteDialogClose = useCallback((open: boolean) => {
-    if (!open) {
-      setDeleteDialogOpen(false);
-      // Attendre que l'animation de fermeture soit terminée avant de réinitialiser
-      setTimeout(() => {
-        setTierToDelete(null);
-        // Forcer le rafraîchissement
-        setForceUpdate(prev => prev + 1);
-      }, 100);
-    } else {
-      setDeleteDialogOpen(true);
-    }
-  }, []);
-
-  // Gérer l'édition d'un tiers (optimisé)
-  const handleEdit = useCallback((tier: Tier) => {
-    // Définir d'abord le tier à éditer avec une copie profonde
-    setEditingTier({...tier});
     
-    // Déterminer le type de tiers et ouvrir la modale appropriée
-    setTimeout(() => {
-      // Si le tier a un SIRET, c'est une entreprise, sinon un particulier
-      if (tier.siret && tier.siret.trim() !== '') {
-        setEditEntrepriseOpen(true);
-      } else {
-        setEditParticulierOpen(true);
-      }
-    }, 50);
-  }, []);
+    try {
+      deleteModal.actions.setSubmitting(true);
+      await tiersApi.deleteTier(deleteModal.data.id);
+      
+      console.log(`✅ Tier ${deleteModal.data.nom} supprimé avec succès`);
+      
+      // Invalider le cache après suppression
+      invalidateCrmCache('suppression tier');
+      
+      // 🚀 FERMER D'ABORD la modale pour libérer l'UI
+      deleteModal.actions.close();
+      
+      // 🔄 PUIS recharger APRÈS un délai pour éviter les conflits
+      setTimeout(async () => {
+        try {
+          await Promise.all([
+            loadTiers(currentPage, searchQuery, activeTab, selectedTypeFilters), // Recharger la liste actuelle
+            loadGlobalStats(searchQuery) // Recharger les stats avec la recherche actuelle
+          ]);
+        } catch (reloadError) {
+          console.error('❌ Erreur lors du rechargement après suppression:', reloadError);
+          // L'UI reste fonctionnelle même si le rechargement échoue
+        }
+      }, 100); // Délai minimal pour permettre à la modale de se fermer complètement
+      
+    } catch (err) {
+      setError("Erreur lors de la suppression du tier");
+      console.error('❌ Erreur lors de la suppression:', err);
+      // En cas d'erreur, ne pas fermer la modale pour permettre de réessayer
+    } finally {
+      deleteModal.actions.setSubmitting(false);
+    }
+  };
 
-  // Gérer la vue détaillée d'un tiers (optimisé)
-  const handleView = useCallback((tier: Tier) => {
+  // Gérer la fermeture de la modale de suppression - VERSION OPTIMISÉE MICROSERVICES
+  const handleDeleteDialogClose = (open: boolean) => {
+    if (!open && !deleteModal.isSubmitting) {
+      console.log('🚪 Fermeture sécurisée de la modale de suppression');
+      deleteModal.actions.close();
+      
+      // 🛡️ NETTOYAGE adapté aux microservices avec latence élevée
+      setTimeout(() => {
+        const overlays = document.querySelectorAll('[data-radix-popper-content-wrapper], [data-radix-focus-guard], [data-radix-portal]');
+        overlays.forEach(el => {
+          if (el.parentNode) {
+            console.log('🧹 Suppression overlay orphelin:', el);
+            el.parentNode.removeChild(el);
+          }
+        });
+        
+        // Débloquer le scroll au cas où
+        document.body.style.overflow = '';
+        document.documentElement.style.overflow = '';
+      }, 500); // Délai plus long pour les microservices avec latence
+      
+      // 🔄 Recharger APRÈS fermeture complète pour éviter les conflits
+      setTimeout(async () => {
+        try {
+          await loadTiers(currentPage, searchQuery, activeTab, selectedTypeFilters);
+        } catch (reloadError) {
+          console.error('❌ Erreur lors du rechargement après fermeture:', reloadError);
+          // L'UI reste fonctionnelle même si le rechargement échoue
+        }
+      }, 150); // Délai plus long pour l'annulation
+    }
+  };
+
+  // Gérer l'édition d'un tiers
+  const handleEdit = (tier: Tier) => {
+    console.log(`✏️ Édition du tiers : ${tier.nom}`, {
+      type: tier.type,
+      siret: tier.siret,
+      hasValidSiret: tier.siret && tier.siret.trim() !== ''
+    });
+    
+    // Déterminer le type de tiers - utiliser le champ 'type' en priorité
+    const isEntreprise = tier.type === 'entreprise' || 
+                        (tier.siret && tier.siret.trim() !== '') ||
+                        tier.type_display === 'Entreprise';
+    
+    console.log(`🏢 Type détecté: ${isEntreprise ? 'ENTREPRISE' : 'PARTICULIER'}`);
+    
+    if (isEntreprise) {
+      editEntrepriseModal.actions.open(tier);
+    } else {
+      editParticulierModal.actions.open(tier);
+    }
+  };
+
+  // Gérer la vue détaillée d'un tiers
+  const handleView = (tier: Tier) => {
     navigate(`/tiers/${tier.id}`);
-  }, [navigate]);
+  };
 
-  // Gérer l'appel téléphonique (optimisé)
-  const handleCall = useCallback((tier: Tier) => {
+  // Gérer l'appel téléphonique (conservé pour référence)
+  const handleCall = (tier: Tier) => {
     window.open(`tel:${tier.phone.replace(/\s/g, "")}`);
-  }, []);
+  };
 
-  // Gérer l'envoi d'email (optimisé)
-  const handleEmail = useCallback((tier: Tier) => {
+  // Gérer l'envoi d'email (conservé pour référence)
+  const handleEmail = (tier: Tier) => {
     window.open(`mailto:${tier.email}`);
-  }, []);
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -331,6 +454,9 @@ export default function Tiers() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onSuccess={async (createdTierId) => {
+          // Invalider le cache après création
+          invalidateCrmCache('création tier');
+          
           // 🚀 Phase 2 : Navigation automatique vers la fiche détail du tier créé
           if (createdTierId) {
             console.log("🎯 Navigation automatique vers la fiche détail du tier:", createdTierId);
@@ -339,7 +465,7 @@ export default function Tiers() {
             // Fallback : Recharger la liste ET les stats si pas d'ID
             console.warn("⚠️ Pas d'ID de tier reçu, rechargement de la liste et des stats");
             await Promise.all([
-              loadTiers(),
+              loadTiers(1, "", "tous", []),
               loadGlobalStats()
             ]);
           }
@@ -349,10 +475,12 @@ export default function Tiers() {
       {/* Stats */}
       <TiersStats counts={countByType} />
 
-      {/* Filters */}
+      {/* Search & Filters */}
       <TiersSearch 
         searchQuery={searchQuery} 
-        onSearchChange={handleSearchChange} 
+        onSearchChange={handleSearchChange}
+        selectedTypes={selectedTypeFilters}
+        onTypeFiltersChange={handleTypeFiltersChange}
       />
 
       {/* Main Content */}
@@ -364,39 +492,6 @@ export default function Tiers() {
           onTabChange={handleTabChange} 
         />
 
-        {/* 📊 Informations de pagination */}
-        {pagination.count > 0 && (
-          <div className="px-6 py-3 border-b border-gray-200 bg-gray-50">
-            <div className="flex items-center justify-between text-sm text-gray-600">
-              <div>
-                Affichage de {((currentPage - 1) * pageSize) + 1} à {Math.min(currentPage * pageSize, pagination.count)} sur {pagination.count} tiers
-              </div>
-              <div className="flex items-center gap-4">
-                <div>Page {currentPage} sur {pagination.num_pages}</div>
-                {/* Contrôles de pagination */}
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={!pagination.has_previous}
-                    onClick={() => handlePageChange(currentPage - 1)}
-                  >
-                    Précédent
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={!pagination.has_next}
-                    onClick={() => handlePageChange(currentPage + 1)}
-                  >
-                    Suivant
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Table */}
         <TiersList 
           tiers={displayedTiers}
@@ -407,43 +502,134 @@ export default function Tiers() {
           onEmail={handleEmail}
           disableInternalPagination={true}
         />
+
+        {/* 🎯 NOUVELLE PAGINATION - Style bibliothèque d'ouvrages */}
+        {pagination.count > 0 && (
+          <div className="flex items-center justify-between mt-4 px-6 pb-4">
+            <div className="text-sm text-neutral-500">
+              Affichage de {((currentPage - 1) * pageSize) + 1} à {Math.min(currentPage * pageSize, pagination.count)} sur {pagination.count} tiers
+            </div>
+            {/* Afficher les contrôles de navigation seulement s'il y a plus d'une page */}
+            {pagination.num_pages > 1 ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={!pagination.has_previous}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, pagination.num_pages) }, (_, i) => {
+                    let pageNum;
+                    if (pagination.num_pages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= pagination.num_pages - 2) {
+                      pageNum = pagination.num_pages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+                    return (
+                      <Button
+                        key={i}
+                        variant={pageNum === currentPage ? "default" : "outline"}
+                        size="sm"
+                        className="w-8 h-8 p-0"
+                        onClick={() => handlePageChange(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={!pagination.has_next}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            ) : (
+              <div className="text-sm text-neutral-400">
+                Page 1 sur 1
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Dialog pour éditer une entreprise */}
-      {editingTier && editEntrepriseOpen && (
+      {editEntrepriseModal.data && (
         <TierEntrepriseEditDialog
-          key={`entreprise-edit-${editingTier.id}-${forceUpdate}`}
-          open={editEntrepriseOpen}
-          onOpenChange={(open) => {
-            handleDialogClose(open);
-            if (!open) loadTiers();
+          key={`entreprise-edit-${editEntrepriseModal.data.id}`}
+          open={editEntrepriseModal.isOpen}
+          onOpenChange={(open) => handleEditDialogClose(editEntrepriseModal, open)}
+          onSuccess={async () => {
+            console.log('🎉 TierEntrepriseEditDialog: onSuccess appelé');
+            
+            // Invalider le cache après édition
+            invalidateCrmCache('édition tier entreprise');
+            
+            // ⏰ ATTENDRE que le nettoyage de useModalState soit terminé
+            setTimeout(async () => {
+              try {
+                console.log('🔄 Rechargement des données (après délai)...', { currentPage, searchQuery, activeTab });
+                await Promise.all([
+                  loadTiers(currentPage, searchQuery, activeTab, selectedTypeFilters),
+                  loadGlobalStats(searchQuery)
+                ]);
+                console.log('✅ Rechargement terminé avec succès');
+              } catch (error) {
+                console.error('❌ Erreur lors du rechargement:', error);
+              }
+            }, 500); // Délai pour éviter le conflit avec useModalState
           }}
-          onSuccess={loadTiers}
-          tier={editingTier}
+          tier={editEntrepriseModal.data}
         />
       )}
 
       {/* Dialog pour éditer un particulier */}
-      {editingTier && editParticulierOpen && (
+      {editParticulierModal.data && (
         <TierParticulierEditDialog
-          key={`particulier-edit-${editingTier.id}-${forceUpdate}`}
-          open={editParticulierOpen}
-          onOpenChange={(open) => {
-            handleDialogClose(open);
-            if (!open) loadTiers();
+          key={`particulier-edit-${editParticulierModal.data.id}`}
+          open={editParticulierModal.isOpen}
+          onOpenChange={(open) => handleEditDialogClose(editParticulierModal, open)}
+          onSuccess={async () => {
+            console.log('🎉 TierParticulierEditDialog: onSuccess appelé');
+            
+            // Invalider le cache après édition
+            invalidateCrmCache('édition tier particulier');
+            
+            // ⏰ ATTENDRE que le nettoyage de useModalState soit terminé
+            setTimeout(async () => {
+              try {
+                console.log('🔄 Rechargement des données (après délai)...', { currentPage, searchQuery, activeTab });
+                await Promise.all([
+                  loadTiers(currentPage, searchQuery, activeTab, selectedTypeFilters),
+                  loadGlobalStats(searchQuery)
+                ]);
+                console.log('✅ Rechargement terminé avec succès');
+              } catch (error) {
+                console.error('❌ Erreur lors du rechargement:', error);
+              }
+            }, 500); // Délai pour éviter le conflit avec useModalState
           }}
-          onSuccess={loadTiers}
-          tier={editingTier}
-        />
+          tier={editParticulierModal.data}
+          />
       )}
 
       {/* Confirmation dialog for deleting tiers */}
       <DeleteConfirmDialog
-        key={`delete-${tierToDelete?.id || 'none'}-${forceUpdate}`}
-        open={deleteDialogOpen}
+        open={deleteModal.isOpen}
         onOpenChange={handleDeleteDialogClose}
         onConfirm={confirmDelete}
-        tier={tierToDelete}
+        tier={deleteModal.data || null}
+        loading={deleteModal.isSubmitting}
       />
 
       {/* 📊 Performance Monitor */}

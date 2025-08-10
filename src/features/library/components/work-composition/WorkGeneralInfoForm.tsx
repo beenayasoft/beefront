@@ -40,7 +40,7 @@ export const WorkGeneralInfoForm = memo(function WorkGeneralInfoForm({
             value={formData.name || ""}
             onChange={onFormChange}
             placeholder="Nom de l'ouvrage"
-            className={`benaya-input ${errors.name ? "border-red-500 focus:border-red-500" : ""}`}
+            className={`Beenaya-input ${errors.name ? "border-red-500 focus:border-red-500" : ""}`}
           />
           {errors.name && (
             <div className="flex items-center gap-1 text-xs text-red-600">
@@ -60,7 +60,7 @@ export const WorkGeneralInfoForm = memo(function WorkGeneralInfoForm({
             value={formData.reference || ""}
             onChange={onFormChange}
             placeholder="Référence de l'ouvrage"
-            className="benaya-input"
+            className="Beenaya-input"
           />
         </div>
       </div>
@@ -76,7 +76,7 @@ export const WorkGeneralInfoForm = memo(function WorkGeneralInfoForm({
           onChange={onFormChange}
           placeholder="Description détaillée de l'ouvrage"
           rows={3}
-          className="benaya-input resize-none"
+          className="Beenaya-input resize-none"
         />
       </div>
 
@@ -89,7 +89,7 @@ export const WorkGeneralInfoForm = memo(function WorkGeneralInfoForm({
             Unité <span className="text-red-500">*</span>
           </Label>
           <Select value={formData.unit || ""} onValueChange={onUnitChange}>
-            <SelectTrigger className={`benaya-input ${errors.unit ? "border-red-500" : ""}`}>
+            <SelectTrigger className={`Beenaya-input ${errors.unit ? "border-red-500" : ""}`}>
               <SelectValue placeholder="Sélectionner une unité" />
             </SelectTrigger>
             <SelectContent>
@@ -126,7 +126,7 @@ export const WorkGeneralInfoForm = memo(function WorkGeneralInfoForm({
               value={formData.margin || ""}
               onChange={onFormChange}
               placeholder="20"
-              className={`benaya-input pr-8 ${errors.margin ? "border-red-500 focus:border-red-500" : ""}`}
+              className={`Beenaya-input pr-8 ${errors.margin ? "border-red-500 focus:border-red-500" : ""}`}
             />
             <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-neutral-500 text-sm">
               %

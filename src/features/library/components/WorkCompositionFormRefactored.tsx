@@ -70,7 +70,7 @@ export const WorkCompositionFormRefactored = memo(function WorkCompositionFormRe
               }
             </DialogDescription>
           </div>
-          <Badge className="benaya-badge-success gap-1">
+          <Badge className="Beenaya-badge-success gap-1">
             <Hammer className="w-3 h-3" />
             Ouvrage
           </Badge>
@@ -152,7 +152,7 @@ export const WorkCompositionFormRefactored = memo(function WorkCompositionFormRe
           <Button
             type="submit"
             disabled={isLoading || components.length === 0}
-            className="w-full sm:w-auto benaya-button"
+            className="w-full sm:w-auto Beenaya-button"
           >
             {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {isEditing ? "Mettre à jour" : "Créer l'ouvrage"}

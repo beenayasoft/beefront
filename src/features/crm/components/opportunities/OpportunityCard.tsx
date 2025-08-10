@@ -1,4 +1,4 @@
-import { useState, memo } from "react";
+import { useState } from "react";
 import { 
   MoreHorizontal, 
   Edit, 
@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Opportunity, OpportunityStatus } from "../../types/opportunities.types";
+import { Opportunity, OpportunityStatus } from "../../types/opportunity";
 import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -35,9 +35,11 @@ interface OpportunityCardProps {
   onMarkAsWon?: (opportunity: Opportunity) => void;
   onMarkAsLost?: (opportunity: Opportunity) => void;
   isDragging?: boolean;
+  onDisableDrag?: () => void;
+  onEnableDrag?: () => void;
 }
 
-const OpportunityCard = memo(function OpportunityCard({
+export function OpportunityCard({
   opportunity,
   onView,
   onEdit,
@@ -47,6 +49,8 @@ const OpportunityCard = memo(function OpportunityCard({
   onMarkAsWon,
   onMarkAsLost,
   isDragging = false,
+  onDisableDrag,
+  onEnableDrag,
 }: OpportunityCardProps) {
   // Formater la date
   const formatDate = (dateString: string | null | undefined) => {
@@ -85,11 +89,17 @@ const OpportunityCard = memo(function OpportunityCard({
   return (
     <div 
       className={cn(
-        "Beenaya-card p-3 cursor-grab active:cursor-grabbing transition-all duration-200",
-        isDragging ? "opacity-50 rotate-3 scale-105 shadow-xl z-50" : "hover:shadow-lg",
+        "Beenaya-card p-3 transition-all duration-200 select-none",
+        isDragging ? "opacity-50 rotate-2 scale-105 shadow-xl z-50 cursor-grabbing" : "hover:shadow-lg cursor-grab",
         opportunity.stage === 'won' && "border-l-4 border-l-green-500",
         opportunity.stage === 'lost' && "border-l-4 border-l-red-500",
       )}
+      style={{
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none'
+      }}
     >
       <div className="space-y-3">
         {/* Header */}
@@ -104,27 +114,42 @@ const OpportunityCard = memo(function OpportunityCard({
             </div>
           </div>
           <div>
-            <DropdownMenu>
+            <DropdownMenu 
+              onOpenChange={(open) => {
+                if (open && onDisableDrag) {
+                  onDisableDrag();
+                } else if (!open && onEnableDrag) {
+                  onEnableDrag();
+                }
+              }}
+            >
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-7 w-7"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <MoreHorizontal className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="Beenaya-glass">
                 {onView && (
-                  <DropdownMenuItem onClick={() => onView(opportunity)}>
+                  <DropdownMenuItem onClick={(e) => { 
+                    e.stopPropagation(); 
+                    console.log('🔍 Voir détails cliqué pour', opportunity.id);
+                    onView(opportunity); 
+                  }}>
                     <Eye className="mr-2 h-4 w-4" />
-                    Voir détails
-                  </DropdownMenuItem>
-                )}
-                {onEdit && (
-                  <DropdownMenuItem onClick={() => onEdit(opportunity)}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Modifier
+                    Voir et modifier
                   </DropdownMenuItem>
                 )}
                 {onCreateQuote && opportunity.stage !== 'won' && opportunity.stage !== 'lost' && (
-                  <DropdownMenuItem onClick={() => onCreateQuote(opportunity)}>
+                  <DropdownMenuItem onClick={(e) => { 
+                    e.stopPropagation(); 
+                    console.log('📄 Créer devis cliqué pour', opportunity.id);
+                    onCreateQuote(opportunity); 
+                  }}>
                     <FileText className="mr-2 h-4 w-4" />
                     Créer un devis
                   </DropdownMenuItem>
@@ -134,13 +159,13 @@ const OpportunityCard = memo(function OpportunityCard({
                   <>
                     <DropdownMenuSeparator />
                     {onMarkAsWon && (
-                      <DropdownMenuItem onClick={() => onMarkAsWon(opportunity)}>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMarkAsWon(opportunity); }}>
                         <CheckCircle className="mr-2 h-4 w-4 text-green-600" />
                         Marquer comme gagnée
                       </DropdownMenuItem>
                     )}
                     {onMarkAsLost && (
-                      <DropdownMenuItem onClick={() => onMarkAsLost(opportunity)}>
+                      <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onMarkAsLost(opportunity); }}>
                         <XCircle className="mr-2 h-4 w-4 text-red-600" />
                         Marquer comme perdue
                       </DropdownMenuItem>
@@ -153,7 +178,7 @@ const OpportunityCard = memo(function OpportunityCard({
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
                       className="text-red-600"
-                      onClick={() => onDelete(opportunity)}
+                      onClick={(e) => { e.stopPropagation(); onDelete(opportunity); }}
                     >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Supprimer
@@ -233,6 +258,4 @@ const OpportunityCard = memo(function OpportunityCard({
       </div>
     </div>
   );
-});
-
-export { OpportunityCard };
+}

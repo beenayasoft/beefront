@@ -12,7 +12,7 @@ export function WorkFinancialAnalysis({ work }: WorkFinancialAnalysisProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Calculator className="w-5 h-5 text-benaya-600" />
+          <Calculator className="w-5 h-5 text-Beenaya-600" />
           Analyse financière
         </CardTitle>
       </CardHeader>

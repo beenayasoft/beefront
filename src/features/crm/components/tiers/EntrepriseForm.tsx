@@ -41,8 +41,7 @@ import {
   EntrepriseFormValues,
   ContactEntreprise,
   AdresseEntreprise,
-  entrepriseFlags,
-  formesJuridiques
+  entrepriseFlags
 } from "./types/entreprise";
 import { useEntrepriseForm } from "./hooks/useEntrepriseForm";
 
@@ -113,7 +112,7 @@ export function EntrepriseForm({
                 {isEditing ? "Modifier l'entreprise" : "Nouvelle entreprise"}
               </h3>
               <p className="text-sm text-muted-foreground">
-                Seule la raison sociale est obligatoire
+                Seul le nom de l'entreprise est obligatoire
               </p>
             </div>
           </div>
@@ -161,56 +160,31 @@ export function EntrepriseForm({
                 <CardTitle className="text-base">Informations principales</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Raison sociale - OBLIGATOIRE */}
+                {/* Nom de l'entreprise - OBLIGATOIRE */}
                 <FormField
                   control={form.control}
-                  name="raisonSociale"
+                  name="nom"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
-                        Raison sociale *
+                        Nom de l'entreprise *
                         <Badge variant="destructive" className="text-xs">Obligatoire</Badge>
                       </FormLabel>
                       <FormControl>
                         <Input 
-                          placeholder="Ex: Dupont Construction SARL" 
+                          placeholder="Ex: Dupont Construction" 
                           disabled={formLoading}
                           {...field} 
                         />
                       </FormControl>
                       <FormDescription>
-                        Nom officiel de l'entreprise tel qu'enregistré
+                        Nom de l'entreprise
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                {/* Forme juridique */}
-                <FormField
-                  control={form.control}
-                  name="formeJuridique"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Forme juridique</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger disabled={formLoading}>
-                            <SelectValue placeholder="Sélectionnez une forme juridique" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {formesJuridiques.map((forme) => (
-                            <SelectItem key={forme.value} value={forme.value}>
-                              {forme.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* SIRET */}
@@ -238,19 +212,19 @@ export function EntrepriseForm({
                   {/* Numéro de TVA */}
                   <FormField
                     control={form.control}
-                    name="numeroTVA"
+                    name="tva"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Numéro de TVA</FormLabel>
                         <FormControl>
                           <Input 
-                            placeholder="FR12345678901" 
+                            placeholder="FR123456789" 
                             disabled={formLoading}
                             {...field} 
                           />
                         </FormControl>
                         <FormDescription>
-                          Format: FR + 11 chiffres
+                          Format: FR + 9-13 chiffres
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -260,53 +234,6 @@ export function EntrepriseForm({
               </CardContent>
             </Card>
 
-            {/* Informations légales */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Informations légales</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Code NAF */}
-                  <FormField
-                    control={form.control}
-                    name="codeNAF"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Code NAF</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Ex: 4120A" 
-                            disabled={formLoading}
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Capital social */}
-                  <FormField
-                    control={form.control}
-                    name="capitalSocial"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Capital social</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Ex: 10000 €" 
-                            disabled={formLoading}
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Relations commerciales */}
             <Card>

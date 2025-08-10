@@ -28,10 +28,18 @@ export const materialsApi = {
   // Récupérer un matériau par ID
   getMaterial: async (id: string): Promise<Material> => {
     try {
+      console.log('🔍 [GET MATERIAL] Récupération du matériau ID:', id);
       const response = await apiClient.get(`/api/library/fournitures/${id}/`);
-      return transformMaterial(response.data);
+      console.log('📥 [GET MATERIAL] Réponse brute du backend:', response.data);
+      console.log('📥 [GET MATERIAL] Supplier_id dans la réponse:', response.data.supplier_id);
+      
+      const transformedMaterial = transformMaterial(response.data);
+      console.log('🔄 [GET MATERIAL] Matériau transformé:', transformedMaterial);
+      console.log('🔄 [GET MATERIAL] Supplier_id final:', transformedMaterial.supplier_id);
+      
+      return transformedMaterial;
     } catch (error) {
-      console.error(`Erreur lors du chargement du matériau ${id}:`, error);
+      console.error(`❌ [GET MATERIAL] Erreur lors du chargement du matériau ${id}:`, error);
       throw error;
     }
   },
@@ -39,11 +47,41 @@ export const materialsApi = {
   // Créer un nouveau matériau
   createMaterial: async (material: Partial<Material>): Promise<Material> => {
     try {
+      console.log('🔍 [CREATE MATERIAL] Données frontend reçues:', material);
+      console.log('🔍 [CREATE MATERIAL] Type de reference:', typeof material.reference, 'Value:', material.reference);
+      
       const backendData = transformMaterialToBackend(material);
-      const response = await apiClient.post('/api/library/fournitures/', backendData);
-      return transformMaterial(response.data);
+      
+      // HACK TEMPORAIRE: Forcer une copie profonde pour éviter les mutations d'objet
+      const cleanBackendData = JSON.parse(JSON.stringify(backendData));
+      console.log('📤 [CREATE MATERIAL] Données envoyées au backend:', backendData);
+      console.log('📤 [CREATE MATERIAL] Type de reference backend:', typeof backendData.reference, 'Value:', backendData.reference);
+      console.log('📤 [CREATE MATERIAL] Données complètes backend:', JSON.stringify(backendData, null, 2));
+      
+      // Intercepteur temporaire pour voir les données réellement envoyées
+      const requestInterceptor = apiClient.interceptors.request.use((config) => {
+        if (config.url?.includes('/api/library/fournitures/')) {
+          console.log('🌐 [AXIOS REQUEST] URL:', config.url);
+          console.log('🌐 [AXIOS REQUEST] Method:', config.method);
+          console.log('🌐 [AXIOS REQUEST] Headers:', config.headers);
+          console.log('🌐 [AXIOS REQUEST] Data avant envoi:', typeof config.data, config.data);
+          console.log('🌐 [AXIOS REQUEST] Data JSON:', JSON.stringify(config.data));
+        }
+        return config;
+      });
+      
+      try {
+        const response = await apiClient.post('/api/library/fournitures/', cleanBackendData);
+        return transformMaterial(response.data);
+      } finally {
+        // Nettoyer l'intercepteur après utilisation
+        apiClient.interceptors.request.eject(requestInterceptor);
+      }
     } catch (error) {
-      console.error("Erreur lors de la création du matériau:", error);
+      console.error("❌ [CREATE MATERIAL] Erreur lors de la création du matériau:", error);
+      if (error.response?.data) {
+        console.error("📋 [CREATE MATERIAL] Détails de l'erreur backend:", error.response.data);
+      }
       throw error;
     }
   },
@@ -51,11 +89,27 @@ export const materialsApi = {
   // Mettre à jour un matériau
   updateMaterial: async (id: string, material: Partial<Material>): Promise<Material> => {
     try {
+      console.log('🔍 [UPDATE MATERIAL] Données frontend reçues:', material);
+      console.log('🔍 [UPDATE MATERIAL] Supplier ID:', material.supplier_id);
+      console.log('🔍 [UPDATE MATERIAL] Supplier data:', material.supplier);
+      
       const backendData = transformMaterialToBackend(material);
+      console.log('📤 [UPDATE MATERIAL] Données transformées pour backend:', backendData);
+      console.log('📤 [UPDATE MATERIAL] Backend supplier_id:', backendData.supplier_id);
+      
       const response = await apiClient.patch(`/api/library/fournitures/${id}/`, backendData);
-      return transformMaterial(response.data);
+      
+      console.log('✅ [UPDATE MATERIAL] Réponse du backend:', response.data);
+      const transformedMaterial = transformMaterial(response.data);
+      console.log('🔄 [UPDATE MATERIAL] Matériau transformé:', transformedMaterial);
+      console.log('🔄 [UPDATE MATERIAL] Matériau supplier_id final:', transformedMaterial.supplier_id);
+      
+      return transformedMaterial;
     } catch (error) {
-      console.error(`Erreur lors de la mise à jour du matériau ${id}:`, error);
+      console.error(`❌ [UPDATE MATERIAL] Erreur lors de la mise à jour du matériau ${id}:`, error);
+      if (error.response?.data) {
+        console.error("📋 [UPDATE MATERIAL] Détails de l'erreur backend:", error.response.data);
+      }
       throw error;
     }
   },

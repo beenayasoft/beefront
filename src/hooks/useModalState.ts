@@ -34,6 +34,7 @@
  * ```
  */
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { forceCleanModalOrphans, debugModalState, isUIBlocked } from '@/utils/modalDebug';
 
 export interface ModalState {
   isOpen: boolean;
@@ -84,7 +85,6 @@ export function useModalState<T = any>(
         clearTimeout(forceCloseTimerRef.current);
       }
 
-      console.log('🔓 Modal ouverte avec données:', data);
       setState({
         isOpen: true,
         data,
@@ -94,7 +94,6 @@ export function useModalState<T = any>(
     }, []),
 
     close: useCallback(() => {
-      console.log('🔒 Fermeture normale de la modal');
       setState(prev => ({
         ...prev,
         isOpen: false,
@@ -102,13 +101,36 @@ export function useModalState<T = any>(
         isSubmitting: false,
       }));
       
-      // Nettoyer les données après la fermeture
+      // Nettoyage différé pour éviter les race conditions
       setTimeout(() => {
-        setState(prev => ({
-          ...prev,
-          data: undefined,
-        }));
-      }, 200); // Délai pour les animations CSS
+        setState(prev => {
+          // Seulement nettoyer si la modale est toujours fermée
+          if (!prev.isOpen) {
+            return {
+              ...prev,
+              data: undefined,
+            };
+          }
+          return prev;
+        });
+      }, 300); // Délai augmenté pour laisser les animations se terminer
+      
+      // Cleanup DOM séparé pour éviter l'interférence
+      setTimeout(() => {
+        const cleanedCount = forceCleanModalOrphans();
+        
+        // Diagnostic automatique après cleanup
+        setTimeout(() => {
+          const blockStatus = isUIBlocked();
+          if (blockStatus.blocked) {
+            console.error('🚨 UI ENCORE BLOQUÉE après cleanup!', blockStatus.details);
+            // Nettoyage forcé supplémentaire
+            forceCleanModalOrphans();
+          } else {
+            console.log('✅ UI libre après fermeture de modale');
+          }
+        }, 100);
+      }, 400);
     }, []),
 
     setLoading: useCallback((loading: boolean) => {
@@ -127,8 +149,7 @@ export function useModalState<T = any>(
       // Protection contre les états figés : forcer la réinitialisation après 30s
       if (submitting) {
         forceCloseTimerRef.current = setTimeout(() => {
-          console.warn('⚠️ État submitting figé détecté - réinitialisation forcée');
-          setState({
+            setState({
             isOpen: false,
             data: undefined,
             isLoading: false,
@@ -141,7 +162,6 @@ export function useModalState<T = any>(
     }, []),
 
     reset: useCallback(() => {
-      console.log('🧹 Réinitialisation complète de la modal');
       if (forceCloseTimerRef.current) {
         clearTimeout(forceCloseTimerRef.current);
       }
@@ -155,7 +175,6 @@ export function useModalState<T = any>(
     }, []),
 
     forceClose: useCallback(() => {
-      console.warn('🚨 Fermeture forcée de la modal');
       if (forceCloseTimerRef.current) {
         clearTimeout(forceCloseTimerRef.current);
       }
@@ -166,6 +185,10 @@ export function useModalState<T = any>(
         isLoading: false,
         isSubmitting: false,
       });
+      
+      setTimeout(() => {
+        forceCleanModalOrphans();
+      }, 100);
     }, []),
   };
 
@@ -182,7 +205,6 @@ export function useModalState<T = any>(
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && state.isOpen && !state.isSubmitting) {
-        console.log('⌨️ Échappement détecté - fermeture de la modal');
         actions.close();
       }
     };
@@ -226,7 +248,6 @@ export function createSafeSubmitHandler<T>(
 ) {
   return async (data: T) => {
     if (modal.isSubmitting) {
-      console.warn('⚠️ Soumission déjà en cours - ignorée');
       return;
     }
 
@@ -236,7 +257,6 @@ export function createSafeSubmitHandler<T>(
       onSuccess?.(data);
       modal.actions.close();
     } catch (error) {
-      console.error('❌ Erreur lors de la soumission:', error);
       onError?.(error as Error, data);
     } finally {
       modal.actions.setSubmitting(false);

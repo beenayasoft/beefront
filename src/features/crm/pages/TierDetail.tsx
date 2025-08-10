@@ -17,7 +17,11 @@ import {
   Users,
   Home,
   Search,
-  Filter
+  Filter,
+  Trash2,
+  Check,
+  Crown,
+  Edit3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,11 +31,10 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTierUtils } from "../components/tiers/useTierUtils";
-import { tiersApi } from "../api/tiers";
+import { tiersApi } from "../api";
 import { TierEntrepriseEditDialog } from "../components/tiers/TierEntrepriseEditDialog";
 import { TierParticulierEditDialog } from "../components/tiers/TierParticulierEditDialog";
-import type { Tier } from "../types/tiers.types";
-import { Opportunity } from "../types/opportunities.types";
+import type { Tier, Opportunity } from "../types/crm.types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { 
   Pagination,
@@ -43,9 +46,13 @@ import {
 } from "@/components/ui/pagination";
 import { OpportunityForm } from "../components/opportunities/OpportunityForm";
 import { toast } from "@/hooks/use-toast";
-import { opportunitiesApi } from "../api";
-import { quotesService } from "@/features/documents/services/quotesService";
-import { Quote } from "@/features/documents/types/quotes.types";
+import { crmApi } from "../api";
+// import { quotesService } from "@/features/documents/services/quotesService";
+// import { Quote } from "@/features/documents/types/quotes.types";
+import { DeleteConfirmDialog } from "../components/tiers/DeleteConfirmDialog";
+import { ContactEditDialog, ContactCreateDialog } from "../components/contacts";
+import { AddressEditDialog, AddressCreateDialog } from "../components/addresses";
+import { useModalState } from "@/hooks/useModalState";
 
 // Types pour les données détaillées du backend
 interface TierDetailData {
@@ -56,8 +63,8 @@ interface TierDetailData {
   tva?: string;
   relation: string;
   is_deleted: boolean;
-  date_creation: string;
-  date_modification: string;
+  created_at: string;
+  updated_at: string;
   contacts?: Array<{
     id: string;
     prenom: string;
@@ -132,32 +139,52 @@ export default function TierDetail() {
   } | null>(null);
   const [dataSource, setDataSource] = useState<'api' | 'mock' | null>(null);
 
-  // 🎯 États pour les devis (similaire aux opportunités)
-  const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [quotesLoading, setQuotesLoading] = useState(false);
-  const [quotesError, setQuotesError] = useState<string | null>(null);
-  const [quoteMetrics, setQuoteMetrics] = useState<{
-    total: number;
-    totalAmount: number;
-    avgAmount: number;
-    byStatus: Record<string, number>;
-    acceptanceRate: number;
-  } | null>(null);
+  // 🎯 États pour les devis (DÉSACTIVÉ - fonctionnalité en développement)
+  // const [quotes, setQuotes] = useState<Quote[]>([]);
+  // const [quotesLoading, setQuotesLoading] = useState(false);
+  // const [quotesError, setQuotesError] = useState<string | null>(null);
+  // const [quoteMetrics, setQuoteMetrics] = useState<{
+  //   total: number;
+  //   totalAmount: number;
+  //   avgAmount: number;
+  //   byStatus: Record<string, number>;
+  //   acceptanceRate: number;
+  // } | null>(null);
 
   // États pour les modales d'édition spécialisées
   const [editEntrepriseDialogOpen, setEditEntrepriseDialogOpen] = useState(false);
   const [editParticulierDialogOpen, setEditParticulierDialogOpen] = useState(false);
 
+  // État pour la modale de suppression avec useModalState
+  const deleteModal = useModalState<Tier>();
+
+  // État pour la modale d'édition de contact
+  const [contactEditModal, setContactEditModal] = useState<{
+    open: boolean;
+    contact: any;
+  }>({ open: false, contact: null });
+
+  // État pour la modale de création de contact
+  const [contactCreateModal, setContactCreateModal] = useState(false);
+
   // États pour la pagination
-  const [quotesCurrentPage, setQuotesCurrentPage] = useState(1);
+  // const [quotesCurrentPage, setQuotesCurrentPage] = useState(1);
   const [opportunitiesCurrentPage, setOpportunitiesCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
   // États pour la recherche et le filtrage
   const [opportunitiesSearchQuery, setOpportunitiesSearchQuery] = useState('');
   const [opportunitiesStatusFilter, setOpportunitiesStatusFilter] = useState<string>('all');
-  const [quotesSearchQuery, setQuotesSearchQuery] = useState('');
-  const [quotesStatusFilter, setQuotesStatusFilter] = useState<string>('all');
+  // const [quotesSearchQuery, setQuotesSearchQuery] = useState('');
+  // const [quotesStatusFilter, setQuotesStatusFilter] = useState<string>('all');
+
+  // États pour les modales d'actions
+  const [actionModalOpen, setActionModalOpen] = useState(false);
+  const [actionModalContent, setActionModalContent] = useState<{
+    title: string;
+    message: string;
+    icon: React.ReactNode;
+  } | null>(null);
 
   // Déterminer le type d'entité
   const isEntreprise = tierData?.type?.includes('entreprise') || false;
@@ -229,21 +256,39 @@ export default function TierDetail() {
           siret: response.siret,
           tva: response.tva,
           is_deleted: response.is_deleted,
-          date_creation: response.date_creation,
-          date_modification: response.date_modification,
+          created_at: response.created_at,
+          updated_at: response.updated_at,
           // Extraire les données des onglets pour faciliter l'accès
           contacts: response.onglets?.contacts || [],
           adresses: response.onglets?.infos?.adresses || [],
           activites: response.onglets?.activites || []
         };
 
-        console.log("Données tier adaptées pour le composant:", adaptedData);
+        console.log("🔍 DEBUG CONTACTS - Données tier adaptées:", adaptedData);
+        console.log("🔍 DEBUG CONTACTS - Structure complète des contacts:", JSON.stringify(adaptedData.contacts, null, 2));
+        
+        // Debug spécifique pour les contacts
+        if (adaptedData.contacts && adaptedData.contacts.length > 0) {
+          adaptedData.contacts.forEach((contact, index) => {
+            console.log(`🔍 Contact ${index}:`, {
+              id: contact.id,
+              nom: contact.nom,
+              prenom: contact.prenom,
+              email: contact.email,
+              telephone: contact.telephone,
+              fonction: contact.fonction,
+              contactPrincipalDevis: contact.contact_principal_devis || contact.is_contact_principal_devis,
+              contactPrincipalFacture: contact.contact_principal_facture || contact.is_contact_principal_facture
+            });
+          });
+        }
+        
         setTierData(adaptedData);
         
-        // MAD Chargement progressif intelligent des opportunités et devis
+        // MAD Chargement progressif intelligent des opportunités
         if (id) {
           loadOpportunitiesProgressively(id);
-          loadQuotesProgressively(id);
+          // Note: loadQuotesProgressively(id) désactivé - fonctionnalité en développement
         }
       } catch (err) {
         console.error("Erreur lors du chargement du tier:", err);
@@ -287,7 +332,7 @@ export default function TierDetail() {
     try {
       console.log('🔄 [TierDetail] Appel de opportunityService.getOpportunitiesByTier avec tierId:', tierId);
       
-      const result = await opportunitiesApi.getOpportunities({ tier: tierId });
+      const result = await crmApi.opportunities.getOpportunitiesByClient(tierId);
       
       console.log('✅ [TierDetail] Résultat reçu:', {
         count: result.length,
@@ -302,7 +347,60 @@ export default function TierDetail() {
       
       // ✅ Utiliser directement les opportunités de l'API (déjà filtrées côté backend)
       setOpportunities(result);
-      setOpportunityMetrics(null); // Pas de métriques pour l'instant
+      
+      // Calculer les métriques à partir des opportunités chargées
+      if (result.length > 0) {
+        // Debug : vérifier les types des données
+        console.log('🔍 [TierDetail] Debug opportunités reçues:', {
+          count: result.length,
+          firstOpportunity: result[0],
+          estimatedAmounts: result.map(opp => ({
+            id: opp.id,
+            amount: opp.estimatedAmount,
+            type: typeof opp.estimatedAmount,
+            stage: opp.stage
+          }))
+        });
+        
+        // Calculer le montant total avec validation des types
+        const totalAmount = result.reduce((sum, opp) => {
+          const amount = typeof opp.estimatedAmount === 'number' 
+            ? opp.estimatedAmount 
+            : parseFloat(String(opp.estimatedAmount) || '0');
+          return sum + (isNaN(amount) ? 0 : amount);
+        }, 0);
+        
+        const avgAmount = result.length > 0 ? totalAmount / result.length : 0;
+        
+        // Calculer les stats par stage
+        const stageStats = result.reduce((acc, opp) => {
+          const stage = opp.stage || 'unknown';
+          acc[stage] = (acc[stage] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        
+        console.log('📊 [TierDetail] Métriques calculées:', {
+          total: result.length,
+          totalAmount,
+          avgAmount,
+          stageStats
+        });
+        
+        setOpportunityMetrics({
+          total: result.length,
+          byStage: stageStats,
+          totalAmount: Math.round(totalAmount * 100) / 100, // Arrondir à 2 décimales
+          avgAmount: Math.round(avgAmount * 100) / 100 // Arrondir à 2 décimales
+        });
+      } else {
+        setOpportunityMetrics({
+          total: 0,
+          byStage: {},
+          totalAmount: 0,
+          avgAmount: 0
+        });
+      }
+      
       setDataSource('api');
       
       // Réinitialiser la page courante si nécessaire
@@ -312,13 +410,19 @@ export default function TierDetail() {
       console.error('❌ [TierDetail] Erreur lors du chargement des opportunités:', error);
       setOpportunitiesError(error instanceof Error ? error.message : 'Erreur de chargement');
       setOpportunities([]);
-      setOpportunityMetrics(null);
+      setOpportunityMetrics({
+        total: 0,
+        byStage: {},
+        totalAmount: 0,
+        avgAmount: 0
+      });
     } finally {
       setOpportunitiesLoading(false);
     }
   };
 
-  // 🎯 Fonction de chargement progressif des devis (similaire aux opportunités)
+  // 🎯 Fonction de chargement des devis (DÉSACTIVÉE - fonctionnalité en développement)
+  /*
   const loadQuotesProgressively = async (tierId: string) => {
     console.log('🎯 [TierDetail] loadQuotesProgressively - tierId reçu:', tierId);
     
@@ -367,6 +471,7 @@ export default function TierDetail() {
       setQuotesLoading(false);
     }
   };
+  */
 
   // Gestionnaire pour l'édition selon le type
   const handleEdit = () => {
@@ -383,7 +488,7 @@ export default function TierDetail() {
   const handleEditSuccess = async () => {
     // Recharger les données après modification
     if (id) {
-      const response = await fetch(`http://localhost:8000/api/tiers/tiers/${id}/vue_360/`, {
+      const response = await fetch(`http://localhost:8000/api/tiers/${id}/vue_360/`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
           'Content-Type': 'application/json',
@@ -402,13 +507,218 @@ export default function TierDetail() {
     setFormDialogOpen(true);
   };
 
+  // Gestionnaires pour les actions avec modales informatives
+  const handleCallAction = () => {
+    setActionModalContent({
+      title: "Fonction d'appel en développement",
+      message: "Cette fonctionnalité sera bientôt disponible ! Nous travaillons actuellement sur l'intégration des appels téléphoniques pour améliorer votre expérience. En attendant, vous pouvez contacter ce tiers en utilisant les informations disponibles dans l'onglet 'Contacts'.",
+      icon: <Phone className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+    });
+    setActionModalOpen(true);
+  };
+
+  const handleEmailAction = () => {
+    setActionModalContent({
+      title: "Fonction d'email en développement",
+      message: "Cette fonctionnalité sera bientôt disponible ! Nous préparons une intégration complète pour l'envoi d'emails directement depuis Beenaya. En attendant, vous pouvez utiliser les adresses email disponibles dans l'onglet 'Contacts' pour contacter ce tiers.",
+      icon: <Mail className="h-12 w-12 text-green-500 mx-auto mb-4" />
+    });
+    setActionModalOpen(true);
+  };
+
+  const handleQuoteAction = () => {
+    setActionModalContent({
+      title: "Fonction de devis en développement",
+      message: "Cette fonctionnalité sera bientôt disponible ! Nous travaillons actuellement sur l'intégration complète des devis dans Beenaya. En attendant, vous pouvez créer des opportunités pour ce tiers qui serviront de base pour vos futurs devis.",
+      icon: <FileText className="h-12 w-12 text-blue-500 mx-auto mb-4" />
+    });
+    setActionModalOpen(true);
+  };
+
+  const handleMapAction = () => {
+    setActionModalContent({
+      title: "Fonction de carte en développement",
+      message: "Cette fonctionnalité sera bientôt disponible ! Nous préparons une intégration avec des services de cartographie pour localiser facilement vos tiers. En attendant, vous pouvez utiliser les adresses disponibles dans l'onglet 'Adresses' pour vous rendre chez ce tiers.",
+      icon: <MapPin className="h-12 w-12 text-purple-500 mx-auto mb-4" />
+    });
+    setActionModalOpen(true);
+  };
+
+  const handleDeleteAction = () => {
+    if (!tierData) return;
+    
+    // Créer un objet Tier compatible pour la modale de suppression
+    const tierForDelete: Tier = {
+      id: tierData.id,
+      nom: tierData.nom,
+      type: tierData.type,
+      relation: tierData.relation,
+      siret: tierData.siret || '',
+      tva: tierData.tva || '',
+      is_deleted: tierData.is_deleted,
+      created_at: tierData.created_at,
+      updated_at: tierData.updated_at,
+      contacts: tierData.contacts || [],
+      adresses: tierData.adresses || []
+    };
+    
+    console.log(`🗑️ Ouverture de la modale de suppression pour : ${tierData.nom}`);
+    deleteModal.actions.open(tierForDelete);
+  };
+
+  // Confirmer la suppression d'un tiers
+  const confirmDelete = async () => {
+    if (!deleteModal.data || deleteModal.isSubmitting) {
+      console.warn('⚠️ Suppression déjà en cours ou aucune donnée - ignorée');
+      return;
+    }
+    
+    try {
+      deleteModal.actions.setSubmitting(true);
+      await tiersApi.deleteTier(deleteModal.data.id);
+      
+      console.log(`✅ Tier ${deleteModal.data.nom} supprimé avec succès`);
+      
+      // Fermer la modale
+      deleteModal.actions.close();
+      
+      // Naviguer vers la liste des tiers après suppression
+      setTimeout(() => {
+        navigate('/tiers');
+      }, 100);
+      
+    } catch (err) {
+      console.error('❌ Erreur lors de la suppression:', err);
+      toast({
+        title: "Erreur de suppression",
+        description: "Une erreur est survenue lors de la suppression du tiers",
+        variant: "destructive",
+      });
+    } finally {
+      deleteModal.actions.setSubmitting(false);
+    }
+  };
+
+  // Gérer la fermeture de la modale de suppression
+  const handleDeleteDialogClose = (open: boolean) => {
+    if (!open && !deleteModal.isSubmitting) {
+      console.log('🚪 Fermeture sécurisée de la modale de suppression');
+      deleteModal.actions.close();
+    }
+  };
+
+  // Gérer l'édition d'un contact
+  const handleEditContact = (contact: any) => {
+    console.log('✏️ Édition du contact:', contact);
+    setContactEditModal({
+      open: true,
+      contact: contact
+    });
+  };
+
+  // Gérer le succès de modification d'un contact
+  const handleContactEditSuccess = async () => {
+    console.log('🎉 Contact modifié avec succès');
+    setContactEditModal({ open: false, contact: null });
+    await reloadTierData();
+  };
+
+  // Gérer le succès de création d'un contact
+  const handleContactCreateSuccess = async () => {
+    console.log('🎉 Contact créé avec succès');
+    await reloadTierData();
+  };
+
+  // États pour la gestion des adresses
+  const [addressEditModal, setAddressEditModal] = useState<{
+    open: boolean;
+    address: any | null;
+  }>({
+    open: false,
+    address: null
+  });
+
+  const [addressCreateModal, setAddressCreateModal] = useState<{
+    open: boolean;
+  }>({
+    open: false
+  });
+
+  // Gérer l'édition d'une adresse
+  const handleEditAddress = (address: any) => {
+    console.log('✏️ Édition de l\'adresse:', address);
+    setAddressEditModal({
+      open: true,
+      address: address
+    });
+  };
+
+  // Gérer le succès de modification d'une adresse
+  const handleAddressEditSuccess = async () => {
+    console.log('🎉 Adresse modifiée avec succès');
+    setAddressEditModal({ open: false, address: null });
+    await reloadTierData();
+  };
+
+  // Gérer le succès de création d'une adresse
+  const handleAddressCreateSuccess = async () => {
+    console.log('🎉 Adresse créée avec succès');
+    setAddressCreateModal({ open: false });
+    await reloadTierData();
+  };
+
+  // Fonction utilitaire pour recharger les données du tier
+  const reloadTierData = async () => {
+    if (!id) return;
+
+    try {
+      const response = await tiersApi.getTierDetail(id);
+      
+      // Adapter les données comme dans le useEffect principal
+      const adaptedData = {
+        id: response.id,
+        nom: response.nom,
+        type: response.type,
+        relation: response.relation,
+        siret: response.siret,
+        tva: response.tva,
+        is_deleted: response.is_deleted,
+        created_at: response.created_at,
+        updated_at: response.updated_at,
+        contacts: response.onglets?.contacts || [],
+        adresses: response.onglets?.infos?.adresses || [],
+        activites: response.onglets?.activites || []
+      };
+      
+      console.log('🔄 Données tier rechargées après action sur contact:', adaptedData);
+      setTierData(adaptedData);
+    } catch (error) {
+      console.error('❌ Erreur lors du rechargement des données tier:', error);
+      // Fallback: rechargement complet si l'API échoue
+      window.location.reload();
+    }
+  };
+
+  // Gérer l'ouverture de la création de contact
+  const handleCreateContact = () => {
+    console.log('✨ Ouverture de la création de contact pour:', tierData?.nom);
+    setContactCreateModal(true);
+  };
+
+  // Gérer la fermeture de la modale d'édition de contact
+  const handleContactEditClose = (open: boolean) => {
+    if (!open) {
+      setContactEditModal({ open: false, contact: null });
+    }
+  };
+
   // Gérer la soumission du formulaire d'opportunité
   const handleFormSubmit = async (formData: Partial<Opportunity>) => {
     try {
       console.log("MAD Phase 3 : Création d'opportunité via service intelligent:", formData);
       
       // Créer l'opportunité via le service intelligent
-      const createdOpportunity = await opportunitiesApi.createOpportunity(formData);
+      const createdOpportunity = await crmApi.opportunities.createOpportunity(formData);
       
       console.log("✅ Opportunité créée avec succès:", createdOpportunity);
       
@@ -535,6 +845,8 @@ export default function TierDetail() {
     return statusMap[status] || status;
   };
 
+  // Fonction désactivée - fonctionnalité devis en développement
+  /*
   const getQuoteStatusFrench = (status: string) => {
     const statusMap: Record<string, string> = {
       'draft': 'Brouillon',
@@ -546,6 +858,7 @@ export default function TierDetail() {
     };
     return statusMap[status] || status;
   };
+  */
 
   // Fonctions de filtrage
   const filterOpportunities = (opportunities: Opportunity[]) => {
@@ -562,6 +875,8 @@ export default function TierDetail() {
     });
   };
 
+  // Fonction désactivée - fonctionnalité devis en développement
+  /*
   const filterQuotes = (quotes: Quote[]) => {
     return quotes.filter(quote => {
       // Filtrage par recherche
@@ -575,11 +890,12 @@ export default function TierDetail() {
       return matchesSearch && matchesStatus;
     });
   };
+  */
 
   // Données filtrées et paginées
   const filteredOpportunities = filterOpportunities(opportunities);
-  const filteredQuotes = filterQuotes(quotes);
-  const paginatedQuotes = getPaginatedData(filteredQuotes, quotesCurrentPage);
+  // const filteredQuotes = filterQuotes(quotes);
+  // const paginatedQuotes = getPaginatedData(filteredQuotes, quotesCurrentPage);
   const paginatedOpportunities = getPaginatedData(filteredOpportunities, opportunitiesCurrentPage);
 
   // Réinitialiser les pages lors des changements de filtres
@@ -587,9 +903,12 @@ export default function TierDetail() {
     setOpportunitiesCurrentPage(1);
   }, [opportunitiesSearchQuery, opportunitiesStatusFilter]);
 
+  // useEffect désactivé - fonctionnalité devis en développement
+  /*
   useEffect(() => {
     setQuotesCurrentPage(1);
   }, [quotesSearchQuery, quotesStatusFilter]);
+  */
 
   // Si en cours de chargement, afficher un spinner
   if (loading) {
@@ -679,12 +998,21 @@ export default function TierDetail() {
                   )}
                 </div>
               </div>
-              <div className="flex-shrink-0 ml-6">
+              <div className="flex-shrink-0 ml-6 flex gap-3">
                 <Button 
                   className="gap-2 bg-white text-Beenaya-900 hover:bg-white/90 px-8"
                   onClick={handleEdit}
                 >
+                  <Edit className="w-4 h-4" />
                   Modifier
+                </Button>
+                <Button 
+                  variant="destructive"
+                  className="gap-2 bg-red-600 text-white hover:bg-red-700 px-6"
+                  onClick={handleDeleteAction}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Supprimer
                 </Button>
               </div>
             </div>
@@ -760,7 +1088,7 @@ export default function TierDetail() {
                       <div>
                         <div className="text-sm text-neutral-500 dark:text-neutral-400">Date de création</div>
                         <div className="font-medium">
-                          {new Date(tierData.date_creation).toLocaleDateString('fr-FR', {
+                          {new Date(tierData.created_at).toLocaleDateString('fr-FR', {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric'
@@ -771,7 +1099,7 @@ export default function TierDetail() {
                       <div>
                         <div className="text-sm text-neutral-500 dark:text-neutral-400">Dernière modification</div>
                         <div className="font-medium">
-                          {new Date(tierData.date_modification).toLocaleDateString('fr-FR', {
+                          {new Date(tierData.updated_at).toLocaleDateString('fr-FR', {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric'
@@ -786,65 +1114,173 @@ export default function TierDetail() {
               <TabsContent value="contacts" className="mt-6">
                 <Card className="Beenaya-card">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="h-5 w-5" />
-                      Contacts ({tierData.contacts?.length || 0})
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <Users className="h-5 w-5" />
+                          Contacts ({tierData.contacts?.length || 0})
+                        </CardTitle>
+                        <p className="text-sm text-neutral-500 mt-1">
+                          Informations de contact et personnes à contacter pour ce tiers
+                        </p>
+                      </div>
+                      <Button 
+                        onClick={handleCreateContact}
+                        size="sm"
+                        className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Nouveau contact
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     {tierData.contacts && tierData.contacts.length > 0 ? (
-                      <div className="space-y-4">
+                      <div className="space-y-6">
                         {tierData.contacts.map((contact, index) => (
-                          <div key={contact.id} className="p-4 border rounded-lg">
-                            <div className="flex items-start justify-between mb-3">
+                          <div key={contact.id} className="p-6 border rounded-lg bg-neutral-50/50 dark:bg-neutral-800/50">
+                            <div className="flex items-start justify-between mb-4">
                               <div className="flex items-center gap-2">
-                                <h4 className="font-semibold">
-                                  {contact.prenom} {contact.nom}
+                                <h4 className="text-lg font-semibold">
+                                  {contact.prenom || contact.nom ? `${contact.prenom || ''} ${contact.nom || ''}`.trim() : 'Contact sans nom'}
                                 </h4>
-                                {contact.contact_principal_devis && (
+                                {(contact.contact_principal_devis || contact.is_contact_principal_devis) && (
                                   <Badge variant="default" className="text-xs">Principal</Badge>
                                 )}
-                                {contact.contact_principal_facture && (
+                                {(contact.contact_principal_facture || contact.is_contact_principal_facture) && (
                                   <Badge variant="outline" className="text-xs">Facturation</Badge>
                                 )}
                               </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditContact(contact)}
+                                className="gap-2"
+                              >
+                                <Edit className="h-4 w-4" />
+                                Modifier
+                              </Button>
                             </div>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                              {contact.fonction && (
-                                <div>
-                                  <span className="text-neutral-500">Fonction:</span>
-                                  <div className="font-medium">{contact.fonction}</div>
+                            {/* Affichage explicite de tous les champs de contact */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              <div>
+                                <div className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">Fonction</div>
+                                <div className="font-medium">
+                                  {contact.fonction || <span className="text-neutral-400 italic">Non renseignée</span>}
                                 </div>
-                              )}
-                              {contact.email && (
-                                <div>
-                                  <span className="text-neutral-500">Email:</span>
-                                  <div className="font-medium">
-                                    <a href={`mailto:${contact.email}`} className="text-Beenaya-600 hover:underline">
+                              </div>
+                              
+                              <div>
+                                <div className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">Email</div>
+                                <div className="font-medium">
+                                  {contact.email ? (
+                                    <a href={`mailto:${contact.email}`} className="text-Beenaya-600 hover:underline flex items-center gap-1">
+                                      <Mail className="h-4 w-4" />
                                       {contact.email}
                                     </a>
-                                  </div>
+                                  ) : (
+                                    <span className="text-neutral-400 italic">Non renseigné</span>
+                                  )}
                                 </div>
-                              )}
-                              {contact.telephone && (
-                                <div>
-                                  <span className="text-neutral-500">Téléphone:</span>
-                                  <div className="font-medium">
-                                    <a href={`tel:${contact.telephone.replace(/\s/g, "")}`} className="text-Beenaya-600 hover:underline">
+                              </div>
+                              
+                              <div>
+                                <div className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">Téléphone</div>
+                                <div className="font-medium">
+                                  {contact.telephone ? (
+                                    <a href={`tel:${contact.telephone.replace(/\s/g, "")}`} className="text-Beenaya-600 hover:underline flex items-center gap-1">
+                                      <Phone className="h-4 w-4" />
                                       {contact.telephone}
                                     </a>
-                                  </div>
+                                  ) : (
+                                    <span className="text-neutral-400 italic">Non renseigné</span>
+                                  )}
                                 </div>
-                              )}
+                              </div>
+                              
+                              <div>
+                                <div className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">Contact pour devis</div>
+                                <div className="font-medium">
+                                  {(contact.contact_principal_devis || contact.is_contact_principal_devis) ? (
+                                    <span className="text-green-600 flex items-center gap-1">
+                                      <Check className="h-4 w-4" />
+                                      Oui
+                                    </span>
+                                  ) : (
+                                    <span className="text-neutral-400">Non</span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <div className="text-sm text-neutral-500 dark:text-neutral-400 mb-1">Contact pour facturation</div>
+                                <div className="font-medium">
+                                  {(contact.contact_principal_facture || contact.is_contact_principal_facture) ? (
+                                    <span className="text-green-600 flex items-center gap-1">
+                                      <Check className="h-4 w-4" />
+                                      Oui
+                                    </span>
+                                  ) : (
+                                    <span className="text-neutral-400">Non</span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </div>
                         ))}
+                        
+                        {/* Suggestion intelligente d'ajout si peu de contacts */}
+                        {tierData.contacts.length === 1 && (
+                          <div className="mt-4 p-4 border-2 border-dashed border-green-200 dark:border-green-700 rounded-lg text-center bg-green-50/50 dark:bg-green-950/10">
+                            <Users className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                            <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-3">
+                              <strong>Astuce :</strong> {isEntreprise 
+                                ? 'Les entreprises ont souvent plusieurs contacts (RH, Finance, Technique...)' 
+                                : 'Les particuliers peuvent avoir des contacts supplémentaires (conjoint, conseiller...)'
+                              }
+                            </p>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={handleCreateContact}
+                              className="gap-2 border-green-300 text-green-700 hover:bg-green-50 dark:border-green-600 dark:text-green-400"
+                            >
+                              <Plus className="h-4 w-4" />
+                              Ajouter un autre contact
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      <div className="text-center py-8 text-neutral-500">
-                        <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>Aucun contact enregistré</p>
+                      <div className="text-center py-12">
+                        <div className="relative">
+                          <Users className="h-20 w-20 mx-auto mb-4 text-green-200 dark:text-green-800" />
+                          <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full w-8 h-8 flex items-center justify-center">
+                            <Plus className="h-4 w-4" />
+                          </div>
+                        </div>
+                        <h3 className="text-lg font-medium mb-2 text-neutral-900 dark:text-neutral-100">
+                          Aucun contact enregistré
+                        </h3>
+                        <p className="text-sm mb-6 max-w-md mx-auto text-neutral-600 dark:text-neutral-400 leading-relaxed">
+                          {isEntreprise 
+                            ? 'Ajoutez des contacts pour cette entreprise (directeur, comptable, responsable technique...)' 
+                            : 'Ajoutez des informations de contact pour ce particulier (lui-même, conjoint, personne de confiance...)'
+                          }
+                        </p>
+                        <div className="space-y-3">
+                          <Button 
+                            onClick={handleCreateContact}
+                            className="gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-2"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Créer le premier contact
+                          </Button>
+                          <p className="text-xs text-neutral-400">
+                            💡 Vous pourrez ajouter d'autres contacts plus tard
+                          </p>
+                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -854,35 +1290,120 @@ export default function TierDetail() {
               <TabsContent value="addresses" className="mt-6">
                 <Card className="Beenaya-card">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Home className="h-5 w-5" />
-                      Adresses ({tierData.adresses?.length || 0})
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                          <MapPin className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <CardTitle className="flex items-center gap-2">
+                            Adresses ({tierData.adresses?.length || 0})
+                          </CardTitle>
+                          <p className="text-sm text-neutral-500 mt-1">
+                            Gérez toutes les adresses de {tierData.type === 'entreprise' ? 'l\'entreprise' : 'cette personne'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <Button
+                        onClick={() => setAddressCreateModal({ open: true })}
+                        className="gap-2 bg-green-600 hover:bg-green-700 text-white hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        size="sm"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Nouvelle adresse
+                        <div className="ml-1 opacity-60">
+                          {tierData.type === 'entreprise' ? '🏢' : '🏠'}
+                        </div>
+                      </Button>
+                    </div>
                   </CardHeader>
+                  
                   <CardContent>
                     {tierData.adresses && tierData.adresses.length > 0 ? (
                       <div className="space-y-4">
-                        {tierData.adresses.map((adresse, index) => (
-                          <div key={adresse.id} className="p-4 border rounded-lg">
-                            <div className="flex items-start justify-between mb-3">
-                              <h4 className="font-semibold">{adresse.libelle}</h4>
-                              {adresse.facturation && (
-                                <Badge variant="default" className="text-xs">Facturation</Badge>
-                              )}
+                        {tierData.adresses.map((adresse) => (
+                          <div 
+                            key={adresse.id} 
+                            className="group p-5 border border-neutral-200 dark:border-neutral-700 rounded-xl hover:border-blue-300 hover:shadow-md hover:shadow-blue-100 dark:hover:shadow-blue-900/20 hover:-translate-y-1 transition-all duration-200 bg-gradient-to-r from-white to-neutral-50/50 dark:from-neutral-800 dark:to-neutral-800/50 cursor-pointer"
+                            onClick={() => handleEditAddress(adresse)}
+                          >
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-lg">
+                                  {adresse.is_facturation ? (
+                                    <Mail className="h-4 w-4 text-green-600" />
+                                  ) : (
+                                    <Home className="h-4 w-4 text-blue-600" />
+                                  )}
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-neutral-900 dark:text-neutral-100">
+                                    {adresse.libelle}
+                                  </h4>
+                                  {adresse.is_facturation && (
+                                    <div className="flex items-center gap-1 mt-1">
+                                      <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 text-xs animate-pulse">
+                                        <Crown className="w-3 h-3 mr-1" />
+                                        Adresse de facturation
+                                      </Badge>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-2">
+                                <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center gap-2 text-xs text-blue-600 bg-blue-50 dark:bg-blue-950/20 px-2 py-1 rounded-full">
+                                  <Edit3 className="h-3 w-3" />
+                                  Cliquer pour modifier
+                                </div>
+                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="Adresse active" />
+                              </div>
                             </div>
                             
-                            <div className="space-y-1 text-sm">
-                              <div className="font-medium">{adresse.rue}</div>
-                              <div>{adresse.code_postal} {adresse.ville}</div>
-                              <div className="text-neutral-500">{adresse.pays}</div>
+                            <div className="pl-11 space-y-2">
+                              <div className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+                                <MapPin className="h-3 w-3 text-neutral-400" />
+                                <span className="font-medium">{adresse.rue}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+                                <span className="w-3 h-3" />
+                                <span>{adresse.code_postal} {adresse.ville}</span>
+                              </div>
+                              {adresse.pays && adresse.pays !== 'France' && (
+                                <div className="flex items-center gap-2 text-sm text-neutral-500">
+                                  <span className="w-3 h-3" />
+                                  <span>{adresse.pays}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-8 text-neutral-500">
-                        <Home className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>Aucune adresse enregistrée</p>
+                      <div className="text-center py-12 border-2 border-dashed border-neutral-200 dark:border-neutral-700 rounded-xl bg-gradient-to-br from-neutral-50/50 to-white dark:from-neutral-800/50 dark:to-neutral-800">
+                        <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-full w-fit mx-auto mb-4">
+                          <MapPin className="h-8 w-8 text-blue-400" />
+                        </div>
+                        <h3 className="font-medium text-neutral-900 dark:text-neutral-100 mb-2">
+                          Aucune adresse enregistrée
+                        </h3>
+                        <p className="text-sm text-neutral-500 mb-6 max-w-md mx-auto">
+                          {tierData.type === 'entreprise' 
+                            ? "Commencez par ajouter l'adresse principale de cette entreprise pour faciliter la gestion des documents et de la facturation."
+                            : "Ajoutez une adresse pour ce contact afin de faciliter les échanges et l'envoi de documents."
+                          }
+                        </p>
+                        <Button
+                          onClick={() => setAddressCreateModal({ open: true })}
+                          className="gap-2 bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg hover:scale-105 transition-all duration-200"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Ajouter la première adresse
+                          <div className="ml-2 opacity-70">
+                            {tierData.type === 'entreprise' ? '🏢' : '🏠'}
+                          </div>
+                        </Button>
                       </div>
                     )}
                   </CardContent>
@@ -897,259 +1418,36 @@ export default function TierDetail() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <FileText className="h-5 w-5" />
-                      Devis de {tierData.nom}
+                      Gestion des devis
                     </CardTitle>
-                    <p className="text-sm text-neutral-500 mt-1">
-                      Gérez tous les devis liés à ce client
-                    </p>
                   </CardHeader>
                   
                   <CardContent>
-                    {/* Métriques des devis */}
-                    {quoteMetrics && quotes.length > 0 && (
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6 p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-950/20 dark:to-red-950/20 rounded-lg">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-orange-600">{quoteMetrics.total}</div>
-                          <div className="text-sm text-neutral-500">Devis total</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-green-600">
-                            {quoteMetrics.totalAmount.toLocaleString('fr-FR')} MAD
-                          </div>
-                          <div className="text-sm text-neutral-500">Montant total</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-600">
-                            {quoteMetrics.avgAmount.toLocaleString('fr-FR')} MAD
-                          </div>
-                          <div className="text-sm text-neutral-500">Montant moyen</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-purple-600">
-                            {quoteMetrics.byStatus.accepted || 0}
-                          </div>
-                          <div className="text-sm text-neutral-500">Acceptés</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-teal-600">
-                            {Math.round(quoteMetrics.acceptanceRate)}%
-                          </div>
-                          <div className="text-sm text-neutral-500">Taux d'acceptation</div>
-                        </div>
+                    <div className="text-center py-16">
+                      <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-full w-fit mx-auto mb-6">
+                        <FileText className="h-16 w-16 text-blue-500" />
                       </div>
-                    )}
-
-                    {/* État de chargement */}
-                    {quotesLoading && (
-                      <div className="flex items-center justify-center py-12 text-neutral-500">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
-                        <span>Chargement des devis...</span>
-                      </div>
-                    )}
-                    
-                    {/* Gestion d'erreurs */}
-                    {quotesError && (
-                      <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 p-4 rounded-lg mb-6">
-                        <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                          <AlertCircle className="h-5 w-5" />
-                          <span>⚠️ {quotesError}</span>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => id && loadQuotesProgressively(id)}
-                            className="ml-auto"
-                          >
-                            Réessayer
-                          </Button>
+                      <h3 className="text-xl font-semibold mb-4 text-neutral-900 dark:text-neutral-100">
+                        Module Devis en développement
+                      </h3>
+                      <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed max-w-lg mx-auto mb-8">
+                        Nous travaillons actuellement sur une intégration complète de la gestion des devis dans cette interface. Cette fonctionnalité permettra de visualiser, créer et gérer tous les devis associés à ce {tierData.type === 'entreprise' ? 'client' : 'contact'} directement depuis sa fiche.
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                        <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-4 py-2 rounded-lg">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                          Fonctionnalité disponible prochainement
                         </div>
+                        <Button 
+                          variant="outline"
+                          onClick={() => navigate('/devis')}
+                          className="gap-2 hover:bg-blue-50 dark:hover:bg-blue-950/20 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300"
+                        >
+                          <FileText className="h-4 w-4" />
+                          Accéder aux devis
+                        </Button>
                       </div>
-                    )}
-
-                    {/* Barre de recherche et filtres pour les devis */}
-                    {!quotesLoading && !quotesError && quotes.length > 0 && (
-                      <div className="flex flex-col sm:flex-row gap-4 mb-6 p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg">
-                        <div className="flex-1">
-                          <div className="relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 h-4 w-4" />
-                            <Input
-                              placeholder="Rechercher par numéro ou nom de projet..."
-                              value={quotesSearchQuery}
-                              onChange={(e) => setQuotesSearchQuery(e.target.value)}
-                              className="pl-10"
-                            />
-                          </div>
-                        </div>
-                        <div className="w-full sm:w-48">
-                          <Select value={quotesStatusFilter} onValueChange={setQuotesStatusFilter}>
-                            <SelectTrigger>
-                              <Filter className="h-4 w-4 mr-2" />
-                              <SelectValue placeholder="Filtrer par statut" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">Tous les statuts</SelectItem>
-                              <SelectItem value="draft">Brouillon</SelectItem>
-                              <SelectItem value="sent">Envoyé</SelectItem>
-                              <SelectItem value="accepted">Accepté</SelectItem>
-                              <SelectItem value="rejected">Refusé</SelectItem>
-                              <SelectItem value="expired">Expiré</SelectItem>
-                              <SelectItem value="cancelled">Annulé</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Tableau des devis */}
-                    {!quotesLoading && !quotesError && (
-                      <>
-                        {filteredQuotes.length > 0 ? (
-                          <>
-                            <div className="border rounded-lg overflow-hidden">
-                              <div className="overflow-x-auto">
-                                <table className="w-full">
-                                  <thead className="bg-neutral-50 dark:bg-neutral-800">
-                                    <tr>
-                                      <th className="px-4 py-3 text-left text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                                        N° / Projet
-                                      </th>
-                                      <th className="px-4 py-3 text-left text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                                        Statut
-                                      </th>
-                                      <th className="px-4 py-3 text-right text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                                        Montant TTC
-                                      </th>
-                                      <th className="px-4 py-3 text-left text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                                        Date d'émission
-                                      </th>
-                                      <th className="px-4 py-3 text-left text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                                        Date d'expiration
-                                      </th>
-                                      <th className="px-4 py-3 text-center text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                                        Actions
-                                      </th>
-                                    </tr>
-                                  </thead>
-                                  <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
-                                    {paginatedQuotes.items.map((quote) => (
-                                      <tr key={quote.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
-                                        <td className="px-4 py-3">
-                                          <div className="font-medium text-neutral-900 dark:text-neutral-100">
-                                            {quote.number}
-                                          </div>
-                                          <div className="text-sm text-neutral-500 truncate max-w-xs">
-                                            {quote.project_name}
-                                          </div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                                                                  <Badge 
-                                          variant={
-                                            quote.status === 'accepted' ? 'default' : 
-                                            quote.status === 'rejected' ? 'destructive' : 
-                                            quote.status === 'expired' ? 'destructive' :
-                                            quote.status === 'sent' ? 'secondary' :
-                                            'outline'
-                                          }
-                                          className="text-xs"
-                                        >
-                                          {quote.status_display || getQuoteStatusFrench(quote.status)}
-                                        </Badge>
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
-                                          <div className="font-medium">
-                                            {quote.total_ttc.toLocaleString('fr-FR')} MAD
-                                          </div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                          <div className="text-sm">
-                                            {quote.issue_date_formatted || 
-                                             new Date(quote.issue_date).toLocaleDateString('fr-FR')}
-                                          </div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                          <div className="text-sm">
-                                            {quote.expiry_date_formatted || 
-                                             new Date(quote.expiry_date).toLocaleDateString('fr-FR')}
-                                          </div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                          <div className="flex items-center justify-center gap-2">
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              onClick={() => navigate(`/devis/${quote.id}`)}
-                                              className="h-8 w-8 p-0"
-                                              title="Voir le devis"
-                                            >
-                                              <Eye className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                              size="sm"
-                                              variant="ghost"
-                                              onClick={() => navigate(`/devis/edit/${quote.id}`)}
-                                              className="h-8 w-8 p-0"
-                                              title="Modifier le devis"
-                                            >
-                                              <Edit className="h-4 w-4" />
-                                            </Button>
-                                          </div>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
-
-                            {/* Information de pagination et pagination pour les devis */}
-                            <div className="flex items-center justify-between mt-4">
-                              <div className="text-sm text-neutral-500">
-                                Affichage de {((quotesCurrentPage - 1) * itemsPerPage) + 1} à {Math.min(quotesCurrentPage * itemsPerPage, filteredQuotes.length)} sur {filteredQuotes.length} devis
-                                {quotesSearchQuery || quotesStatusFilter !== 'all' ? ` (${quotes.length} au total)` : ''}
-                              </div>
-                              {createPaginationComponent(
-                                quotesCurrentPage,
-                                paginatedQuotes.totalPages,
-                                setQuotesCurrentPage
-                              )}
-                            </div>
-                          </>
-                        ) : (
-                          <div className="text-center py-12 text-neutral-500">
-                            <FileText className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                            <h3 className="text-lg font-medium mb-2">
-                              {quotesSearchQuery || quotesStatusFilter !== 'all'
-                                ? 'Aucun résultat trouvé' 
-                                : 'Aucun devis'}
-                            </h3>
-                            <p className="text-sm mb-4">
-                              {quotesSearchQuery || quotesStatusFilter !== 'all'
-                                ? 'Aucun devis ne correspond aux critères de recherche.'
-                                : 'Ce client n\'a pas encore de devis établi.'}
-                            </p>
-                            {(quotesSearchQuery || quotesStatusFilter !== 'all') ? (
-                              <Button 
-                                variant="outline" 
-                                onClick={() => {
-                                  setQuotesSearchQuery('');
-                                  setQuotesStatusFilter('all');
-                                }}
-                                className="mt-2"
-                              >
-                                Effacer les filtres
-                              </Button>
-                            ) : (
-                              <Button 
-                                onClick={() => navigate(`/devis/new?client=${tierData.id}`)}
-                                className="gap-2 Beenaya-button-primary"
-                              >
-                                <Plus className="h-4 w-4" />
-                                Créer le premier devis
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </>
-                    )}
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -1171,33 +1469,48 @@ export default function TierDetail() {
                   
                   <CardContent>
                     {/* Métriques des opportunités */}
-                    {opportunities.length > 0 && (
+                    {opportunityMetrics && opportunityMetrics.total > 0 && (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-lg">
                         <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-600">{filteredOpportunities.length}</div>
+                          <div className="text-2xl font-bold text-blue-600">
+                            {opportunitiesSearchQuery || opportunitiesStatusFilter !== 'all' 
+                              ? filteredOpportunities.length 
+                              : opportunityMetrics.total}
+                          </div>
                           <div className="text-sm text-neutral-500">
                             Opportunités{opportunitiesSearchQuery || opportunitiesStatusFilter !== 'all' ? ' (filtrées)' : ''}
                           </div>
                         </div>
                         <div className="text-center">
                           <div className="text-2xl font-bold text-green-600">
-                            {filteredOpportunities.reduce((sum, opp) => sum + opp.estimatedAmount, 0).toLocaleString('fr-FR')} MAD
+                            {(opportunitiesSearchQuery || opportunitiesStatusFilter !== 'all' 
+                              ? filteredOpportunities.reduce((sum, opp) => sum + opp.estimatedAmount, 0)
+                              : opportunityMetrics.totalAmount
+                            ).toLocaleString('fr-FR')} MAD
                           </div>
                           <div className="text-sm text-neutral-500">Montant total</div>
                         </div>
                         <div className="text-center">
                           <div className="text-2xl font-bold text-purple-600">
-                            {filteredOpportunities.length > 0 
-                              ? Math.round(filteredOpportunities.reduce((sum, opp) => sum + opp.estimatedAmount, 0) / filteredOpportunities.length).toLocaleString('fr-FR')
-                              : 0} MAD
+                            {(opportunitiesSearchQuery || opportunitiesStatusFilter !== 'all' 
+                              ? (filteredOpportunities.length > 0 
+                                  ? Math.round(filteredOpportunities.reduce((sum, opp) => sum + opp.estimatedAmount, 0) / filteredOpportunities.length)
+                                  : 0)
+                              : Math.round(opportunityMetrics.avgAmount)
+                            ).toLocaleString('fr-FR')} MAD
                           </div>
                           <div className="text-sm text-neutral-500">Montant moyen</div>
                         </div>
                         <div className="text-center">
                           <div className="text-2xl font-bold text-teal-600">
-                            {filteredOpportunities.length > 0 
-                              ? ((filteredOpportunities.filter(opp => opp.stage === 'won').length / filteredOpportunities.length) * 100).toFixed(2)
-                              : 0}%
+                            {opportunitiesSearchQuery || opportunitiesStatusFilter !== 'all' 
+                              ? (filteredOpportunities.length > 0 
+                                  ? ((filteredOpportunities.filter(opp => opp.stage === 'won').length / filteredOpportunities.length) * 100).toFixed(2)
+                                  : 0)
+                              : (opportunityMetrics.total > 0 
+                                  ? (((opportunityMetrics.byStage.won || 0) / opportunityMetrics.total) * 100).toFixed(2)
+                                  : 0)
+                            }%
                           </div>
                           <div className="text-sm text-neutral-500">Taux de conversion</div>
                         </div>
@@ -1439,7 +1752,12 @@ export default function TierDetail() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-neutral-500">Adresses:</span>
-                    <span className="font-medium">{tierData.adresses?.length || 0}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{tierData.adresses?.length || 0}</span>
+                      {tierData.adresses?.some(addr => addr.is_facturation) && (
+                        <div className="w-2 h-2 bg-green-400 rounded-full" title="Adresse de facturation configurée" />
+                      )}
+                    </div>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-neutral-500">Relation:</span>
@@ -1451,13 +1769,13 @@ export default function TierDetail() {
                       <div>
                         <span className="text-neutral-500 text-xs">Créé le:</span>
                         <div className="font-medium text-sm">
-                          {new Date(tierData.date_creation).toLocaleDateString('fr-FR')}
+                          {new Date(tierData.created_at).toLocaleDateString('fr-FR')}
                         </div>
                       </div>
                       <div>
                         <span className="text-neutral-500 text-xs">Modifié le:</span>
                         <div className="font-medium text-sm">
-                          {new Date(tierData.date_modification).toLocaleDateString('fr-FR')}
+                          {new Date(tierData.updated_at).toLocaleDateString('fr-FR')}
                         </div>
                       </div>
                     </div>
@@ -1487,34 +1805,44 @@ export default function TierDetail() {
                   <Button 
                     className="w-full gap-2" 
                     variant="outline"
-                    onClick={() => navigate(`/devis/new?client=${tierData.id}`)}
+                    onClick={handleCreateContact}
+                  >
+                    <Users className="h-4 w-4" />
+                    Ajouter un contact
+                  </Button>
+                  
+                  <Button 
+                    className="w-full gap-2" 
+                    variant="outline"
+                    onClick={handleQuoteAction}
                   >
                     <FileText className="h-4 w-4" />
                     Créer un devis
                   </Button>
                   
-                  {tierData.contacts && tierData.contacts[0] && (
-                    <>
-                      {/* {tierData.contacts[0].telephone && (
-                        <Button className="w-full gap-2" variant="outline" onClick={() => window.open(`tel:${tierData.contacts[0].telephone.replace(/\s/g, "")}`)}>
-                          <Phone className="h-4 w-4" />
-                          Appeler
-                        </Button>
-                      )} */}
-                      {tierData.contacts[0].email && (
-                        <Button className="w-full gap-2" variant="outline" onClick={() => window.open(`mailto:${tierData.contacts[0].email}`)}>
-                          <Mail className="h-4 w-4" />
-                          Envoyer un email
-                        </Button>
-                      )}
-                    </>
-                  )}
+                  <Button 
+                    className="w-full gap-2" 
+                    variant="outline"
+                    onClick={handleCallAction}
+                  >
+                    <Phone className="h-4 w-4" />
+                    Appeler
+                  </Button>
+                  
+                  <Button 
+                    className="w-full gap-2" 
+                    variant="outline"
+                    onClick={handleEmailAction}
+                  >
+                    <Mail className="h-4 w-4" />
+                    Envoyer un email
+                  </Button>
                   {tierData.adresses && tierData.adresses[0] && (
-                    <Button className="w-full gap-2" variant="outline" onClick={() => {
-                      const adresse = tierData.adresses![0];
-                      const adresseComplete = `${adresse.rue}, ${adresse.code_postal} ${adresse.ville}, ${adresse.pays || 'France'}`;
-                      window.open(`https://maps.google.com/?q=${encodeURIComponent(adresseComplete)}`);
-                    }}>
+                    <Button 
+                      className="w-full gap-2" 
+                      variant="outline" 
+                      onClick={handleMapAction}
+                    >
                       <MapPin className="h-4 w-4" />
                       Voir sur la carte
                     </Button>
@@ -1568,6 +1896,90 @@ export default function TierDetail() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Modale informative pour les actions */}
+      <Dialog open={actionModalOpen} onOpenChange={setActionModalOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="text-center text-lg font-semibold">
+              {actionModalContent?.title}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="text-center py-4">
+            {actionModalContent?.icon}
+            <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed">
+              {actionModalContent?.message}
+            </p>
+          </div>
+          
+          <div className="flex justify-center pt-4">
+            <Button 
+              onClick={() => setActionModalOpen(false)}
+              className="px-8"
+            >
+              Compris
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modale de confirmation de suppression */}
+      <DeleteConfirmDialog
+        open={deleteModal.isOpen}
+        onOpenChange={handleDeleteDialogClose}
+        onConfirm={confirmDelete}
+        tier={deleteModal.data || null}
+        loading={deleteModal.isSubmitting}
+      />
+
+      {/* Modale d'édition de contact */}
+      {contactEditModal.contact && (
+        <ContactEditDialog
+          open={contactEditModal.open}
+          onOpenChange={handleContactEditClose}
+          onSuccess={handleContactEditSuccess}
+          contact={contactEditModal.contact}
+          tierId={tierData?.id || ''}
+          tierName={tierData?.nom || ''}
+        />
+      )}
+
+      {/* Modale de création de contact */}
+      {tierData && (
+        <ContactCreateDialog
+          open={contactCreateModal}
+          onOpenChange={setContactCreateModal}
+          onSuccess={handleContactCreateSuccess}
+          tierId={tierData.id}
+          tierName={tierData.nom}
+        />
+      )}
+
+      {/* Modale d'édition d'adresse */}
+      {addressEditModal.address && tierData && (
+        <AddressEditDialog
+          open={addressEditModal.open}
+          onOpenChange={(open) => setAddressEditModal({ open, address: open ? addressEditModal.address : null })}
+          onSuccess={handleAddressEditSuccess}
+          address={addressEditModal.address}
+          tierId={tierData.id}
+          tierName={tierData.nom}
+          tierType={tierData.type}
+        />
+      )}
+
+      {/* Modale de création d'adresse */}
+      {tierData && (
+        <AddressCreateDialog
+          open={addressCreateModal.open}
+          onOpenChange={(open) => setAddressCreateModal({ open })}
+          onSuccess={handleAddressCreateSuccess}
+          tierId={tierData.id}
+          tierName={tierData.nom}
+          tierType={tierData.type}
+        />
+      )}
 
     </>
   );

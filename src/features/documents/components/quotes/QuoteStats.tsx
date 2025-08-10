@@ -47,21 +47,21 @@ const QuoteStats: React.FC<QuoteStatsProps> = ({ stats }) => {
         value={stats.total.toString()}
         change={`${stats.draft} brouillons`}
         changeType="neutral"
-        icon={<FileText className="h-5 w-5 text-benaya-600" />}
+        icon={<FileText className="h-5 w-5 text-Beenaya-600" />}
       />
       <MetricCard
         title="En attente"
         value={stats.sent.toString()}
         change={formatCurrency(stats.pendingAmount) + " EUR"}
         changeType="neutral"
-        icon={<AlertTriangle className="h-5 w-5 text-benaya-600" />}
+        icon={<AlertTriangle className="h-5 w-5 text-Beenaya-600" />}
       />
       <MetricCard
         title="Taux d'acceptation"
         value={`${acceptanceRate.toFixed(1)}%`}
         change={`${stats.accepted} acceptés sur ${stats.total}`}
         changeType="positive"
-        icon={<Target className="h-5 w-5 text-benaya-600" />}
+        icon={<Target className="h-5 w-5 text-Beenaya-600" />}
       />
       <MetricCard
         title="Valeur totale"
@@ -69,7 +69,7 @@ const QuoteStats: React.FC<QuoteStatsProps> = ({ stats }) => {
         currency="EUR"
         change={`${stats.accepted} devis acceptés`}
         changeType="positive"
-        icon={<DollarSign className="h-5 w-5 text-benaya-600" />}
+        icon={<DollarSign className="h-5 w-5 text-Beenaya-600" />}
       />
     </div>
   );

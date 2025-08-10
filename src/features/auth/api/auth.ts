@@ -27,6 +27,9 @@ export interface AuthResponse {
     last_name: string;
     company: string;
     tenant_id?: string; // Ajouté pour multi-tenant
+    avatar?: string; // Ajouté pour l'avatar
+    phone?: string;
+    is_verified?: boolean;
   };
 }
 

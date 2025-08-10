@@ -2,6 +2,19 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { authApi, LoginCredentials, RegisterData } from '../api';
 import { tenantApi, TenantInfo } from '../../../lib/api/tenant';
 
+// Fonction utilitaire pour valider et nettoyer un tenant ID
+const validateAndCleanTenantId = (tenantId: string | undefined): string | null => {
+  if (!tenantId) return null;
+  
+  const cleaned = tenantId
+    .replace(/[\xa0\u00A0\u2000-\u200B\uFEFF]/g, '')
+    .split(',')[0]
+    .trim();
+    
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(cleaned) ? cleaned : null;
+};
+
 // Type pour les informations du tenant
 interface ExtendedTenantInfo extends TenantInfo {
   id: string;
@@ -71,13 +84,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         try {
           const userData = await authApi.getCurrentUser();
           if (userData?.tenant_id) {
-            // Récupérer les informations complètes du tenant
-            try {
-              const tenantData = await tenantApi.getCurrentTenantInfo();
-              userData.tenant_info = tenantData;
-              localStorage.setItem('tenantId', userData.tenant_id);
-            } catch (tenantError) {
-              console.error('Erreur lors de la récupération des infos du tenant:', tenantError);
+            // Valider et nettoyer le tenant_id avant stockage
+            const cleanTenantId = validateAndCleanTenantId(userData.tenant_id);
+            if (cleanTenantId) {
+              localStorage.setItem('tenantId', cleanTenantId);
+              // Récupérer les informations complètes du tenant
+              try {
+                const tenantData = await tenantApi.getCurrentTenantInfo();
+                userData.tenant_info = tenantData;
+              } catch (tenantError) {
+                console.error('Erreur lors de la récupération des infos du tenant:', tenantError);
+              }
+            } else {
+              console.error('Tenant ID invalide reçu du serveur:', userData.tenant_id);
             }
           }
           setUser(userData);
@@ -95,12 +114,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               // Réessayer de récupérer les informations utilisateur et du tenant
               const userData = await authApi.getCurrentUser();
               if (userData?.tenant_id) {
-                try {
-                  const tenantData = await tenantApi.getCurrentTenantInfo();
-                  userData.tenant_info = tenantData;
-                  localStorage.setItem('tenantId', userData.tenant_id);
-                } catch (tenantError) {
-                  console.error('Erreur lors de la récupération des infos du tenant:', tenantError);
+                // Valider et nettoyer le tenant_id avant stockage
+                const cleanTenantId = validateAndCleanTenantId(userData.tenant_id);
+                if (cleanTenantId) {
+                  localStorage.setItem('tenantId', cleanTenantId);
+                  try {
+                    const tenantData = await tenantApi.getCurrentTenantInfo();
+                    userData.tenant_info = tenantData;
+                  } catch (tenantError) {
+                    console.error('Erreur lors de la récupération des infos du tenant:', tenantError);
+                  }
+                } else {
+                  console.error('Tenant ID invalide reçu du serveur après refresh:', userData.tenant_id);
                 }
               }
               setUser(userData);
@@ -129,13 +154,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       localStorage.setItem('refreshToken', data.refresh);
       
       if (data.user?.tenant_id) {
-        localStorage.setItem('tenantId', data.user.tenant_id);
-        try {
-          // Récupérer les informations complètes du tenant
-          const tenantData = await tenantApi.getCurrentTenantInfo();
-          data.user.tenant_info = tenantData;
-        } catch (tenantError) {
-          console.error('Erreur lors de la récupération des infos du tenant:', tenantError);
+        // Valider et nettoyer le tenant_id avant stockage
+        const cleanTenantId = validateAndCleanTenantId(data.user.tenant_id);
+        if (cleanTenantId) {
+          localStorage.setItem('tenantId', cleanTenantId);
+          try {
+            // Récupérer les informations complètes du tenant
+            const tenantData = await tenantApi.getCurrentTenantInfo();
+            data.user.tenant_info = tenantData;
+          } catch (tenantError) {
+            console.error('Erreur lors de la récupération des infos du tenant:', tenantError);
+          }
+        } else {
+          console.error('Tenant ID invalide reçu lors du login:', data.user.tenant_id);
         }
       }
 
@@ -144,13 +175,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       } else {
         const userData = await authApi.getCurrentUser();
         if (userData?.tenant_id) {
-          localStorage.setItem('tenantId', userData.tenant_id);
-          try {
-            // Récupérer les informations complètes du tenant
-            const tenantData = await tenantApi.getCurrentTenantInfo();
-            userData.tenant_info = tenantData;
-          } catch (tenantError) {
-            console.error('Erreur lors de la récupération des infos du tenant:', tenantError);
+          // Valider et nettoyer le tenant_id avant stockage
+          const cleanTenantId = validateAndCleanTenantId(userData.tenant_id);
+          if (cleanTenantId) {
+            localStorage.setItem('tenantId', cleanTenantId);
+            try {
+              // Récupérer les informations complètes du tenant
+              const tenantData = await tenantApi.getCurrentTenantInfo();
+              userData.tenant_info = tenantData;
+            } catch (tenantError) {
+              console.error('Erreur lors de la récupération des infos du tenant:', tenantError);
+            }
+          } else {
+            console.error('Tenant ID invalide reçu lors du getCurrentUser:', userData.tenant_id);
           }
         }
         setUser(userData);
@@ -165,21 +202,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   // Fonction d'inscription
   const handleRegister = async (data: RegisterData) => {
+    console.log('🚀 useAuth.handleRegister - Début');
     setIsLoading(true);
     setError(null);
     try {
+      console.log('🚀 useAuth.handleRegister - Appel API');
       const response = await authApi.register(data);
+      console.log('🚀 useAuth.handleRegister - Réponse API reçue:', response);
       localStorage.setItem('accessToken', response.access);
       localStorage.setItem('refreshToken', response.refresh);
       setUser(response.user || null);
       // Stocker le tenant_id pour l'injection automatique du header multi-tenant
       if (response.user?.tenant_id) {
-        localStorage.setItem('tenantId', response.user.tenant_id);
+        // Valider et nettoyer le tenant_id avant stockage
+        const cleanTenantId = validateAndCleanTenantId(response.user.tenant_id);
+        if (cleanTenantId) {
+          localStorage.setItem('tenantId', cleanTenantId);
+        } else {
+          console.error('Tenant ID invalide reçu lors de l\'inscription:', response.user.tenant_id);
+        }
       }
+      console.log('🚀 useAuth.handleRegister - Succès complet');
     } catch (error: any) {
+      console.log('🚀 useAuth.handleRegister - Erreur:', error);
+      console.log('🚀 useAuth.handleRegister - Erreur response:', error.response);
       setError(error.response?.data?.detail || 'Erreur lors de l\'inscription');
+      console.log('🚀 useAuth.handleRegister - Avant throw');
       throw error;
     } finally {
+      console.log('🚀 useAuth.handleRegister - Finally');
       setIsLoading(false);
     }
   };

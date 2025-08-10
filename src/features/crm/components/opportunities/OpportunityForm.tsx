@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Check, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,14 +12,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  DialogHeader,
+  DialogTitle, 
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { OpportunityClientSelector } from "./OpportunityClientSelector";
 import { Opportunity, OpportunityStatus, OpportunitySource } from "../../types/opportunities.types";
-import { TierData } from "../../api/tiers";
+import { TierData } from "../../api";
 import { crmApi } from "@/features/crm/api";
 import { usersService } from "@/lib/services/usersService";
 import { User } from "@/lib/api/users";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 interface OpportunityFormProps {
@@ -58,131 +63,84 @@ export function OpportunityForm({
   );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [tiers, setTiers] = useState<TierData[]>([]);
-  const [tiersLoading, setTiersLoading] = useState(true);
-  const [tiersError, setTiersError] = useState<string | null>(null);
+  const [selectedClientData, setSelectedClientData] = useState<any>(null);
   
   // Nouvel état pour les utilisateurs
   const [users, setUsers] = useState<User[]>([]);
   const [usersLoading, setUsersLoading] = useState(true);
   const [usersError, setUsersError] = useState<string | null>(null);
 
-  // Charger les tiers depuis l'API
+  // Initialisation de la sélection client si pré-sélectionné
   useEffect(() => {
-    const loadTiers = async () => {
-      try {
-        setTiersLoading(true);
-        setTiersError(null);
-        
-        // Récupérer clients et prospects séparément puis les combiner
-        const [clientsResponse, prospectsResponse] = await Promise.all([
-          crmApi.tiers.getTiers(1, 100, { relation: 'client' }),
-          crmApi.tiers.getTiers(1, 100, { relation: 'prospect' })
-        ]);
-        
-        const allTiers = [...clientsResponse.results, ...prospectsResponse.results];
-        setTiers(allTiers);
-        
-        console.log(`✅ Chargé ${allTiers.length} clients/prospects pour le formulaire`);
-        
-        // 🚀 Phase 4 : Pré-sélectionner le tier si fourni
-        if (preselectedTierId && !opportunity?.tierId) {
-          const preselectedTier = allTiers.find(tier => tier.id === preselectedTierId);
-          if (preselectedTier) {
-            console.log(`🎯 Pré-sélection du tier:`, preselectedTier);
-            setFormData(prev => ({
-              ...prev,
-              tierId: preselectedTier.id,
-              tierName: preselectedTier.nom,
-              tierType: [preselectedTier.type],
-            }));
-            
-            toast({
-              title: "Client pré-sélectionné",
-              description: `Le client "${preselectedTier.nom}" a été automatiquement sélectionné`,
-            });
-          } else {
-            console.warn(`⚠️ Tier ${preselectedTierId} non trouvé dans la liste des clients/prospects`);
-          }
+    if (preselectedTierId && !opportunity?.tierId && !selectedClientData) {
+      // Si on a un ID pré-sélectionné, on va chercher les infos du client
+      const loadPreselectedClient = async () => {
+        try {
+          const tierDetails = await crmApi.tiers.getTierDetails(preselectedTierId);
+          const clientData: ClientSearchItem = {
+            id: tierDetails.id,
+            nom: tierDetails.nom,
+            type: tierDetails.type,
+            relation: tierDetails.relation,
+            adresse: tierDetails.adresses?.[0] ? {
+              rue: tierDetails.adresses[0].rue,
+              ville: tierDetails.adresses[0].ville,
+              code_postal: tierDetails.adresses[0].code_postal
+            } : undefined
+          };
+          
+          setSelectedClientData(clientData);
+          setFormData(prev => ({
+            ...prev,
+            tierId: clientData.id,
+            tierName: clientData.nom,
+            tierType: [clientData.type],
+          }));
+          
+          toast({
+            title: "Client pré-sélectionné",
+            description: `Le client "${clientData.nom}" a été automatiquement sélectionné`,
+          });
+        } catch (error) {
+          console.error('❌ Erreur lors du chargement du client pré-sélectionné:', error);
         }
-      } catch (error) {
-        console.error('❌ Erreur lors du chargement des tiers:', error);
-        setTiersError(error instanceof Error ? error.message : 'Erreur inconnue');
-        
-        toast({
-          title: "Erreur de chargement",
-          description: "Impossible de charger la liste des clients/prospects. Veuillez réessayer.",
-          variant: "destructive",
-        });
-      } finally {
-        setTiersLoading(false);
-      }
-    };
+      };
+      
+      loadPreselectedClient();
+    }
+  }, [preselectedTierId, opportunity?.tierId, selectedClientData, toast]);
 
-    loadTiers();
-  }, [toast, preselectedTierId, opportunity?.tierId]);
-
-  // Charger les utilisateurs depuis l'API avec timeout optimisé
+  // Charger les utilisateurs depuis l'API
   useEffect(() => {
     const loadUsers = async () => {
       try {
         setUsersLoading(true);
         setUsersError(null);
         
-        // Chargement en parallèle avec timeout réduit
-        const [usersList, currentUser] = await Promise.allSettled([
-          Promise.race([
-            usersService.getUsers(),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Timeout - Utilisateurs')), 10000)
-            )
-          ]),
-          Promise.race([
-            usersService.getCurrentUser(),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Timeout - Utilisateur courant')), 10000)
-            )
-          ])
-        ]);
+        const usersList = await usersService.getUsers();
+        setUsers(usersList);
         
-        // Traiter la liste des utilisateurs
-        if (usersList.status === 'fulfilled') {
-          setUsers(usersList.value as any[]);
-          console.log(`✅ Chargé ${(usersList.value as any[]).length} utilisateurs pour le formulaire`);
-        } else {
-          console.warn('⚠️ Échec du chargement des utilisateurs, utilisation du fallback');
-          // Le service a déjà un fallback avec des utilisateurs par défaut
-          const fallbackUsers = await usersService.getUsers();
-          setUsers(fallbackUsers);
-        }
+        console.log(`✅ Chargé ${usersList.length} utilisateurs pour le formulaire`);
         
         // Assigner automatiquement l'utilisateur courant si c'est une nouvelle opportunité
-        if (!isEditing && !opportunity?.assignedTo) {
-          if (currentUser.status === 'fulfilled' && currentUser.value) {
-            const user = currentUser.value as any;
-            console.log(`🔄 Assignation automatique à l'utilisateur courant: ${user.username}`);
+        if (!isEditing && !opportunity?.assignedTo && usersList.length > 0) {
+          // Récupérer l'utilisateur courant
+          const currentUser = await usersService.getCurrentUser();
+          if (currentUser) {
+            console.log(`🔄 Assignation automatique à l'utilisateur courant: ${currentUser.username}`);
             setFormData(prev => ({
               ...prev,
-              assignedTo: user.id
+              assignedTo: currentUser.id
             }));
           }
         }
       } catch (error) {
         console.error('❌ Erreur lors du chargement des utilisateurs:', error);
-        setUsersError('Service utilisateurs indisponible');
-        
-        // Utiliser le fallback même en cas d'erreur
-        try {
-          const fallbackUsers = await usersService.getUsers();
-          setUsers(fallbackUsers);
-          console.log('⚠️ Utilisation des utilisateurs par défaut suite à l\'erreur');
-        } catch (fallbackError) {
-          console.error('❌ Échec du fallback utilisateurs:', fallbackError);
-        }
+        setUsersError(error instanceof Error ? error.message : 'Erreur inconnue');
         
         toast({
-          title: "Service utilisateurs lent",
-          description: "Utilisation des utilisateurs par défaut.",
+          title: "Erreur de chargement",
+          description: "Impossible de charger la liste des utilisateurs. Veuillez réessayer.",
           variant: "destructive",
         });
       } finally {
@@ -264,23 +222,34 @@ export function OpportunityForm({
 
   // Gérer le changement de client/prospect
   const handleTierChange = (tierId: string) => {
-    const selectedTier = tiers.find((tier) => tier.id === tierId);
-    if (selectedTier) {
+    console.log('🔄 Changement de client:', tierId);
+    setFormData((prev) => ({
+      ...prev,
+      tierId,
+      // Les autres champs seront mis à jour via onSelectedClientChange
+    }));
+    
+    // Effacer l'erreur pour ce champ
+    if (errors.tierId) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.tierId;
+        return newErrors;
+      });
+    }
+  };
+
+  // Gérer les données détaillées du client sélectionné
+  const handleSelectedClientChange = (client: any) => {
+    console.log('📋 Données client mises à jour:', client);
+    setSelectedClientData(client);
+    if (client) {
       setFormData((prev) => ({
         ...prev,
-        tierId,
-        tierName: selectedTier.nom,
-        tierType: [selectedTier.type],
+        tierId: client.id,
+        tierName: client.name,
+        tierType: client.type,
       }));
-      
-      // Effacer l'erreur pour ce champ
-      if (errors.tierId) {
-        setErrors((prev) => {
-          const newErrors = { ...prev };
-          delete newErrors.tierId;
-          return newErrors;
-        });
-      }
     }
   };
 
@@ -329,405 +298,494 @@ export function OpportunityForm({
       // Logs détaillés avant soumission
       console.log('📝 Soumission du formulaire avec données:', formData);
       console.log('🔍 Vérification des champs obligatoires:');
-      console.log(' - name:', formData.name ? '✅' : '❌');
-      console.log(' - tierId:', formData.tierId ? '✅' : '❌');
-      console.log(' - stage:', formData.stage ? '✅' : '❌');
-      console.log(' - estimatedAmount:', formData.estimatedAmount !== undefined ? '✅' : '❌', formData.estimatedAmount);
-      console.log(' - probability:', formData.probability !== undefined ? '✅' : '❌', formData.probability);
-      console.log(' - expectedCloseDate:', formData.expectedCloseDate ? '✅' : '❌', formData.expectedCloseDate);
-      console.log(' - source:', formData.source ? '✅' : '❌');
+      console.log(' - name:', formData.name ? '✅' : '❌', typeof formData.name, formData.name);
+      console.log(' - tierId:', formData.tierId ? '✅' : '❌', typeof formData.tierId, formData.tierId);
+      console.log(' - stage:', formData.stage ? '✅' : '❌', typeof formData.stage, formData.stage);
+      console.log(' - estimatedAmount:', formData.estimatedAmount !== undefined ? '✅' : '❌', typeof formData.estimatedAmount, formData.estimatedAmount);
+      console.log(' - probability:', formData.probability !== undefined ? '✅' : '❌', typeof formData.probability, formData.probability);
+      console.log(' - expectedCloseDate:', formData.expectedCloseDate ? '✅' : '❌', typeof formData.expectedCloseDate, formData.expectedCloseDate);
+      console.log(' - source:', formData.source ? '✅' : '❌', typeof formData.source, formData.source);
+      
+      console.log('🚨 ANALYSE DÉTAILLÉE DE TOUTES LES PROPRIÉTÉS:');
+      Object.entries(formData).forEach(([key, value]) => {
+        console.log(`   ${key}:`, typeof value, Array.isArray(value) ? '(ARRAY!)' : '', value);
+      });
       
       onSubmit(formData);
     }
   };
 
-  // Remplacer le champ assignedTo désactivé par un Select avec les utilisateurs
-  const renderAssignedToField = () => (
-    <div className="space-y-2">
-      <Label htmlFor="assignedTo">
-        Responsable
-      </Label>
-      <Select
-        value={formData.assignedTo || ""}
-        onValueChange={(value) => handleInputChange("assignedTo", value)}
-      >
-        <SelectTrigger className="Beenaya-input">
-          <SelectValue placeholder={usersLoading ? "Chargement..." : "Sélectionner un responsable"} />
-          {usersLoading && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="none">Aucun responsable</SelectItem>
-          {usersError ? (
-            <div className="p-2 text-xs text-red-500">
-              ❌ {usersError}
-            </div>
-          ) : users.length === 0 && !usersLoading ? (
-            <div className="p-2 text-xs text-neutral-500">
-              Aucun utilisateur trouvé
-            </div>
-          ) : (
-            users.map((user) => (
-              user.id ? (
-                <SelectItem key={user.id} value={user.id}>
-                  {usersService.formatUserName(user)}
-                </SelectItem>
-              ) : null
-            ))
-          )}
-        </SelectContent>
-      </Select>
-      <p className="text-xs text-neutral-500">
-        Sélectionnez un responsable pour cette opportunité (optionnel).
-      </p>
-    </div>
-  );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Informations de base */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Informations de base</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="name" className={errors.name ? "text-red-500" : ""}>
-              Nom de l'opportunité <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="name"
-              value={formData.name || ""}
-              onChange={(e) => handleInputChange("name", e.target.value)}
-              className={`Beenaya-input ${errors.name ? "border-red-500" : ""}`}
-              placeholder="Ex: Rénovation Villa Dupont"
-            />
-            {errors.name && (
-              <p className="text-xs text-red-500 flex items-center">
-                <AlertCircle className="w-3 h-3 mr-1" />
-                {errors.name}
-              </p>
-            )}
+    <>
+      <DialogHeader className="space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-r from-Beenaya-500 to-Beenaya-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-semibold">💼</span>
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="tierId" className={errors.tierId ? "text-red-500" : ""}>
-              Client/Prospect <span className="text-red-500">*</span>
-              {/* 🚀 Phase 4 : Indicateur de pré-sélection */}
-              {preselectedTierId && formData.tierId === preselectedTierId && (
-                <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                  ✓ Pré-sélectionné depuis la fiche client
-                </span>
-              )}
-              {disableTierSelection && (
-                <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                  ✓ Client du devis
-                </span>
-              )}
-            </Label>
-            <Select
-              value={formData.tierId}
-              onValueChange={handleTierChange}
-              disabled={tiersLoading || disableTierSelection}
-            >
-              <SelectTrigger className={`Beenaya-input ${errors.tierId ? "border-red-500" : ""} ${
-                preselectedTierId && formData.tierId === preselectedTierId 
-                  ? "border-green-500 bg-green-50 ring-2 ring-green-200" 
-                  : ""
-              }`}>
-                <SelectValue 
-                  placeholder={
-                    tiersLoading 
-                      ? "Chargement des clients..." 
-                      : tiersError 
-                        ? "Erreur de chargement" 
-                        : "Sélectionner un client/prospect"
-                  } 
+          <div className="flex-1">
+            <DialogTitle className="text-xl font-semibold">
+              {isEditing ? 'Modifier l\'opportunité' : 'Nouvelle opportunité'}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-neutral-600 mt-1">
+              {isEditing ? 'Modifiez les informations de cette opportunité' : 'Créez une nouvelle opportunité commerciale'}
+            </DialogDescription>
+          </div>
+        </div>
+      </DialogHeader>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+
+        <div className="space-y-6">
+          {/* Informations de base */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <span className="text-Beenaya-600">💼</span>
+                Informations de base
+              </CardTitle>
+              <CardDescription>
+                Renseignez les informations principales de l'opportunité
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="name" className={`text-sm font-medium ${
+                    errors.name ? "text-red-600" : "text-neutral-700"
+                  }`}>
+                    Nom de l'opportunité <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="name"
+                    value={formData.name || ""}
+                    onChange={(e) => handleInputChange("name", e.target.value)}
+                    className={`Beenaya-input ${
+                      errors.name ? "border-red-500 focus:border-red-500" : ""
+                    }`}
+                    placeholder="Ex: Rénovation Villa Dupont"
+                  />
+                  {errors.name && (
+                    <div className="flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="w-3 h-3" />
+                      {errors.name}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="tierId" className={`text-sm font-medium ${
+                      errors.tierId ? "text-red-600" : "text-neutral-700"
+                    }`}>
+                      Client/Prospect <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="flex gap-2">
+                      {preselectedTierId && formData.tierId === preselectedTierId && (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
+                          <Check className="w-3 h-3" />
+                          Pré-sélectionné
+                        </span>
+                      )}
+                      {disableTierSelection && (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                          <Check className="w-3 h-3" />
+                          Client du devis
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <OpportunityClientSelector
+                    value={formData.tierId || ""}
+                    onValueChange={handleTierChange}
+                    selectedClientData={selectedClientData}
+                    onSelectedClientChange={handleSelectedClientChange}
+                    placeholder="Rechercher un client/prospect..."
+                    disabled={disableTierSelection}
+                    className={errors.tierId ? "border-red-500" : ""}
+                    error={!!errors.tierId}
+                  />
+                  {errors.tierId && (
+                    <div className="flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="w-3 h-3" />
+                      {errors.tierId}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-sm font-medium text-neutral-700">
+                  Description
+                </Label>
+                <Textarea
+                  id="description"
+                  value={formData.description || ""}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
+                  className="Beenaya-input resize-none"
+                  placeholder="Description détaillée du projet, besoins spécifiques, contexte..."
+                  rows={3}
                 />
-                {tiersLoading && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
-              </SelectTrigger>
-              <SelectContent>
-                {tiersError ? (
-                  <SelectItem value="error" disabled>
-                    ❌ {tiersError}
-                  </SelectItem>
-                ) : tiers.length === 0 && !tiersLoading ? (
-                  <SelectItem value="empty" disabled>
-                    Aucun client/prospect trouvé
-                  </SelectItem>
-                ) : (
-                  tiers.map((tier) => (
-                    <SelectItem key={tier.id} value={tier.id}>
-                      <div className="flex items-center space-x-2">
-                        <span>{tier.nom}</span>
-                        {tier.type && (
-                          <span className="text-xs text-neutral-500">
-                            ({tier.type})
-                          </span>
-                        )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Détails de l'opportunité */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <span className="text-purple-600">⚡</span>
+                Détails de l'opportunité
+              </CardTitle>
+              <CardDescription>
+                Définissez l'étape, la source et le responsable
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="stage" className={`text-sm font-medium ${
+                    errors.stage ? "text-red-600" : "text-neutral-700"
+                  }`}>
+                    Étape <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={formData.stage}
+                    onValueChange={(value) => handleInputChange("stage", value)}
+                  >
+                    <SelectTrigger className={`Beenaya-input ${
+                      errors.stage ? "border-red-500" : ""
+                    }`}>
+                      <SelectValue placeholder="Sélectionner une étape" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">
+                        <div className="flex items-center justify-between w-full">
+                          <span>Nouvelle</span>
+                          <span className="text-xs text-neutral-500 ml-4">10%</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="needs_analysis">
+                        <div className="flex items-center justify-between w-full">
+                          <span>Analyse des besoins</span>
+                          <span className="text-xs text-neutral-500 ml-4">30%</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="negotiation">
+                        <div className="flex items-center justify-between w-full">
+                          <span>Négociation</span>
+                          <span className="text-xs text-neutral-500 ml-4">60%</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="won">
+                        <div className="flex items-center justify-between w-full">
+                          <span>Gagnée</span>
+                          <span className="text-xs text-green-600 ml-4">100%</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="lost">
+                        <div className="flex items-center justify-between w-full">
+                          <span>Perdue</span>
+                          <span className="text-xs text-red-600 ml-4">0%</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.stage && (
+                    <div className="flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="w-3 h-3" />
+                      {errors.stage}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="source" className={`text-sm font-medium ${
+                    errors.source ? "text-red-600" : "text-neutral-700"
+                  }`}>
+                    Source <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={formData.source}
+                    onValueChange={(value) => handleInputChange("source", value as OpportunitySource)}
+                  >
+                    <SelectTrigger className={`Beenaya-input ${
+                      errors.source ? "border-red-500" : ""
+                    }`}>
+                      <SelectValue placeholder="Sélectionner une source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="website">Site web</SelectItem>
+                      <SelectItem value="referral">Recommandation</SelectItem>
+                      <SelectItem value="cold_call">Démarchage téléphonique</SelectItem>
+                      <SelectItem value="exhibition">Salon/Exposition</SelectItem>
+                      <SelectItem value="partner">Partenaire</SelectItem>
+                      <SelectItem value="social_media">Réseaux sociaux</SelectItem>
+                      <SelectItem value="other">Autre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {errors.source && (
+                    <div className="flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="w-3 h-3" />
+                      {errors.source}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Responsable */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <span className="text-amber-600">👥</span>
+                Responsable
+              </CardTitle>
+              <CardDescription>
+                Assignez un responsable à cette opportunité
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="assignedTo" className="text-sm font-medium text-neutral-700">
+                  Responsable
+                </Label>
+                <Select
+                  value={formData.assignedTo || ""}
+                  onValueChange={(value) => handleInputChange("assignedTo", value)}
+                >
+                  <SelectTrigger className="Beenaya-input">
+                    <SelectValue placeholder={usersLoading ? "Chargement..." : "Sélectionner un responsable"} />
+                    {usersLoading && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Aucun responsable</SelectItem>
+                    {usersError ? (
+                      <div className="p-2 text-xs text-red-500">
+                        ❌ {usersError}
                       </div>
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-            {errors.tierId && (
-              <p className="text-xs text-red-500 flex items-center">
-                <AlertCircle className="w-3 h-3 mr-1" />
-                {errors.tierId}
-              </p>
-            )}
-          </div>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="description">
-            Description
-          </Label>
-          <Textarea
-            id="description"
-            value={formData.description || ""}
-            onChange={(e) => handleInputChange("description", e.target.value)}
-            className="Beenaya-input resize-none"
-            placeholder="Description du projet"
-            rows={3}
-          />
-        </div>
-      </div>
-
-      {/* Détails de l'opportunité */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Détails de l'opportunité</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="stage" className={errors.stage ? "text-red-500" : ""}>
-              Étape <span className="text-red-500">*</span>
-            </Label>
-            <Select
-              value={formData.stage}
-              onValueChange={(value) => handleInputChange("stage", value)}
-            >
-              <SelectTrigger className={`Beenaya-input ${errors.stage ? "border-red-500" : ""}`}>
-                <SelectValue placeholder="Sélectionner une étape" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="new">
-                  <div className="flex items-center justify-between w-full">
-                    <span>Nouvelle</span>
-                    <span className="text-xs text-neutral-500 ml-4">10%</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="needs_analysis">
-                  <div className="flex items-center justify-between w-full">
-                    <span>Analyse des besoins</span>
-                    <span className="text-xs text-neutral-500 ml-4">30%</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="negotiation">
-                  <div className="flex items-center justify-between w-full">
-                    <span>Négociation</span>
-                    <span className="text-xs text-neutral-500 ml-4">60%</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="won">
-                  <div className="flex items-center justify-between w-full">
-                    <span>Gagnée</span>
-                    <span className="text-xs text-green-600 ml-4">100%</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="lost">
-                  <div className="flex items-center justify-between w-full">
-                    <span>Perdue</span>
-                    <span className="text-xs text-red-600 ml-4">0%</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.stage && (
-              <p className="text-xs text-red-500 flex items-center">
-                <AlertCircle className="w-3 h-3 mr-1" />
-                {errors.stage}
-              </p>
-            )}
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="source" className={errors.source ? "text-red-500" : ""}>
-              Source <span className="text-red-500">*</span>
-            </Label>
-            <Select
-              value={formData.source}
-              onValueChange={(value) => handleInputChange("source", value as OpportunitySource)}
-            >
-              <SelectTrigger className={`Beenaya-input ${errors.source ? "border-red-500" : ""}`}>
-                <SelectValue placeholder="Sélectionner une source" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="website">Site web</SelectItem>
-                <SelectItem value="referral">Recommandation</SelectItem>
-                <SelectItem value="cold_call">Démarchage téléphonique</SelectItem>
-                <SelectItem value="exhibition">Salon/Exposition</SelectItem>
-                <SelectItem value="partner">Partenaire</SelectItem>
-                <SelectItem value="social_media">Réseaux sociaux</SelectItem>
-                <SelectItem value="other">Autre</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.source && (
-              <p className="text-xs text-red-500 flex items-center">
-                <AlertCircle className="w-3 h-3 mr-1" />
-                {errors.source}
-              </p>
-            )}
-          </div>
-          
-          {renderAssignedToField()}
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="estimatedAmount" className={errors.estimatedAmount ? "text-red-500" : ""}>
-              Montant estimé (MAD) <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="estimatedAmount"
-              type="number"
-              min="0"
-              step="1000"
-              value={formData.estimatedAmount || ""}
-              onChange={(e) => handleInputChange("estimatedAmount", parseFloat(e.target.value))}
-              className={`Beenaya-input ${errors.estimatedAmount ? "border-red-500" : ""}`}
-              placeholder="0"
-            />
-            {errors.estimatedAmount && (
-              <p className="text-xs text-red-500 flex items-center">
-                <AlertCircle className="w-3 h-3 mr-1" />
-                {errors.estimatedAmount}
-              </p>
-            )}
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="probability" className={errors.probability ? "text-red-500" : ""}>
-              Probabilité (%) <span className="text-red-500">*</span>
-              <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                ✨ Calculée automatiquement
-              </span>
-            </Label>
-            <Input
-              id="probability"
-              type="number"
-              min="0"
-              max="100"
-              value={formData.probability || ""}
-              readOnly
-              className={`Beenaya-input bg-neutral-50 cursor-not-allowed ${errors.probability ? "border-red-500" : "border-blue-300"}`}
-              placeholder="20"
-            />
-            <p className="text-xs text-neutral-500">
-              🔗 La probabilité est automatiquement ajustée selon l'étape sélectionnée
-            </p>
-            {errors.probability && (
-              <p className="text-xs text-red-500 flex items-center">
-                <AlertCircle className="w-3 h-3 mr-1" />
-                {errors.probability}
-              </p>
-            )}
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="expectedCloseDate" className={errors.expectedCloseDate ? "text-red-500" : ""}>
-              Date de clôture prévue <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="expectedCloseDate"
-              type="date"
-              value={formData.expectedCloseDate || ""}
-              onChange={(e) => handleInputChange("expectedCloseDate", e.target.value)}
-              className={`Beenaya-input ${errors.expectedCloseDate ? "border-red-500" : ""}`}
-            />
-            {errors.expectedCloseDate && (
-              <p className="text-xs text-red-500 flex items-center">
-                <AlertCircle className="w-3 h-3 mr-1" />
-                {errors.expectedCloseDate}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Raison de perte (si applicable) */}
-      {formData.stage === 'lost' && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Raison de la perte</h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="lossReason" className={errors.lossReason ? "text-red-500" : ""}>
-                Raison <span className="text-red-500">*</span>
-              </Label>
-              <Select
-                value={formData.lossReason || ""}
-                onValueChange={(value) => handleInputChange("lossReason", value)}
-              >
-                <SelectTrigger className={`Beenaya-input ${errors.lossReason ? "border-red-500" : ""}`}>
-                  <SelectValue placeholder="Sélectionner une raison" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="price">Prix trop élevé</SelectItem>
-                  <SelectItem value="competitor">Concurrent choisi</SelectItem>
-                  <SelectItem value="timing">Mauvais timing</SelectItem>
-                  <SelectItem value="no_budget">Pas de budget</SelectItem>
-                  <SelectItem value="no_need">Pas de besoin réel</SelectItem>
-                  <SelectItem value="no_decision">Pas de décision prise</SelectItem>
-                  <SelectItem value="other">Autre</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.lossReason && (
-                <p className="text-xs text-red-500 flex items-center">
-                  <AlertCircle className="w-3 h-3 mr-1" />
-                  {errors.lossReason}
+                    ) : users.length === 0 && !usersLoading ? (
+                      <div className="p-2 text-xs text-neutral-500">
+                        Aucun utilisateur trouvé
+                      </div>
+                    ) : (
+                      users.map((user) => (
+                        user.id ? (
+                          <SelectItem key={user.id} value={user.id}>
+                            {usersService.formatUserName(user)}
+                          </SelectItem>
+                        ) : null
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-neutral-500">
+                  Sélectionnez un responsable pour cette opportunité (optionnel).
                 </p>
-              )}
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Informations financières */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <span className="text-emerald-600">💰</span>
+                Informations financières
+              </CardTitle>
+              <CardDescription>
+                Définissez le montant et la date de clôture
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="estimatedAmount" className={`text-sm font-medium ${
+                    errors.estimatedAmount ? "text-red-600" : "text-neutral-700"
+                  }`}>
+                    Montant estimé (MAD) <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="estimatedAmount"
+                      type="number"
+                      min="0"
+                      step="1000"
+                      value={formData.estimatedAmount || ""}
+                      onChange={(e) => handleInputChange("estimatedAmount", parseFloat(e.target.value))}
+                      className={`Beenaya-input pr-12 ${
+                        errors.estimatedAmount ? "border-red-500 focus:border-red-500" : ""
+                      }`}
+                      placeholder="0"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-neutral-500 text-sm">
+                      MAD
+                    </div>
+                  </div>
+                  {errors.estimatedAmount && (
+                    <div className="flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="w-3 h-3" />
+                      {errors.estimatedAmount}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="expectedCloseDate" className={`text-sm font-medium ${
+                    errors.expectedCloseDate ? "text-red-600" : "text-neutral-700"
+                  }`}>
+                    Date de clôture prévue <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="expectedCloseDate"
+                    type="date"
+                    value={formData.expectedCloseDate || ""}
+                    onChange={(e) => handleInputChange("expectedCloseDate", e.target.value)}
+                    className={`Beenaya-input ${
+                      errors.expectedCloseDate ? "border-red-500 focus:border-red-500" : ""
+                    }`}
+                  />
+                  {errors.expectedCloseDate && (
+                    <div className="flex items-center gap-1 text-xs text-red-600">
+                      <AlertCircle className="w-3 h-3" />
+                      {errors.expectedCloseDate}
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="probability" className={`text-sm font-medium ${
+                    errors.probability ? "text-red-600" : "text-neutral-700"
+                  }`}>
+                    Probabilité (%) <span className="text-red-500">*</span>
+                  </Label>
+                  <span className="inline-flex items-center gap-1 text-xs font-medium bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                    ✨ Auto
+                  </span>
+                </div>
+                <Input
+                  id="probability"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={formData.probability || ""}
+                  readOnly
+                  className="Beenaya-input bg-neutral-50 cursor-not-allowed"
+                  placeholder="20"
+                />
+                <p className="text-xs text-neutral-500">
+                  🔗 La probabilité est automatiquement ajustée selon l'étape sélectionnée
+                </p>
+                {errors.probability && (
+                  <div className="flex items-center gap-1 text-xs text-red-600">
+                    <AlertCircle className="w-3 h-3" />
+                    {errors.probability}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Raison de perte (si applicable) */}
+          {formData.stage === 'lost' && (
+            <Card className="border-red-200 bg-red-50">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-base flex items-center gap-2 text-red-700">
+                  <span className="text-red-600">⚠️</span>
+                  Raison de la perte
+                </CardTitle>
+                <CardDescription className="text-red-600">
+                  Documentez les raisons de la perte de cette opportunité
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="lossReason" className={`text-sm font-medium ${
+                      errors.lossReason ? "text-red-600" : "text-red-700"
+                    }`}>
+                      Raison <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={formData.lossReason || ""}
+                      onValueChange={(value) => handleInputChange("lossReason", value)}
+                    >
+                      <SelectTrigger className={`Beenaya-input ${
+                        errors.lossReason ? "border-red-500" : ""
+                      }`}>
+                        <SelectValue placeholder="Sélectionner une raison" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="price">Prix trop élevé</SelectItem>
+                        <SelectItem value="competitor">Concurrent choisi</SelectItem>
+                        <SelectItem value="timing">Mauvais timing</SelectItem>
+                        <SelectItem value="no_budget">Pas de budget</SelectItem>
+                        <SelectItem value="no_need">Pas de besoin réel</SelectItem>
+                        <SelectItem value="no_decision">Pas de décision prise</SelectItem>
+                        <SelectItem value="other">Autre</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {errors.lossReason && (
+                      <div className="flex items-center gap-1 text-xs text-red-600">
+                        <AlertCircle className="w-3 h-3" />
+                        {errors.lossReason}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="lossDescription" className="text-sm font-medium text-red-700">
+                      Description
+                    </Label>
+                    <Textarea
+                      id="lossDescription"
+                      value={formData.lossDescription || ""}
+                      onChange={(e) => handleInputChange("lossDescription", e.target.value)}
+                      className="Beenaya-input resize-none"
+                      placeholder="Détails sur les raisons de la perte..."
+                      rows={3}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Résumé */}
+          <div className="p-4 bg-neutral-50 rounded-lg border">
+            <div className="flex justify-between items-center">
+              <span className="text-neutral-700">Montant pondéré:</span>
+              <span className="font-semibold text-lg">
+                {formatCurrency((formData.estimatedAmount || 0) * (formData.probability || 0) / 100)} MAD
+              </span>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="lossDescription">
-                Description
-              </Label>
-              <Textarea
-                id="lossDescription"
-                value={formData.lossDescription || ""}
-                onChange={(e) => handleInputChange("lossDescription", e.target.value)}
-                className="Beenaya-input resize-none"
-                placeholder="Détails sur la raison de la perte"
-                rows={3}
-              />
-            </div>
+            <p className="text-xs text-neutral-500 mt-1">
+              Le montant pondéré est calculé en multipliant le montant estimé par la probabilité de succès.
+            </p>
           </div>
         </div>
-      )}
 
-      {/* Montant pondéré */}
-      <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
-        <div className="flex justify-between items-center">
-          <span className="text-neutral-700 dark:text-neutral-300">Montant pondéré:</span>
-          <span className="font-semibold text-lg">
-            {formatCurrency((formData.estimatedAmount || 0) * (formData.probability || 0) / 100)} MAD
-          </span>
-        </div>
-        <p className="text-xs text-neutral-500 mt-1">
-          Le montant pondéré est calculé en multipliant le montant estimé par la probabilité de succès.
-        </p>
-      </div>
-
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Annuler
-        </Button>
-        <Button type="submit" className="Beenaya-button-primary">
-          <Check className="mr-2 h-4 w-4" />
-          {isEditing ? "Mettre à jour" : "Créer l'opportunité"}
-        </Button>
-      </DialogFooter>
-    </form>
+        <DialogFooter className="flex flex-col-reverse md:flex-row gap-4 pt-6 border-t border-neutral-200">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="w-full md:w-auto"
+          >
+            Annuler
+          </Button>
+          <Button
+            type="submit"
+            className="w-full md:w-auto Beenaya-button"
+          >
+            <Check className="mr-2 h-4 w-4" />
+            {isEditing ? "Mettre à jour" : "Créer"}
+          </Button>
+        </DialogFooter>
+      </form>
+    </>
   );
 }
