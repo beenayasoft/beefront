@@ -4,8 +4,6 @@
 import React from 'react';
 import { formatCurrency } from '@/lib/utils';
 import { formatDate } from '@/lib/utils/formatters';
-import { PaymentMethodsSection } from '@/components/payment/PaymentMethodsSection';
-import type { PaymentMethod } from '@/lib/api/paymentMethods';
 
 // Type pour les props du composant
 interface QuotePreviewProps {
@@ -82,7 +80,7 @@ interface QuotePreviewProps {
     paymentMethodsLayout?: 'horizontal' | 'vertical' | 'grid';
     paymentMethodsStyle?: 'modern' | 'classic' | 'minimal';
   };
-  paymentMethods?: PaymentMethod[];
+  paymentMethods?: any[];
 }
 
 /**
@@ -293,19 +291,6 @@ export const QuotePreview: React.FC<QuotePreviewProps> = ({
         </div>
       )}
 
-      {/* Moyens de paiement */}
-      {appearanceSettings.showPaymentMethods && paymentMethods.length > 0 && (
-        <div className="mb-6">
-          <PaymentMethodsSection
-            paymentMethods={paymentMethods}
-            title={appearanceSettings.paymentMethodsTitle}
-            layout={appearanceSettings.paymentMethodsLayout}
-            style={appearanceSettings.paymentMethodsStyle}
-            className="text-xs"
-          />
-        </div>
-      )}
-      
       {/* Signature */}
       {appearanceSettings.showSignatureArea && (
         <div className="mt-6 grid grid-cols-2 gap-4 text-xs">
