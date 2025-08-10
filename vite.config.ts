@@ -39,7 +39,6 @@ export default defineConfig(({ mode }) => ({
             '@radix-ui/react-scroll-area',
             '@radix-ui/react-select',
             '@radix-ui/react-separator',
-            '@radix-ui/react-sheet',
             '@radix-ui/react-slider',
             '@radix-ui/react-switch',
             '@radix-ui/react-tabs',
