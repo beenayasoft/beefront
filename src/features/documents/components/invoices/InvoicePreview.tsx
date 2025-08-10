@@ -5,8 +5,6 @@
 import React from 'react';
 import { formatCurrency } from '@/lib/utils';
 import { formatDate } from '@/lib/utils/formatters';
-import { PaymentMethodsSection } from '@/components/payment/PaymentMethodsSection';
-import type { PaymentMethod } from '@/lib/api/paymentMethods';
 
 // Type pour les props du composant
 interface InvoicePreviewProps {
@@ -92,7 +90,7 @@ interface InvoicePreviewProps {
     paymentMethodsLayout?: 'horizontal' | 'vertical' | 'grid';
     paymentMethodsStyle?: 'modern' | 'classic' | 'minimal';
   };
-  paymentMethods?: PaymentMethod[];
+  paymentMethods?: any[];
 }
 
 /**
@@ -300,19 +298,6 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
             Conditions de paiement
           </h3>
           <p className="text-gray-700">{invoice.termsAndConditions}</p>
-        </div>
-      )}
-
-      {/* Moyens de paiement */}
-      {appearanceSettings.showPaymentMethods && paymentMethods.length > 0 && (
-        <div className="mb-4">
-          <PaymentMethodsSection
-            paymentMethods={paymentMethods}
-            title={appearanceSettings.paymentMethodsTitle}
-            layout={appearanceSettings.paymentMethodsLayout}
-            style={appearanceSettings.paymentMethodsStyle}
-            className="text-xs"
-          />
         </div>
       )}
 
