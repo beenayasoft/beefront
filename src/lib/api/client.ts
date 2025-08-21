@@ -250,6 +250,14 @@ export const handleApiError = (error: any, defaultMessage: string = 'Une erreur 
         }
         
         if (typeof data === 'object') {
+          // Gérer spécialement les erreurs d'unicité de numéro
+          if (data.number && Array.isArray(data.number)) {
+            const numberError = data.number[0];
+            if (typeof numberError === 'string' && numberError.includes('existe déjà')) {
+              return numberError;
+            }
+          }
+          
           // Extraire le premier message d'erreur
           const firstError = Object.values(data)[0];
           if (Array.isArray(firstError) && firstError.length > 0) {

@@ -131,14 +131,6 @@ const QuoteFilters: React.FC<QuoteFiltersProps> = ({
               <div className="w-2 h-2 bg-slate-400 rounded-full mr-2"></div>
               Brouillon
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onStatusFilterChange && onStatusFilterChange(['pending_validation'])}>
-              <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
-              En attente de validation
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onStatusFilterChange && onStatusFilterChange(['validated'])}>
-              <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-              Validé
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onStatusFilterChange && onStatusFilterChange(['sent'])}>
               <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
               Envoyé

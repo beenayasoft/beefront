@@ -75,14 +75,14 @@ export function OpportunityStats({ stats }: OpportunityStatsProps) {
       <MetricCard
         title="En cours"
         value={inProgressCount.toString()}
-        change={formatCurrency(adaptedStats.weightedAmount || 0) + " MAD"}
+        change={formatCurrency(adaptedStats.weightedAmount || 0, 2, true) + " MAD"}
         changeType="neutral"
         icon={<Clock className="h-5 w-5 text-Beenaya-600" />}
       />
       <MetricCard
         title="Gagnées"
         value={(adaptedStats.byStage?.won || 0).toString()}
-        change={formatCurrency(adaptedStats.wonAmount || 0) + " MAD"}
+        change={formatCurrency(adaptedStats.wonAmount || 0, 2, true) + " MAD"}
         changeType="positive"
         icon={<CheckCircle className="h-5 w-5 text-green-600" />}
       />

@@ -19,7 +19,12 @@ export const ItemTypeSelector: React.FC<ItemTypeSelectorProps> = ({
   className = ''
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const selectedConfig = getQuoteItemTypeConfig(selectedType);
+  const selectedConfig = getQuoteItemTypeConfig(selectedType) || {
+    label: 'Type inconnu',
+    description: 'Type non configuré',
+    icon: '❓',
+    color: 'bg-gray-100 border-gray-300 text-gray-600'
+  };
 
   const handleTypeSelect = (type: QuoteItemType) => {
     onTypeChange(type);
@@ -69,7 +74,12 @@ export const ItemTypeSelector: React.FC<ItemTypeSelectorProps> = ({
                 </div>
                 <div className="space-y-1">
                   {category.types.map((type) => {
-                    const config = getQuoteItemTypeConfig(type);
+                    const config = getQuoteItemTypeConfig(type) || {
+                      label: 'Type inconnu',
+                      description: 'Type non configuré',
+                      icon: '❓',
+                      color: 'bg-gray-100 border-gray-300 text-gray-600'
+                    };
                     const isSelected = type === selectedType;
                     
                     return (

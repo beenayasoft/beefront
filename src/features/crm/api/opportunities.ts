@@ -57,6 +57,13 @@ const adaptOpportunityFromApi = (opportunityApi: any): Opportunity => {
 const adaptOpportunityToApi = (opportunity: Partial<Opportunity>): any => {
   // 🔧 CORRECTIF : Gérer les arrays qui arrivent parfois du formulaire
   console.log('🔍 Debug adaptOpportunityToApi - données reçues:', opportunity);
+  console.log('🔍 Propriétés disponibles:', Object.keys(opportunity));
+  console.log('🔍 Formats détectés:', {
+    estimatedAmount: opportunity.estimatedAmount,
+    estimated_amount: (opportunity as any).estimated_amount,
+    expectedCloseDate: opportunity.expectedCloseDate,
+    expected_close_date: (opportunity as any).expected_close_date
+  });
   
   // Helper pour extraire une valeur d'un array si nécessaire
   const extractValue = (value: any) => {
@@ -68,7 +75,8 @@ const adaptOpportunityToApi = (opportunity: Partial<Opportunity>): any => {
   };
   
   // S'assurer que les valeurs numériques sont des nombres et non des chaînes
-  const rawEstimatedAmount = extractValue(opportunity.estimatedAmount);
+  // Gérer les deux formats: camelCase (estimatedAmount) et snake_case (estimated_amount)
+  const rawEstimatedAmount = extractValue(opportunity.estimatedAmount || opportunity.estimated_amount);
   const estimatedAmount = typeof rawEstimatedAmount === 'string' 
     ? parseFloat(rawEstimatedAmount) 
     : rawEstimatedAmount || 1; // Le backend exige un montant > 0
@@ -93,7 +101,8 @@ const adaptOpportunityToApi = (opportunity: Partial<Opportunity>): any => {
   }
   
   // S'assurer que la date est au bon format
-  const rawExpectedCloseDate = extractValue(opportunity.expectedCloseDate);
+  // Gérer les deux formats: camelCase (expectedCloseDate) et snake_case (expected_close_date)
+  const rawExpectedCloseDate = extractValue(opportunity.expectedCloseDate || opportunity.expected_close_date);
   const expectedCloseDate = rawExpectedCloseDate || 
     new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
@@ -177,10 +186,10 @@ export const opportunitiesApi = {
       console.log('📦 Données adaptées pour API:', apiData);
       console.log('🔍 Vérification des champs obligatoires:');
       console.log(' - name:', apiData.name ? '✅' : '❌', apiData.name);
-      console.log(' - tier:', apiData.tier ? '✅' : '❌', apiData.tier);
+      console.log(' - tierId:', apiData.tierId ? '✅' : '❌', apiData.tierId);
       console.log(' - stage:', apiData.stage ? '✅' : '❌', apiData.stage);
-      console.log(' - estimated_amount:', apiData.estimated_amount ? '✅' : '❌', apiData.estimated_amount);
-      console.log(' - expected_close_date:', apiData.expected_close_date ? '✅' : '❌', apiData.expected_close_date);
+      console.log(' - estimatedAmount:', apiData.estimatedAmount ? '✅' : '❌', apiData.estimatedAmount);
+      console.log(' - expectedCloseDate:', apiData.expectedCloseDate ? '✅' : '❌', apiData.expectedCloseDate);
       console.log(' - source:', apiData.source ? '✅' : '❌', apiData.source);
       
       console.log('🔍 DERNIÈRE VÉRIFICATION - Données exactes envoyées à apiClient.post:');
@@ -252,7 +261,8 @@ export const opportunitiesApi = {
       // Si l'erreur indique qu'il faut créer un devis pour passer en négociation
       if (error?.response?.status === 400 && error?.response?.data?.code === 'QUOTE_REQUIRED_FOR_NEGOTIATION') {
         console.log(`💡 Suggestion: créer un devis avant de passer en négociation pour l'opportunité ${id}`);
-        // On laisse l'erreur remonter avec toutes les informations pour que le frontend puisse l'afficher correctement
+        // On laisse l'erreur d'origine remonter telle quelle pour préserver toutes les propriétés
+        throw error;
       }
       
       console.error(`❌ Erreur lors de la mise à jour du stage pour l'opportunité ${id}:`, error);

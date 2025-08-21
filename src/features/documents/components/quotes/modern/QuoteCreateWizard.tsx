@@ -27,6 +27,11 @@ import { ReviewStep } from './steps/ReviewStep';
 interface QuoteCreateWizardProps {
   onQuoteCreated?: (quoteId: string) => void;
   onCancel?: () => void;
+  initialData?: {
+    preselectedTierId?: string;
+    opportunityId?: string;
+    opportunityName?: string;
+  };
 }
 
 const STEP_CONFIG = {
@@ -66,12 +71,13 @@ const STEP_CONFIG = {
 
 const QuoteCreateWizard: React.FC<QuoteCreateWizardProps> = ({
   onQuoteCreated,
-  onCancel
+  onCancel,
+  initialData
 }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const wizard = useQuoteWizard();
+  const wizard = useQuoteWizard(initialData);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   
@@ -95,8 +101,17 @@ const QuoteCreateWizard: React.FC<QuoteCreateWizardProps> = ({
     setSubmitError(null);
     
     try {
-      const quoteData = wizard.generateQuoteData();
+      const quoteData = await wizard.generateQuoteData();
       const newQuote = await quotesApi.createQuote(quoteData);
+      
+      // Incrémenter le compteur pour le prochain devis
+      try {
+        await wizard.incrementQuoteCounter();
+        console.log('📈 Compteur de devis incrémenté avec succès');
+      } catch (counterError) {
+        console.error('⚠️ Erreur lors de l\'incrémentation du compteur:', counterError);
+        // Ne pas faire échouer la création pour un problème de compteur
+      }
       
       toast({
         title: 'Devis créé avec succès',

@@ -25,7 +25,12 @@ export enum QuoteItemType {
   CHAPTER = 'chapter',
   SECTION = 'section',
   DISCOUNT = 'discount',
-  ADVANCE_PAYMENT = 'advance_payment'
+  ADVANCE_PAYMENT = 'advance_payment',
+  // Ajout des types manquants pour compatibilité
+  PRODUCT = 'product',
+  SERVICE = 'service',
+  FREE_TEXT = 'free_text',
+  SEPARATOR = 'separator'
 }
 
 /**
@@ -186,6 +191,7 @@ export interface QuoteItem {
 export interface Quote {
   id: string;
   number: string;
+  formattedNumber?: string; // Numéro formaté selon la configuration tenant (généré par le backend)
   // ❌ tierId supprimé - isolation automatique par schéma tenant
   clientName: string;
   clientAddress?: string;
@@ -252,6 +258,7 @@ export interface QuoteStats {
 export interface QuoteFilters {
   status?: QuoteStatus | string;
   // ❌ tierId supprimé - filtrage automatique par schéma tenant
+  client_id?: string; // ✅ Ajouté pour filtrer par client
   opportunityId?: string;
   dateFrom?: string;
   dateTo?: string;
@@ -317,6 +324,9 @@ export interface CreateQuoteData {
   // Informations CRM
   // ✅ Note: tier_id retiré car gestion automatique par schéma tenant
   opportunity_id?: string; // ID de l'opportunité dans le CRM
+  
+  // Numérotation
+  number?: string; // Numéro formaté du devis
   
   // Informations client (auto-remplies depuis CRM)
   client_name: string;

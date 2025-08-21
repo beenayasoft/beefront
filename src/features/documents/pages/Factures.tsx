@@ -25,7 +25,6 @@ import { InvoiceTabs } from "../components/invoices/InvoiceTabs";
 import { InvoiceList } from "../components/invoices/InvoiceList";
 import { RecordPaymentModal } from "../components/invoices/RecordPaymentModal";
 import { CreateCreditNoteModal } from "../components/invoices/CreateCreditNoteModal";
-import { CreateInvoiceModal } from "../components/invoices/CreateInvoiceModal";
 import { ValidateInvoiceModal } from "../components/invoices/ValidateInvoiceModal";
 import { DeleteInvoiceModal } from "../components/invoices/DeleteInvoiceModal";
 import { toast } from "@/components/ui/use-toast";
@@ -35,7 +34,9 @@ import {
   validateInvoice, 
   recordPayment, 
   createCreditNote,
-  deleteInvoice
+  deleteInvoice,
+  generateInvoicePdf,
+  InvoiceFilters as InvoiceFiltersType
 } from "../api/invoices";
 import { Invoice, InvoiceStatus, Payment } from "../types/invoices.types";
 
@@ -47,6 +48,10 @@ export default function Factures() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [dateRange, setDateRange] = useState<{from?: string; to?: string}>({});
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [sortField, setSortField] = useState<string>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [stats, setStats] = useState({
     all: 0,
     draft: 0,
@@ -67,7 +72,6 @@ export default function Factures() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [creditNoteModalOpen, setCreditNoteModalOpen] = useState(false);
-  const [createInvoiceModalOpen, setCreateInvoiceModalOpen] = useState(false);
   const [validateInvoiceModalOpen, setValidateInvoiceModalOpen] = useState(false);
   const [deleteInvoiceModalOpen, setDeleteInvoiceModalOpen] = useState(false);
 
@@ -76,19 +80,22 @@ export default function Factures() {
     try {
       setLoading(true);
       
-      // Préparer les paramètres
-      const params: any = {
-        page,
-        page_size: 20,
+      // Préparer les filtres conformément à l'interface InvoiceFilters
+      const filters: InvoiceFiltersType = {
         search: searchQuery || undefined,
+        date_from: dateRange.from,
+        date_to: dateRange.to,
+        ordering: sortOrder === 'desc' ? `-${sortField}` : sortField,
       };
       
       // Filtrer par statut si nécessaire
       if (activeTab !== "all") {
-        params.status = activeTab as InvoiceStatus;
+        filters.status = activeTab as InvoiceStatus;
+      } else if (statusFilter.length > 0) {
+        filters.status = statusFilter[0] as InvoiceStatus; // Prendre le premier filtre de statut
       }
       
-      const response = await getInvoices(params);
+      const response = await getInvoices(page, 20, filters);
       setInvoices(response.results);
       setTotalCount(response.count);
     } catch (error) {
@@ -109,21 +116,23 @@ export default function Factures() {
       console.log("🔍 Chargement des statistiques des factures...");
       const invoiceStats = await getInvoiceStats();
       console.log("📊 Statistiques reçues:", invoiceStats);
+      console.log("💰 Montant encaissé (totalPaid):", invoiceStats.totalPaid);
+      console.log("💰 Montant encaissé (paidAmount - legacy):", invoiceStats.paidAmount);
       
       setStats({
-        all: invoiceStats.total,
-        draft: invoiceStats.draft,
-        sent: invoiceStats.sent,
-        overdue: invoiceStats.overdue,
-        partially_paid: invoiceStats.partially_paid,
-        paid: invoiceStats.paid,
-        cancelled: invoiceStats.cancelled + invoiceStats.cancelled_by_credit_note,
+        all: invoiceStats.totalInvoices || invoiceStats.total,
+        draft: invoiceStats.draftInvoices || invoiceStats.draft,
+        sent: invoiceStats.sentInvoices || invoiceStats.sent,
+        overdue: invoiceStats.overdueInvoices || invoiceStats.overdue,
+        partially_paid: invoiceStats.partiallyPaidInvoices || invoiceStats.partially_paid,
+        paid: invoiceStats.paidInvoices || invoiceStats.paid,
+        cancelled: (invoiceStats.cancelledInvoices || invoiceStats.cancelled || 0) + (invoiceStats.creditNoteInvoices || invoiceStats.cancelled_by_credit_note || 0),
       });
       setStatsData({
-        totalAmount: invoiceStats.totalAmount,
+        totalAmount: invoiceStats.totalAmountTtc || invoiceStats.totalAmount,
         overdueAmount: invoiceStats.overdueAmount,
-        paidAmount: invoiceStats.paidAmount,
-        remainingAmount: invoiceStats.remainingAmount,
+        paidAmount: invoiceStats.totalPaid || invoiceStats.paidAmount,
+        remainingAmount: invoiceStats.totalOutstanding || invoiceStats.remainingAmount,
       });
       console.log("✅ Statistiques mises à jour avec succès");
     } catch (error) {
@@ -150,8 +159,69 @@ export default function Factures() {
   // Charger les données au montage et lors des changements
   useEffect(() => {
     loadInvoices();
+  }, [activeTab, searchQuery, page, dateRange, statusFilter, sortField, sortOrder]);
+
+  useEffect(() => {
     loadStats();
-  }, [activeTab, searchQuery, page]);
+  }, [invoices]);
+
+  // Filter handlers
+  const handleDateRangeChange = (from: string, to: string) => {
+    setDateRange({ from, to });
+    setPage(1); // Reset to first page
+  };
+
+  const handleStatusFilterChange = (statuses: string[]) => {
+    setStatusFilter(statuses);
+    setPage(1); // Reset to first page
+  };
+
+  const handleSortChange = (field: string, order: 'asc' | 'desc') => {
+    setSortField(field);
+    setSortOrder(order);
+    setPage(1); // Reset to first page
+  };
+
+  const handleExport = async () => {
+    try {
+      // Pour l'instant, on exporte la liste actuelle en CSV/Excel
+      const csvContent = generateCSVFromInvoices(invoices);
+      downloadCSVFile(csvContent, `factures-export-${new Date().toISOString().split('T')[0]}.csv`);
+    } catch (error) {
+      console.error("Erreur lors de l'export:", error);
+    }
+  };
+
+  const generateCSVFromInvoices = (invoices: Invoice[]): string => {
+    const headers = ['Numéro', 'Client', 'Date création', 'Date échéance', 'Statut', 'Montant HT', 'Montant TTC', 'Montant payé'];
+    const rows = invoices.map(invoice => [
+      invoice.number,
+      invoice.clientName,
+      new Date(invoice.createdAt).toLocaleDateString('fr-FR'),
+      invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('fr-FR') : '',
+      invoice.status,
+      invoice.totalHT?.toString() || '0',
+      invoice.totalTTC?.toString() || '0',
+      invoice.amountPaid?.toString() || '0'
+    ]);
+    
+    return [headers, ...rows]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+  };
+
+  const downloadCSVFile = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   // View invoice details
   const handleViewInvoice = (invoice: Invoice) => {
@@ -163,35 +233,9 @@ export default function Factures() {
     navigate(`/factures/edit/${invoice.id}`);
   };
 
-  // Create new invoice - ouvrir la modale au lieu de naviguer
+  // Create new invoice - naviguer vers le wizard de création
   const handleCreateInvoice = () => {
-    setCreateInvoiceModalOpen(true);
-  };
-
-  // Gérer le succès de création de facture
-  const handleCreateInvoiceSuccess = (invoice: Invoice) => {
-    console.log("handleCreateInvoiceSuccess appelé avec:", invoice);
-    console.log("ID de la facture:", invoice.id);
-    
-    // Rafraîchir la liste et les stats
-    loadInvoices();
-    loadStats();
-    
-    // S'assurer que l'ID est une chaîne valide avant de naviguer
-    if (invoice && invoice.id) {
-      console.log("Navigation vers:", `/factures/edit/${invoice.id}`);
-      // Utiliser un court délai pour s'assurer que la navigation se fait après la fermeture complète de la modale
-      setTimeout(() => {
-        navigate(`/factures/edit/${invoice.id}`);
-      }, 200);
-    } else {
-      console.error("ID de facture invalide:", invoice);
-      toast({
-        title: "Erreur",
-        description: "Impossible d'ouvrir l'éditeur: ID de facture invalide",
-        variant: "destructive",
-      });
-    }
+    navigate('/factures/nouvelle');
   };
 
   // Delete invoice - ouvrir la modale de confirmation
@@ -304,9 +348,32 @@ export default function Factures() {
     }
   };
 
-  // Download invoice (placeholder)
-  const handleDownloadInvoice = (invoice: Invoice) => {
-    alert(`Téléchargement de la facture ${invoice.number} à implémenter`);
+  // Download invoice PDF
+  const handleDownloadInvoice = async (invoice: Invoice) => {
+    try {
+      const pdfBlob = await generateInvoicePdf(invoice.id);
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `facture-${invoice.number}.pdf`;
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Succès",
+        description: `Le PDF de la facture ${invoice.number} a été téléchargé`,
+      });
+    } catch (error) {
+      console.error("Erreur lors du téléchargement:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de télécharger la facture",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -351,6 +418,10 @@ export default function Factures() {
       <InvoiceFilters
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onDateRangeChange={handleDateRangeChange}
+        onStatusFilterChange={handleStatusFilterChange}
+        onSortChange={handleSortChange}
+        onExport={handleExport}
       />
 
       {/* Main Content */}
@@ -373,6 +444,7 @@ export default function Factures() {
         {/* Table */}
         <InvoiceList
           invoices={invoices}
+          loading={loading}
           onView={handleViewInvoice}
           onEdit={handleEditInvoice}
           onDelete={handleDeleteInvoice}
@@ -385,12 +457,6 @@ export default function Factures() {
 
       {/* Modals */}
       
-      {/* Nouvelle facture */}
-      <CreateInvoiceModal
-        open={createInvoiceModalOpen}
-        onOpenChange={setCreateInvoiceModalOpen}
-        onSuccess={handleCreateInvoiceSuccess}
-      />
 
       {/* Modales nécessitant une facture sélectionnée */}
       {selectedInvoice && (

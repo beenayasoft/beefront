@@ -115,17 +115,18 @@ export function useModalState<T = any>(
         });
       }, 300); // Délai augmenté pour laisser les animations se terminer
       
-      // Cleanup DOM séparé pour éviter l'interférence
+      // Cleanup DOM séparé pour éviter l'interférence - DÉSACTIVÉ TEMPORAIREMENT
+      // pour éviter les conflits avec les toasts
       setTimeout(() => {
-        const cleanedCount = forceCleanModalOrphans();
+        // const cleanedCount = forceCleanModalOrphans();
         
         // Diagnostic automatique après cleanup
         setTimeout(() => {
           const blockStatus = isUIBlocked();
           if (blockStatus.blocked) {
-            console.error('🚨 UI ENCORE BLOQUÉE après cleanup!', blockStatus.details);
-            // Nettoyage forcé supplémentaire
-            forceCleanModalOrphans();
+            console.warn('⚠️ UI potentiellement bloquée après fermeture modale:', blockStatus.details);
+            // Nettoyage forcé supplémentaire - DÉSACTIVÉ
+            // forceCleanModalOrphans();
           } else {
             console.log('✅ UI libre après fermeture de modale');
           }
@@ -187,7 +188,7 @@ export function useModalState<T = any>(
       });
       
       setTimeout(() => {
-        forceCleanModalOrphans();
+        // forceCleanModalOrphans(); // DÉSACTIVÉ pour éviter les conflits avec les toasts
       }, 100);
     }, []),
   };

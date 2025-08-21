@@ -39,6 +39,35 @@ const QuotePreview: React.FC = () => {
       try {
         // Récupérer les détails du devis
         const quoteData = await quotesApi.getQuoteDetails(id, signal);
+        
+        // Debug : vérifier les totaux reçus
+        console.log('📊 Totaux reçus du backend:', {
+          totalHt: quoteData.totalHt,
+          totalVat: quoteData.totalVat,
+          totalTtc: quoteData.totalTtc,
+          itemsCount: quoteData.items?.length || 0
+        });
+        
+        // Debug : vérifier les totaux des items
+        if (quoteData.items?.length > 0) {
+          quoteData.items.forEach((item, index) => {
+            console.log(`📋 Item ${index + 1}:`, {
+              designation: item.designation,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              discount: item.discount,
+              vatRate: item.vatRate,
+              totalHt: item.totalHt,
+              totalTtc: item.totalTtc,
+              type: item.type
+            });
+            
+            // Calcul manuel pour comparaison
+            const manualCalc = (item.quantity || 0) * (item.unitPrice || 0) * (1 - (item.discount || 0) / 100);
+            console.log(`🧮 Calcul manuel: ${item.quantity} × ${item.unitPrice} × (1 - ${item.discount}/100) = ${manualCalc}`);
+          });
+        }
+        
         setQuote(quoteData);
       } catch (error) {
         // Ne pas définir d'erreur si la requête a été annulée

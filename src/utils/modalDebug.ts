@@ -78,7 +78,12 @@ export function forceCleanModalOrphans(): number {
     const elements = document.querySelectorAll(selector);
     elements.forEach(el => {
       // Vérifier si le portal est vraiment orphelin (pas de contenu visible)
-      if (el.children.length === 0 || !el.querySelector('[data-state="open"]')) {
+      // ET s'assurer que ce n'est pas un toast
+      if ((el.children.length === 0 || !el.querySelector('[data-state="open"]')) &&
+          !el.closest('[data-radix-toast-viewport]') &&
+          !el.closest('[data-sonner-toaster]') &&
+          !el.hasAttribute('data-radix-toast-viewport') &&
+          !el.querySelector('[data-radix-toast-root]')) {
         console.log(`🧹 Suppression portal orphelin: ${selector}`);
         el.remove();
         cleanedCount++;
@@ -109,7 +114,13 @@ export function forceCleanModalOrphans(): number {
     if (styles.position === 'fixed' && 
         parseInt(styles.zIndex || '0') > 100 && 
         (styles.pointerEvents === 'none' || styles.visibility === 'hidden') &&
-        !el.closest('[data-radix-toast-viewport]')) { // Éviter de supprimer les toasts
+        !el.closest('[data-radix-toast-viewport]') && 
+        !el.closest('[data-sonner-toaster]') &&
+        !el.hasAttribute('data-radix-toast-root') &&
+        !el.hasAttribute('data-radix-toast-viewport') &&
+        !el.hasAttribute('data-radix-toast-title') &&
+        !el.hasAttribute('data-radix-toast-description') &&
+        !el.querySelector('[data-radix-toast-root]')) { // Éviter de supprimer les toasts
       console.log(`🧹 Suppression élément bloquant: ${el.tagName}`, el);
       el.remove();
       cleanedCount++;
@@ -300,7 +311,12 @@ export function emergencyUnblockUI(): void {
   // 6. Supprimer tous les éléments avec z-index > 1000
   document.querySelectorAll('*').forEach(el => {
     const zIndex = window.getComputedStyle(el).zIndex;
-    if (zIndex && parseInt(zIndex) > 1000 && !el.closest('[data-sonner-toaster]')) {
+    if (zIndex && parseInt(zIndex) > 1000 && 
+        !el.closest('[data-sonner-toaster]') &&
+        !el.closest('[data-radix-toast-viewport]') &&
+        !el.hasAttribute('data-radix-toast-viewport') &&
+        !el.hasAttribute('data-radix-toast-root') &&
+        !el.querySelector('[data-radix-toast-root]')) {
       console.log(`🧹 URGENCE: Suppression z-index élevé`, el);
       el.remove();
     }

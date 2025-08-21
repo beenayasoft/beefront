@@ -10,6 +10,7 @@ import { PageTitleProvider } from "@/components/common/PageTitleProvider";
 
 // Import statique uniquement pour Auth (nécessaire au démarrage)
 import Auth from "@/features/auth/pages/Auth";
+import DebugClientSearch from "./debug-client-search";
 
 // Lazy loading OPTIMISÉ - TOUTES les pages depuis features/ (réduction bundle size)
 const Index = lazy(() => import("@/pages/Dashboard"));
@@ -27,6 +28,7 @@ const QuoteEditor = lazy(() => import("@/features/documents/pages/QuoteEditor"))
 const QuoteDetail = lazy(() => import("@/features/documents/pages/QuoteDetail"));
 const QuotePreview = lazy(() => import("@/features/documents/pages/QuotePreview"));
 const Factures = lazy(() => import("@/features/documents/pages/Factures"));
+const InvoiceCreate = lazy(() => import("@/features/documents/pages/InvoiceCreate"));
 const InvoiceDetail = lazy(() => import("@/features/documents/pages/InvoiceDetail"));
 const InvoiceEditor = lazy(() => import("@/features/documents/pages/InvoiceEditor"));
 const InvoicePreview = lazy(() => import("@/features/documents/pages/InvoicePreview"));
@@ -133,6 +135,7 @@ export default function App() {
                   <Chantiers />
                 </Suspense>
               } />
+              <Route path="debug-clients" element={<DebugClientSearch />} />
               <Route path="devis" element={
                 <Suspense fallback={<PageLoader />}>
                   <Devis />
@@ -162,6 +165,11 @@ export default function App() {
               <Route path="factures" element={
                 <Suspense fallback={<PageLoader />}>
                   <Factures />
+                </Suspense>
+              } />
+              <Route path="factures/nouvelle" element={
+                <Suspense fallback={<PageLoader />}>
+                  <InvoiceCreate />
                 </Suspense>
               } />
               <Route path="factures/:id" element={

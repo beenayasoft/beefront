@@ -79,6 +79,12 @@ export const useOpportunityFlow = (options: UseOpportunityFlowOptions): Opportun
     queryFn: async ({ signal }) => {
       if (!client?.id) return { results: [], count: 0 };
       
+      // En mode édition, ne pas chercher d'opportunités pour éviter les erreurs API
+      if (client.id === 'edit-mode') {
+        console.log('🎯 useOpportunityFlow - Mode édition détecté, pas de recherche d\'opportunités');
+        return { results: [], count: 0 };
+      }
+      
       console.log('🎯 useOpportunityFlow - Recherche opportunités pour client:', client);
       
       try {

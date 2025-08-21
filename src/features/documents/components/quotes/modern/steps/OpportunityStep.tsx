@@ -2,7 +2,7 @@
  * Étape de sélection/création d'opportunité
  * Workflow intelligent basé sur le client sélectionné
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Target, Plus, TrendingUp, Calendar, DollarSign, ExternalLink, AlertCircle } from 'lucide-react';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -18,6 +18,7 @@ import { useOpportunityFlow } from '../../../../hooks/useOpportunityFlow';
 import { OpportunityOption } from '@/features/crm/types/crm.types';
 import { formatCurrency } from '@/lib/utils';
 import { OpportunityQuickCreateForm } from '../forms/OpportunityQuickCreateForm';
+import { crmApi } from '@/features/crm/api/crm';
 
 interface OpportunityStepProps {
   wizard: UseQuoteWizard;
@@ -44,6 +45,36 @@ const STAGE_COLORS = {
 export const OpportunityStep: React.FC<OpportunityStepProps> = ({ wizard }) => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  
+  // Pré-sélection automatique de l'opportunité si fournie dans les données initiales
+  useEffect(() => {
+    const opportunityId = wizard.initialData?.opportunityId;
+    
+    if (opportunityId && !wizard.opportunity && wizard.client) {
+      console.log('🎯 Auto-sélection de l\'opportunité depuis les données initiales:', opportunityId);
+      
+      // Récupérer les détails de l'opportunité
+      crmApi.opportunities.getOpportunityDetails(opportunityId)
+        .then(opportunityDetails => {
+          // Convertir les données en format OpportunityOption
+          const opportunityOption: OpportunityOption = {
+            id: opportunityDetails.id,
+            name: opportunityDetails.name,
+            stage: opportunityDetails.stage,
+            estimatedAmount: opportunityDetails.estimatedAmount || 0,
+            probability: opportunityDetails.probability || 0,
+            tierId: opportunityDetails.tierId || wizard.client?.id || '',
+            tierName: wizard.client?.name || opportunityDetails.tierName || 'Client'
+          };
+          
+          console.log('✅ Opportunité récupérée automatiquement:', opportunityOption.name);
+          wizard.setOpportunity(opportunityOption);
+        })
+        .catch(error => {
+          console.error('❌ Erreur lors de la récupération de l\'opportunité pré-sélectionnée:', error);
+        });
+    }
+  }, [wizard.initialData?.opportunityId, wizard.opportunity, wizard.client, wizard.setOpportunity]);
   
   const opportunityFlow = useOpportunityFlow({
     client: wizard.client,

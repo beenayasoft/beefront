@@ -3,14 +3,24 @@
  * Utilise le nouveau wizard avec design system cohérent
  */
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import QuoteCreateWizard from '../components/quotes/modern/QuoteCreateWizard';
+
+interface LocationState {
+  preselectedTierId?: string;
+  opportunityId?: string;
+  opportunityName?: string;
+}
 
 /**
  * Page de création d'un nouveau devis
  */
 const DevisNew: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Récupérer les données d'initialisation depuis la navigation
+  const initialData = location.state as LocationState;
   
   // Gérer la création réussie du devis
   const handleQuoteCreated = (quoteId: string) => {
@@ -26,6 +36,7 @@ const DevisNew: React.FC = () => {
     <QuoteCreateWizard
       onQuoteCreated={handleQuoteCreated}
       onCancel={handleCancel}
+      initialData={initialData}
     />
   );
 };

@@ -27,7 +27,23 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
   level = 0
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const config = getQuoteItemTypeConfig(item.type);
+  let config = getQuoteItemTypeConfig(item.type);
+  
+  // Protection contre les types non définis
+  if (!config) {
+    console.warn(`Type d'élément non reconnu: ${item.type}. Utilisation du type par défaut MATERIAL.`);
+    // Utiliser un type par défaut si le type n'est pas reconnu
+    config = {
+      type: QuoteItemType.MATERIAL,
+      label: 'Élément',
+      description: 'Élément de devis',
+      icon: '📦',
+      allowPricing: true,
+      allowQuantity: true,
+      defaultUnit: BTPUnits.UNIT,
+      color: 'bg-gray-50 border-gray-200 text-gray-800'
+    };
+  }
 
   // Calculer les totaux localement pour la réactivité
   const [localTotals, setLocalTotals] = useState({
@@ -97,7 +113,7 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
     switch (item.type) {
       case QuoteItemType.FREE_TEXT:
         return (
-          <div className="col-span-full">
+          <td colSpan={8} className="px-2 py-2">
             <textarea
               value={item.freeText || ''}
               onChange={(e) => handleFieldChange('freeText', e.target.value)}
@@ -106,12 +122,12 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               disabled={isLoading}
             />
-          </div>
+          </td>
         );
 
       case QuoteItemType.SEPARATOR:
         return (
-          <div className="col-span-full">
+          <td colSpan={8} className="px-2 py-2">
             <input
               type="text"
               value={item.separatorTitle || ''}
@@ -121,7 +137,7 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
               disabled={isLoading}
             />
             <div className="mt-2 border-t-2 border-gray-300"></div>
-          </div>
+          </td>
         );
 
       case QuoteItemType.CHAPTER:
@@ -129,7 +145,7 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
         return (
           <>
             {/* Titre */}
-            <div className="col-span-3">
+            <td colSpan={6} className="px-2 py-2">
               <input
                 type="text"
                 value={item.designation || ''}
@@ -138,9 +154,9 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 font-semibold"
                 disabled={isLoading}
               />
-            </div>
+            </td>
             {/* Colonnes vides pour l'alignement */}
-            <div className="col-span-4"></div>
+            <td colSpan={2} className="px-2 py-2"></td>
           </>
         );
 
@@ -148,7 +164,7 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
         return (
           <>
             {/* Désignation */}
-            <div className="col-span-2">
+            <td className="px-2 py-1">
               <input
                 type="text"
                 value={item.designation || ''}
@@ -166,10 +182,10 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
                 className="w-full mt-1 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                 disabled={isLoading}
               />
-            </div>
+            </td>
 
             {/* Quantité */}
-            <div>
+            <td className="px-2 py-1">
               {allowsQuantity(item.type) ? (
                 <input
                   type="number"
@@ -183,10 +199,10 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
               ) : (
                 <span className="text-gray-400 text-sm">-</span>
               )}
-            </div>
+            </td>
 
             {/* Unité */}
-            <div>
+            <td className="px-2 py-1">
               {allowsQuantity(item.type) ? (
                 <select
                   value={item.unit || ''}
@@ -203,10 +219,10 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
               ) : (
                 <span className="text-gray-400 text-sm">-</span>
               )}
-            </div>
+            </td>
 
             {/* Prix unitaire */}
-            <div>
+            <td className="px-2 py-1">
               {allowsPricing(item.type) ? (
                 <input
                   type="number"
@@ -220,10 +236,10 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
               ) : (
                 <span className="text-gray-400 text-sm">-</span>
               )}
-            </div>
+            </td>
 
             {/* Remise */}
-            <div>
+            <td className="px-2 py-1">
               {allowsPricing(item.type) ? (
                 <div className="flex space-x-1">
                   <input
@@ -248,10 +264,10 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
               ) : (
                 <span className="text-gray-400 text-sm">-</span>
               )}
-            </div>
+            </td>
 
             {/* TVA */}
-            <div>
+            <td className="px-2 py-1">
               {allowsPricing(item.type) ? (
                 <select
                   value={item.vatRate?.toString() || '20'}
@@ -268,16 +284,16 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
               ) : (
                 <span className="text-gray-400 text-sm">-</span>
               )}
-            </div>
+            </td>
 
             {/* Total HT */}
-            <div className="text-right">
+            <td className="px-2 py-1 text-right">
               {allowsPricing(item.type) ? (
                 <span className="font-medium">{formatCurrency(localTotals.totalHt)}</span>
               ) : (
                 <span className="text-gray-400 text-sm">-</span>
               )}
-            </div>
+            </td>
           </>
         );
     }

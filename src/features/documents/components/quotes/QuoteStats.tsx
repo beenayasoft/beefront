@@ -17,11 +17,10 @@ import { formatCurrency } from '@/lib/utils';
  * Interface pour les props du composant QuoteStats
  */
 interface QuoteStatsProps {
+  // ✅ Statuts alignés avec le backend document-service
   stats: {
     total: number;
     draft: number;
-    pending_validation: number;
-    validated: number;
     sent: number;
     accepted: number;
     rejected: number;
@@ -52,7 +51,7 @@ const QuoteStats: React.FC<QuoteStatsProps> = ({ stats }) => {
       <MetricCard
         title="En attente"
         value={stats.sent.toString()}
-        change={formatCurrency(stats.pendingAmount) + " EUR"}
+        change={formatCurrency(stats.pendingAmount, 2, true)}
         changeType="neutral"
         icon={<AlertTriangle className="h-5 w-5 text-Beenaya-600" />}
       />
@@ -65,8 +64,7 @@ const QuoteStats: React.FC<QuoteStatsProps> = ({ stats }) => {
       />
       <MetricCard
         title="Valeur totale"
-        value={formatCurrency(stats.totalAmount)}
-        currency="EUR"
+        value={formatCurrency(stats.totalAmount, 2, true)}
         change={`${stats.accepted} devis acceptés`}
         changeType="positive"
         icon={<DollarSign className="h-5 w-5 text-Beenaya-600" />}

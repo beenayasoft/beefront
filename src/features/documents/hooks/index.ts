@@ -8,6 +8,9 @@ export { useQuoteWizard } from './useQuoteWizard';
 export { useClientSearch } from './useClientSearch';
 export { useOpportunityFlow } from './useOpportunityFlow';
 
+// Hooks pour le wizard de création de factures
+export { useInvoiceWizard } from './useInvoiceWizard';
+
 // Hooks pour les taux de TVA intelligents
 export { useSmartVatRates } from './useSmartVatRates';
 // ✅ Phase 2 : Hook dynamique pour taux de TVA tenant-specific
@@ -20,6 +23,7 @@ export { usePaymentTerms } from './usePaymentTerms';
 export type { UseQuoteWizard } from './useQuoteWizard';
 export type { UseClientSearch } from './useClientSearch';
 export type { UseOpportunityFlow } from './useOpportunityFlow';
+export type { UseInvoiceWizard } from './useInvoiceWizard';
 
 // TODO: Ajouter les hooks Documents génériques
 // export { useQuotes } from './useQuotes';

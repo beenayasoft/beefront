@@ -2,8 +2,8 @@
  * Étape de validation finale du devis
  * Récapitulatif complet avant création
  */
-import React from 'react';
-import { CheckCircle2, User, Target, Building, Package, Calculator, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CheckCircle2, User, Target, Building, Package, Calculator, FileText, Hash } from 'lucide-react';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,19 +12,79 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 import { UseQuoteWizard } from '../../../hooks/useQuoteWizard';
 import { formatCurrency } from '@/lib/utils';
+import { quotesApi } from '@/features/documents/api/quotes';
+import { settingsApi } from '@/features/settings/api/settings';
+import { formatNumberWithSettings, getDocumentFormat, getNextSequentialNumber } from '@/features/documents/utils/numberFormatting';
 
 interface ReviewStepProps {
   wizard: UseQuoteWizard;
 }
 
 export const ReviewStep: React.FC<ReviewStepProps> = ({ wizard }) => {
+  const [nextQuoteNumber, setNextQuoteNumber] = useState<string>('');
+  const [isLoadingNumber, setIsLoadingNumber] = useState(true);
+
+  // Charger le prochain numéro formaté depuis les settings
+  useEffect(() => {
+    const loadNextNumber = async () => {
+      try {
+        setIsLoadingNumber(true);
+        
+        // Récupérer les informations du tenant pour obtenir la configuration de numérotation
+        const tenantInfo = await settingsApi.getCurrentTenantInfo();
+        const numberingSettings = tenantInfo.document_numbering || [];
+        
+        // Obtenir le format configuré pour les devis
+        const format = getDocumentFormat(numberingSettings, 'quote');
+        
+        // Obtenir le prochain numéro séquentiel
+        const nextNumber = getNextSequentialNumber(numberingSettings, 'quote');
+        
+        // Formater le numéro final
+        const formattedNumber = formatNumberWithSettings(format, nextNumber);
+        
+        setNextQuoteNumber(formattedNumber);
+      } catch (error) {
+        console.error('Erreur lors du chargement du prochain numéro:', error);
+        // Fallback : utiliser l'ancienne méthode
+        try {
+          const fallbackNumber = await quotesApi.getNextQuoteNumber();
+          setNextQuoteNumber(fallbackNumber);
+        } catch (fallbackError) {
+          setNextQuoteNumber('DEV-XXXX');
+        }
+      } finally {
+        setIsLoadingNumber(false);
+      }
+    };
+
+    loadNextNumber();
+
+    // Écouter les changements de configuration de numérotation
+    const handleNumberingChange = () => {
+      loadNextNumber();
+    };
+    
+    window.addEventListener('numberingSettingsChanged', handleNumberingChange);
+    
+    return () => {
+      window.removeEventListener('numberingSettingsChanged', handleNumberingChange);
+    };
+  }, []);
+
   // Calculs des totaux
   const calculateTotals = () => {
     return wizard.items.reduce((acc, item) => {
-      const baseTotal = item.quantity * item.unitPrice;
-      const discountAmount = baseTotal * (item.discount || 0) / 100;
+      // S'assurer que les valeurs sont numériques
+      const quantity = Number(item.quantity) || 0;
+      const unitPrice = Number(item.unitPrice) || 0;
+      const discount = Number(item.discount) || 0;
+      const vatRate = Number(item.vatRate) || 0;
+      
+      const baseTotal = quantity * unitPrice;
+      const discountAmount = baseTotal * discount / 100;
       const totalHT = baseTotal - discountAmount;
-      const vatAmount = totalHT * (item.vatRate || 0) / 100;
+      const vatAmount = totalHT * vatRate / 100;
       const totalTtc = totalHT + vatAmount;
       
       return {
@@ -39,13 +99,36 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ wizard }) => {
   
   return (
     <div className="space-y-6">
-      {/* Instructions */}
-      <Alert>
-        <CheckCircle2 className="h-4 w-4" />
-        <AlertDescription>
-          Vérifiez toutes les informations avant de créer votre devis.
-        </AlertDescription>
-      </Alert>
+      {/* Instructions et numéro de devis */}
+      <div className="space-y-4">
+        <Alert>
+          <CheckCircle2 className="h-4 w-4" />
+          <AlertDescription>
+            Vérifiez toutes les informations avant de créer votre devis.
+          </AlertDescription>
+        </Alert>
+
+        {/* Aperçu du numéro de devis */}
+        <Card className="border-l-4 border-l-blue-500">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <Hash className="h-5 w-5 text-blue-600" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  Numéro du devis à créer :
+                </p>
+                <p className="text-lg font-bold text-blue-600">
+                  {isLoadingNumber ? (
+                    <span className="animate-pulse">Chargement...</span>
+                  ) : (
+                    nextQuoteNumber
+                  )}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Client */}

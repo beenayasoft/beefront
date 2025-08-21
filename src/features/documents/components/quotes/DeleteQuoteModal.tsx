@@ -29,17 +29,17 @@ export function DeleteQuoteModal({
   const [loading, setLoading] = useState(false);
 
   const handleDelete = async () => {
+    if (!quote?.id) {
+      console.error('Aucun devis sélectionné pour la suppression');
+      return;
+    }
+    
     try {
       setLoading(true);
       await quotesApi.deleteQuote(quote.id);
       
-      toast({
-        title: "Succès",
-        description: `Le devis ${quote.number} a été supprimé`,
-      });
-      
-      onSuccess();
       onOpenChange(false);
+      onSuccess();
     } catch (error) {
       console.error("Erreur lors de la suppression:", error);
       toast({
@@ -55,6 +55,12 @@ export function DeleteQuoteModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
+        {!quote ? (
+          <div className="p-4 text-center text-gray-500">
+            Aucun devis sélectionné
+          </div>
+        ) : (
+          <>
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
@@ -73,16 +79,16 @@ export function DeleteQuoteModal({
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="text-sm">
               <div className="font-medium text-gray-900">
-                Devis {quote.number}
+                Devis {quote?.number}
               </div>
               <div className="text-gray-600 mt-1">
-                {quote.clientName}
+                {quote?.clientName}
               </div>
               <div className="text-gray-600">
                 {new Intl.NumberFormat('fr-FR', { 
                   style: 'currency', 
                   currency: 'EUR' 
-                }).format(quote.totalTtc || 0)}
+                }).format(quote?.totalTtc || 0)}
               </div>
             </div>
           </div>
@@ -111,6 +117,8 @@ export function DeleteQuoteModal({
             {loading ? "Suppression..." : "Supprimer"}
           </Button>
         </DialogFooter>
+        </>
+        )}
       </DialogContent>
     </Dialog>
   );

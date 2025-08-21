@@ -25,7 +25,6 @@ import { QuoteStats } from "../components/quotes/QuoteStats";
 import { QuoteFilters } from "../components/quotes/QuoteFilters";
 import { QuoteTabs } from "../components/quotes/QuoteTabs";
 import { QuoteList } from "../components/quotes/QuoteList";
-import { ValidateQuoteModal } from "../components/quotes/ValidateQuoteModal";
 import { SendQuoteModal } from "../components/quotes/SendQuoteModal";
 import { ConvertToInvoiceModal } from "../components/quotes/ConvertToInvoiceModal";
 import { DeleteQuoteModal } from "../components/quotes/DeleteQuoteModal";
@@ -33,6 +32,7 @@ import { DuplicateQuoteModal } from "../components/quotes/DuplicateQuoteModal";
 import { toast } from "@/components/ui/use-toast";
 import { quotesApi } from "../api/quotes";
 import { Quote, QuoteStatus, QuoteFilters as FilterType, PaginatedQuotesResponse } from "../types/quotes.types";
+import { useModalState } from "@/hooks/useModalState";
 
 export default function Devis() {
   const navigate = useNavigate();
@@ -42,11 +42,14 @@ export default function Devis() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [dateRange, setDateRange] = useState<{from?: string; to?: string}>({});
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [sortField, setSortField] = useState<string>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  // ✅ Statuts alignés avec le backend document-service
   const [stats, setStats] = useState({
     all: 0,
     draft: 0,
-    pending_validation: 0,
-    validated: 0,
     sent: 0,
     accepted: 0,
     rejected: 0,
@@ -60,13 +63,11 @@ export default function Devis() {
     averageValue: 0,
   });
   
-  // States for modals
-  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
-  const [validateQuoteModalOpen, setValidateQuoteModalOpen] = useState(false);
-  const [sendQuoteModalOpen, setSendQuoteModalOpen] = useState(false);
-  const [convertToInvoiceModalOpen, setConvertToInvoiceModalOpen] = useState(false);
-  const [deleteQuoteModalOpen, setDeleteQuoteModalOpen] = useState(false);
-  const [duplicateQuoteModalOpen, setDuplicateQuoteModalOpen] = useState(false);
+  // States for modals - Migration vers useModalState pour éviter les gels d'UI
+  const sendQuoteModal = useModalState<Quote>();
+  const convertToInvoiceModal = useModalState<Quote>();
+  const deleteQuoteModal = useModalState<Quote>();
+  const duplicateQuoteModal = useModalState<Quote>();
 
   // Charger les devis depuis l'API
   const loadQuotes = async () => {
@@ -76,11 +77,17 @@ export default function Devis() {
       // Préparer les paramètres
       const filters: FilterType = {
         search: searchQuery || undefined,
+        dateFrom: dateRange.from,
+        dateTo: dateRange.to,
+        sortBy: sortField,
+        sortOrder: sortOrder,
       };
       
       // Filtrer par statut si nécessaire
       if (activeTab !== "all") {
         filters.status = activeTab as QuoteStatus;
+      } else if (statusFilter.length > 0) {
+        filters.status = statusFilter[0] as QuoteStatus; // Prendre le premier filtre de statut
       }
       
       const response = await quotesApi.getQuotes(page, 10, filters);
@@ -114,19 +121,25 @@ export default function Devis() {
       const rejectedQuotes = quotes.filter(q => q.status === 'rejected').length;
       const expiredQuotes = quotes.filter(q => q.status === 'expired').length;
       
-      const totalAmount = quotes.reduce((sum, quote) => sum + (quote.totalTtc || 0), 0);
+      const totalAmount = quotes.reduce((sum, quote) => sum + (parseFloat(quote.totalTtc) || 0), 0);
       const acceptedAmount = quotes
         .filter(q => q.status === 'accepted')
-        .reduce((sum, quote) => sum + (quote.totalTtc || 0), 0);
+        .reduce((sum, quote) => sum + (parseFloat(quote.totalTtc) || 0), 0);
       const pendingAmount = quotes
-        .filter(q => ['sent', 'validated'].includes(q.status))
-        .reduce((sum, quote) => sum + (quote.totalTtc || 0), 0);
+        .filter(q => q.status === 'sent')
+        .reduce((sum, quote) => sum + (parseFloat(quote.totalTtc) || 0), 0);
+      
+      console.log("📊 Statistiques calculées:", {
+        totalQuotes,
+        totalAmount,
+        acceptedAmount,
+        pendingAmount,
+        sampleQuote: quotes[0]?.totalTtc
+      });
       
       setStats({
         all: totalQuotes,
         draft: draftQuotes,
-        pending_validation: quotes.filter(q => q.status === 'pending_validation').length,
-        validated: quotes.filter(q => q.status === 'validated').length,
         sent: sentQuotes,
         accepted: acceptedQuotes,
         rejected: rejectedQuotes,
@@ -148,8 +161,6 @@ export default function Devis() {
       setStats({
         all: 0,
         draft: 0,
-        pending_validation: 0,
-        validated: 0,
         sent: 0,
         accepted: 0,
         rejected: 0,
@@ -168,17 +179,74 @@ export default function Devis() {
   // Charger les données au montage et lors des changements
   useEffect(() => {
     loadQuotes();
-  }, [activeTab, searchQuery, page]);
+  }, [activeTab, searchQuery, page, dateRange, statusFilter, sortField, sortOrder]);
 
   useEffect(() => {
     if (quotes.length > 0) {
       loadStats();
     }
-  }, [quotes]);
+  }, [quotes.length]);
 
   // View quote details
   const handleViewQuote = (quote: Quote) => {
     navigate(`/devis/${quote.id}`);
+  };
+
+  // Filter handlers
+  const handleDateRangeChange = (from: string, to: string) => {
+    setDateRange({ from, to });
+    setPage(1); // Reset to first page
+  };
+
+  const handleStatusFilterChange = (statuses: string[]) => {
+    setStatusFilter(statuses);
+    setPage(1); // Reset to first page
+  };
+
+  const handleSortChange = (field: string, order: 'asc' | 'desc') => {
+    setSortField(field);
+    setSortOrder(order);
+    setPage(1); // Reset to first page
+  };
+
+  const handleExport = async () => {
+    try {
+      // Pour l'instant, on exporte la liste actuelle en CSV/Excel
+      const csvContent = generateCSVFromQuotes(quotes);
+      downloadCSVFile(csvContent, `devis-export-${new Date().toISOString().split('T')[0]}.csv`);
+    } catch (error) {
+      console.error("Erreur lors de l'export:", error);
+    }
+  };
+
+  const generateCSVFromQuotes = (quotes: Quote[]): string => {
+    const headers = ['Numéro', 'Client', 'Projet', 'Date création', 'Date expiration', 'Statut', 'Montant HT', 'Montant TTC'];
+    const rows = quotes.map(quote => [
+      quote.number,
+      quote.clientName,
+      quote.projectName || '',
+      new Date(quote.createdAt).toLocaleDateString('fr-FR'),
+      quote.expiryDate ? new Date(quote.expiryDate).toLocaleDateString('fr-FR') : '',
+      quote.status,
+      quote.totalHt.toString(),
+      quote.totalTtc.toString()
+    ]);
+    
+    return [headers, ...rows]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
+  };
+
+  const downloadCSVFile = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   // Edit quote
@@ -191,68 +259,77 @@ export default function Devis() {
     navigate("/devis/nouveau");
   };
 
-  // Validate quote
-  const handleValidateQuote = (quote: Quote) => {
-    setSelectedQuote(quote);
-    setValidateQuoteModalOpen(true);
-  };
-
-  // Gérer le succès de validation
-  const handleValidateQuoteSuccess = async (validatedQuote: Quote) => {
-    // Rafraîchir la liste et les stats
-    await loadQuotes();
-    
-    toast({
-      title: "Succès",
-      description: `Le devis ${validatedQuote.number} a été validé`,
-    });
-  };
 
   // Send quote
   const handleSendQuote = (quote: Quote) => {
-    setSelectedQuote(quote);
-    setSendQuoteModalOpen(true);
+    console.log('📧 Ouverture modal envoi pour:', quote);
+    sendQuoteModal.actions.open(quote);
   };
 
   // Gérer le succès d'envoi
   const handleSendQuoteSuccess = async (sentQuote: Quote) => {
-    // Rafraîchir la liste
-    await loadQuotes();
+    console.log('🎉 handleSendQuoteSuccess appelée pour:', sentQuote.number);
+    
+    // Mise à jour locale du statut au lieu de recharger toute la liste
+    setQuotes(prevQuotes => 
+      prevQuotes.map(quote => 
+        quote.id === sentQuote.id 
+          ? { ...quote, status: 'sent' as const }
+          : quote
+      )
+    );
     
     toast({
       title: "Succès",
       description: `Le devis ${sentQuote.number} a été envoyé`,
     });
+    
+    console.log('🎉 handleSendQuoteSuccess terminée');
   };
 
-  // Convert to invoice
-  const handleConvertToInvoice = (quote: Quote) => {
-    setSelectedQuote(quote);
-    setConvertToInvoiceModalOpen(true);
+  // Convert to invoice - ouvrir la modal
+  const handleOpenConvertToInvoice = (quote: Quote) => {
+    convertToInvoiceModal.actions.open(quote);
   };
 
-  // Gérer le succès de conversion
-  const handleConvertToInvoiceSuccess = async (invoice: any) => {
-    // Rafraîchir la liste
-    await loadQuotes();
+  // Gérer la conversion (appelle l'API)
+  const handleConvertToInvoice = async (formData: any) => {
+    if (!convertToInvoiceModal.data) return;
     
-    toast({
-      title: "Succès",
-      description: `Le devis a été converti en facture`,
-    });
-    
-    // Rediriger vers la facture créée
-    if (invoice && invoice.id) {
-      setTimeout(() => {
-        navigate(`/factures/${invoice.id}`);
-      }, 200);
+    try {
+      // Appeler l'API de conversion
+      const invoice = await quotesApi.convertToInvoice(convertToInvoiceModal.data.id, formData);
+      
+      // Fermer la modal avec cleanup automatique
+      convertToInvoiceModal.actions.close();
+      
+      // Rafraîchir la liste
+      await loadQuotes();
+      
+      toast({
+        title: "Succès",
+        description: `Le devis a été converti en facture`,
+      });
+      
+      // Rediriger vers la facture créée
+      if (invoice && invoice.id) {
+        setTimeout(() => {
+          navigate(`/factures/${invoice.id}`);
+        }, 200);
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Erreur lors de la conversion du devis en facture",
+        variant: "destructive",
+      });
+      console.error('Erreur lors de la conversion:', error);
     }
   };
 
   // Duplicate quote
   const handleDuplicateQuote = (quote: Quote) => {
-    setSelectedQuote(quote);
-    setDuplicateQuoteModalOpen(true);
+    duplicateQuoteModal.actions.open(quote);
   };
 
   // Gérer le succès de duplication
@@ -261,8 +338,9 @@ export default function Devis() {
     await loadQuotes();
     
     toast({
-      title: "Succès",
-      description: `Le devis a été dupliqué`,
+      title: "Devis dupliqué avec succès",
+      description: `Le devis ${duplicatedQuote.number} a été créé par duplication`,
+      variant: 'default'
     });
     
     // Rediriger vers le nouveau devis
@@ -275,35 +353,108 @@ export default function Devis() {
 
   // Delete quote
   const handleDeleteQuote = (quote: Quote) => {
-    setSelectedQuote(quote);
-    setDeleteQuoteModalOpen(true);
+    deleteQuoteModal.actions.open(quote);
   };
 
   // Gérer le succès de suppression
-  const handleDeleteQuoteSuccess = () => {
-    // Rafraîchir la liste
-    loadQuotes();
-    
-    toast({
-      title: "Succès",
-      description: "Le devis a été supprimé avec succès",
-    });
+  const handleDeleteQuoteSuccess = async () => {
+    try {
+      // La modal se ferme automatiquement avec cleanup
+      
+      // Rafraîchir la liste
+      await loadQuotes();
+      
+      toast({
+        title: "Devis supprimé avec succès",
+        description: "Le devis a été définitivement supprimé",
+        variant: 'default'
+      });
+    } catch (error) {
+      console.error("Erreur lors du rechargement après suppression:", error);
+      toast({
+        title: "Attention",
+        description: "Le devis a été supprimé mais la liste n'a pas pu être rafraîchie",
+        variant: "destructive",
+      });
+    }
   };
 
-  // Download quote (placeholder)
+  // Download quote with backend PDF generation
   const handleDownloadQuote = async (quote: Quote) => {
     try {
-      const pdfBlob = await quotesApi.generateQuotePdf(quote.id);
-      const url = window.URL.createObjectURL(pdfBlob);
+      console.log(`🔄 Téléchargement PDF backend pour le devis ${quote.number}...`);
+      
+      // Récupérer les paramètres d'apparence et infos tenant
+      let appearanceSettings = null;
+      let tenantInfo = null;
+      
+      try {
+        const [settingsModule, tenantModule] = await Promise.all([
+          import('@/lib/api/documentAppearance'),
+          import('@/lib/api/tenant')
+        ]);
+        
+        appearanceSettings = await settingsModule.documentAppearanceAPI.getAppearanceSettings();
+        tenantInfo = await tenantModule.tenantApi.getCurrentTenantInfo();
+        
+        console.log('🎨 Paramètres récupérés pour PDF backend');
+      } catch (settingsError) {
+        console.warn('⚠️ Impossible de récupérer les paramètres:', settingsError);
+      }
+      
+      // Préparer les données complètes pour le backend
+      const pdfRequestData = {
+        appearance_settings: appearanceSettings,
+        tenant_info: tenantInfo,
+        quote_data: {
+          id: quote.id,
+          number: quote.number,
+          clientName: quote.clientName,
+          projectName: quote.projectName,
+          totalHt: quote.totalHt,
+          totalVat: quote.totalVat,
+          totalTtc: quote.totalTtc,
+          items: quote.items,
+          issueDate: quote.issueDate,
+          expiryDate: quote.expiryDate,
+          notes: quote.notes,
+          termsAndConditions: quote.termsAndConditions
+        }
+      };
+      
+      console.log('📤 Envoi données complètes au backend pour PDF:', pdfRequestData);
+      
+      // Utiliser l'API backend avec tous les paramètres
+      const pdfBlob = await quotesApi.exportQuoteToPdf(quote.id, pdfRequestData);
+      
+      // Vérifier que le blob est valide
+      if (!pdfBlob || pdfBlob.size === 0) {
+        throw new Error('PDF vide ou invalide reçu du serveur');
+      }
+      
+      console.log(`📄 PDF reçu - Taille: ${pdfBlob.size} bytes`);
+      
+      // Créer un blob avec le type MIME correct pour PDF
+      const correctedBlob = new Blob([pdfBlob], { type: 'application/pdf' });
+      
+      const url = window.URL.createObjectURL(correctedBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `devis-${quote.number}.pdf`;
+      link.download = `devis-${quote.number.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      
+      // Nettoyer après un délai
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+      
+      console.log(`✅ PDF backend téléchargé avec succès pour le devis ${quote.number}`);
+      
     } catch (error) {
-      console.error("Erreur lors du téléchargement:", error);
+      console.error("❌ Erreur lors du téléchargement:", error);
       toast({
         title: "Erreur",
         description: "Impossible de télécharger le devis",
@@ -338,8 +489,6 @@ export default function Devis() {
         stats={{
           total: stats.all,
           draft: stats.draft,
-          pending_validation: stats.pending_validation,
-          validated: stats.validated,
           sent: stats.sent,
           accepted: stats.accepted,
           rejected: stats.rejected,
@@ -356,6 +505,10 @@ export default function Devis() {
       <QuoteFilters
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onDateRangeChange={handleDateRangeChange}
+        onStatusFilterChange={handleStatusFilterChange}
+        onSortChange={handleSortChange}
+        onExport={handleExport}
       />
 
       {/* Main Content */}
@@ -367,8 +520,6 @@ export default function Devis() {
           counts={{
             all: stats.all,
             draft: stats.draft,
-            pending_validation: stats.pending_validation,
-            validated: stats.validated,
             sent: stats.sent,
             accepted: stats.accepted,
             rejected: stats.rejected,
@@ -383,9 +534,8 @@ export default function Devis() {
           loading={loading}
           onView={handleViewQuote}
           onEdit={handleEditQuote}
-          onValidate={handleValidateQuote}
           onSend={handleSendQuote}
-          onConvertToInvoice={handleConvertToInvoice}
+          onConvertToInvoice={handleOpenConvertToInvoice}
           onDuplicate={handleDuplicateQuote}
           onDelete={handleDeleteQuote}
           onDownload={handleDownloadQuote}
@@ -394,41 +544,61 @@ export default function Devis() {
 
       {/* Modals */}
       
-      {/* Modales nécessitant un devis sélectionné */}
-      {selectedQuote && (
+      {/* Modales avec nouvelle gestion useModalState */}
+      {(sendQuoteModal.data || convertToInvoiceModal.data || duplicateQuoteModal.data || deleteQuoteModal.data) && (
         <>
-          <ValidateQuoteModal
-            open={validateQuoteModalOpen}
-            onOpenChange={setValidateQuoteModalOpen}
-            quote={selectedQuote}
-            onSuccess={handleValidateQuoteSuccess}
-          />
-          
           <SendQuoteModal
-            open={sendQuoteModalOpen}
-            onOpenChange={setSendQuoteModalOpen}
-            quote={selectedQuote}
-            onSuccess={handleSendQuoteSuccess}
+            open={sendQuoteModal.isOpen}
+            onOpenChange={(open) => !open && sendQuoteModal.actions.close()}
+            quote={sendQuoteModal.data}
+            onSend={async (data: { recipient_email: string; message?: string }) => {
+              try {
+                console.log('📧 Début envoi devis:', sendQuoteModal.data?.id, data);
+                if (!sendQuoteModal.data?.id) {
+                  throw new Error('Aucun devis sélectionné');
+                }
+                await quotesApi.sendQuote(sendQuoteModal.data.id, data);
+                console.log('📧 Envoi réussi');
+                
+                // Fermer le modal avec cleanup automatique
+                sendQuoteModal.actions.close();
+                
+                // Toast simple sans autres actions
+                toast({
+                  title: "Succès",
+                  description: `Le devis a été envoyé`,
+                });
+                
+                console.log('📧 Traitement terminé');
+              } catch (error) {
+                console.error('Erreur lors de l\'envoi:', error);
+                toast({
+                  title: "Erreur",
+                  description: "Impossible d'envoyer le devis",
+                  variant: "destructive",
+                });
+              }
+            }}
           />
 
           <ConvertToInvoiceModal
-            open={convertToInvoiceModalOpen}
-            onOpenChange={setConvertToInvoiceModalOpen}
-            quote={selectedQuote}
-            onSuccess={handleConvertToInvoiceSuccess}
+            open={convertToInvoiceModal.isOpen}
+            onOpenChange={(open) => !open && convertToInvoiceModal.actions.close()}
+            quote={convertToInvoiceModal.data}
+            onConvert={handleConvertToInvoice}
           />
 
           <DuplicateQuoteModal
-            open={duplicateQuoteModalOpen}
-            onOpenChange={setDuplicateQuoteModalOpen}
-            quote={selectedQuote}
+            open={duplicateQuoteModal.isOpen}
+            onOpenChange={(open) => !open && duplicateQuoteModal.actions.close()}
+            quote={duplicateQuoteModal.data}
             onSuccess={handleDuplicateQuoteSuccess}
           />
 
           <DeleteQuoteModal
-            open={deleteQuoteModalOpen}
-            onOpenChange={setDeleteQuoteModalOpen}
-            quote={selectedQuote}
+            open={deleteQuoteModal.isOpen}
+            onOpenChange={(open) => !open && deleteQuoteModal.actions.close()}
+            quote={deleteQuoteModal.data}
             onSuccess={handleDeleteQuoteSuccess}
           />
         </>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -29,9 +29,21 @@ export function DuplicateQuoteModal({
   onSuccess 
 }: DuplicateQuoteModalProps) {
   const [loading, setLoading] = useState(false);
-  const [newQuoteNumber, setNewQuoteNumber] = useState(`${quote.number}-COPY`);
+  const [newQuoteNumber, setNewQuoteNumber] = useState(`${quote?.number || ''}-COPY`);
+
+  // Mettre à jour le numéro quand le quote change
+  useEffect(() => {
+    if (quote?.number) {
+      setNewQuoteNumber(`${quote.number}-COPY`);
+    }
+  }, [quote?.number]);
 
   const handleDuplicate = async () => {
+    if (!quote?.id) {
+      console.error('Aucun devis sélectionné pour la duplication');
+      return;
+    }
+    
     try {
       setLoading(true);
       
@@ -61,6 +73,12 @@ export function DuplicateQuoteModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
+        {!quote ? (
+          <div className="p-4 text-center text-gray-500">
+            Aucun devis sélectionné
+          </div>
+        ) : (
+          <>
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
@@ -79,16 +97,16 @@ export function DuplicateQuoteModal({
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="text-sm">
               <div className="font-medium text-gray-900">
-                Devis original : {quote.number}
+                Devis original : {quote?.number}
               </div>
               <div className="text-gray-600 mt-1">
-                {quote.clientName}
+                {quote?.clientName}
               </div>
               <div className="text-gray-600">
                 {new Intl.NumberFormat('fr-FR', { 
                   style: 'currency', 
                   currency: 'EUR' 
-                }).format(quote.totalTtc || 0)}
+                }).format(quote?.totalTtc || 0)}
               </div>
             </div>
           </div>
@@ -127,6 +145,8 @@ export function DuplicateQuoteModal({
             {loading ? "Duplication..." : "Dupliquer"}
           </Button>
         </DialogFooter>
+        </>
+        )}
       </DialogContent>
     </Dialog>
   );

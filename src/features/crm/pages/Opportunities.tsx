@@ -592,6 +592,19 @@ export default function Opportunities() {
       
     } catch (error) {
       console.error('❌ Erreur lors de la confirmation API:', error);
+      console.log('🔍 Détails complets de l\'erreur:', {
+        status: error?.response?.status,
+        data: error?.response?.data,
+        headers: error?.response?.headers,
+        config: error?.config
+      });
+      console.log('🔍 Test condition pour QUOTE_REQUIRED:', {
+        statusIs400: error?.response?.status === 400,
+        hasData: !!error?.response?.data,
+        hasCode: !!error?.response?.data?.code,
+        code: error?.response?.data?.code,
+        codeMatch: error?.response?.data?.code === 'QUOTE_REQUIRED_FOR_NEGOTIATION'
+      });
       
       // 8. ROLLBACK en cas d'erreur - remettre l'état original
       setOpportunities(prev => prev.map(opp => 
@@ -617,12 +630,16 @@ export default function Opportunities() {
       });
       
       // 9. Gestion élégante des erreurs selon le type
+      console.log('🎯 Entrant dans la gestion d\'erreur spécifique');
       if (error?.response?.status === 400 && error?.response?.data?.code) {
+        console.log('✅ Condition principale remplie, errorData:', error.response.data);
         const errorData = error.response.data;
         
         // Si l'erreur a un code spécifique, ouvrir le dialogue de transition
+        console.log('🔍 Vérification du code:', errorData.code);
         if (errorData.code === 'QUOTE_REQUIRED_FOR_NEGOTIATION' || 
             errorData.code === 'NEGOTIATION_REQUIRED_FOR_WON') {
+          console.log('🚀 Ouverture du dialogue de transition!');
           setTransitionDialog({
             isOpen: true,
             opportunity,

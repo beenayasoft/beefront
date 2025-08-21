@@ -1,7 +1,7 @@
 /**
  * Composant d'affichage de la liste des devis
  */
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Eye,
   Edit,
@@ -34,6 +34,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Quote } from '../../types/quotes.types';
 import { formatCurrency } from '@/lib/utils';
+import { quotesApi } from '../../api/quotes';
+// Plus besoin de settingsApi - les numéros formatés viennent du backend
 
 /**
  * Props du composant QuoteList
@@ -43,7 +45,6 @@ interface QuoteListProps {
   loading: boolean;
   onView: (quote: Quote) => void;
   onEdit: (quote: Quote) => void;
-  onValidate: (quote: Quote) => void;
   onSend: (quote: Quote) => void;
   onConvertToInvoice: (quote: Quote) => void;
   onDuplicate: (quote: Quote) => void;
@@ -59,13 +60,19 @@ const QuoteList: React.FC<QuoteListProps> = ({
   loading,
   onView,
   onEdit,
-  onValidate,
   onSend,
   onConvertToInvoice,
   onDuplicate,
   onDelete,
   onDownload,
 }) => {
+  // Plus besoin de state pour les numéros formatés - le backend les fournit directement
+
+  // Plus besoin d'initialisation - les numéros formatés viennent du backend
+
+  // Plus besoin de formatage asynchrone - les numéros arrivent déjà formatés
+
+  // Plus besoin d'écouter les changements - les numéros formatés viendront automatiquement du backend
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'draft':
@@ -73,20 +80,6 @@ const QuoteList: React.FC<QuoteListProps> = ({
           <Badge className="Beenaya-badge-neutral gap-1">
             <div className="w-2 h-2 bg-neutral-400 rounded-full"></div>
             Brouillon
-          </Badge>
-        );
-      case 'pending_validation':
-        return (
-          <Badge className="Beenaya-badge-warning gap-1">
-            <Clock className="w-3 h-3" />
-            En attente
-          </Badge>
-        );
-      case 'validated':
-        return (
-          <Badge className="Beenaya-badge-primary gap-1">
-            <CheckCircle className="w-3 h-3" />
-            Validé
           </Badge>
         );
       case 'sent':
@@ -165,7 +158,9 @@ const QuoteList: React.FC<QuoteListProps> = ({
             quotes.map((quote) => (
               <TableRow key={quote.id}>
                 <TableCell>{getStatusBadge(quote.status)}</TableCell>
-                <TableCell className="font-medium">{quote.number}</TableCell>
+                <TableCell className="font-medium">
+                  {quote.number || 'Brouillon'}
+                </TableCell>
                 <TableCell>
                   <Badge className="Beenaya-badge-primary text-xs">
                     {quote.clientName}
@@ -173,7 +168,7 @@ const QuoteList: React.FC<QuoteListProps> = ({
                 </TableCell>
                 <TableCell>{new Date(quote.createdAt).toLocaleDateString('fr-FR')}</TableCell>
                 <TableCell className="font-semibold">
-                  {formatCurrency(quote.totalTtc || 0)} EUR
+                  {formatCurrency(quote.totalTtc || 0, 2, true)} EUR
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
@@ -209,10 +204,6 @@ const QuoteList: React.FC<QuoteListProps> = ({
                             <Edit className="mr-2 h-4 w-4" />
                             Modifier
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onValidate && onValidate(quote)}>
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Valider
-                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => onSend && onSend(quote)}>
                             <Send className="mr-2 h-4 w-4" />
                             Envoyer
@@ -228,7 +219,7 @@ const QuoteList: React.FC<QuoteListProps> = ({
                         </>
                       )}
                       
-                      {(quote.status === 'validated' || quote.status === 'sent') && (
+                      {quote.status === 'sent' && (
                         <>
                           <DropdownMenuItem onClick={() => onEdit && onEdit(quote)}>
                             <Edit className="mr-2 h-4 w-4" />

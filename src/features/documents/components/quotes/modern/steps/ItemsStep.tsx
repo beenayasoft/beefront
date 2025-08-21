@@ -71,10 +71,16 @@ export const ItemsStep: React.FC<ItemsStepProps> = ({ wizard }) => {
   
   // Calculs
   const calculateItemTotal = (item: CreateQuoteItemData) => {
-    const baseTotal = item.quantity * item.unitPrice;
-    const discountAmount = baseTotal * (item.discount || 0) / 100;
+    // S'assurer que les valeurs sont numériques
+    const quantity = Number(item.quantity) || 0;
+    const unitPrice = Number(item.unitPrice) || 0;
+    const discount = Number(item.discount) || 0;
+    const vatRate = Number(item.vatRate) || 0;
+    
+    const baseTotal = quantity * unitPrice;
+    const discountAmount = baseTotal * discount / 100;
     const totalHT = baseTotal - discountAmount;
-    const vatAmount = totalHT * (item.vatRate || 0) / 100;
+    const vatAmount = totalHT * vatRate / 100;
     const totalTtc = totalHT + vatAmount;
     
     return { totalHT, vatAmount, totalTtc };

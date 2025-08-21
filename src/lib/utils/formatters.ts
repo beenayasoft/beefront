@@ -20,9 +20,9 @@ export const formatCurrency = (
   const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
 
   // Formater avec l'API Intl
-  return new Intl.NumberFormat('fr-FR', {
+  return new Intl.NumberFormat('fr-MA', {
     style: 'currency',
-    currency: 'EUR',
+    currency: 'MAD',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
     ...options

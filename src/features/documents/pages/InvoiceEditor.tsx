@@ -65,6 +65,7 @@ import { getInvoiceById, updateInvoice, validateInvoice, changeInvoiceStatus, de
 import { tiersApi } from "@/features/crm/api";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
+import { useModalState, createSafeSubmitHandler } from "@/hooks/useModalState";
 import { DndContext, DragEndEvent, closestCenter } from "@dnd-kit/core";
 import { SortableContext, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { DraggableInvoiceItem } from "../components/invoices/DraggableInvoiceItem";
@@ -83,11 +84,11 @@ export default function InvoiceEditor() {
   const [isDirty, setIsDirty] = useState(false);
   const [showTaxIncluded, setShowTaxIncluded] = useState(true);
 
-  // Modals
-  const [itemFormOpen, setItemFormOpen] = useState(false);
-  const [sectionFormOpen, setSectionFormOpen] = useState(false);
-  const [discountFormOpen, setDiscountFormOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<InvoiceItem | null>(null);
+  // Modals - Migration vers useModalState pour éviter les gels d'UI
+  const itemFormModal = useModalState<InvoiceItem>();
+  const sectionFormModal = useModalState();
+  const discountFormModal = useModalState();
+  const deleteConfirmModal = useModalState<{ invoiceId: string; title: string }>;
 
   // Invoice state
   const [invoice, setInvoice] = useState<Partial<Invoice>>({
@@ -178,24 +179,24 @@ export default function InvoiceEditor() {
   useEffect(() => {
     if (invoice.items && invoice.items.length > 0) {
       // Calculate totals
-      let totalHT = 0;
-      let totalVAT = 0;
+      let totalHt = 0;
+      let totalVat = 0;
       
       invoice.items.forEach(item => {
         if (item.type !== 'chapter' && item.type !== 'section') {
-          totalHT += item.totalHT;
-          totalVAT += item.totalHT * (item.vatRate / 100);
+          totalHt += item.totalHT;
+          totalVat += item.totalHT * (parseFloat(item.vatRate) / 100);
         }
       });
       
-      const totalTTC = totalHT + totalVAT;
+      const totalTtc = totalHt + totalVat;
       
       setInvoice(prev => ({
         ...prev,
-        totalHT,
-        totalVAT,
-        totalTTC,
-        remainingAmount: totalTTC,
+        totalHT: totalHt,
+        totalVAT: totalVat,
+        totalTTC: totalTtc,
+        remainingAmount: totalTtc,
       }));
     } else {
       setInvoice(prev => ({
@@ -349,16 +350,14 @@ export default function InvoiceEditor() {
     }
   };
 
-  // Open item form for editing
+  // Open item form for editing - Migration vers useModalState
   const handleEditItem = (item: InvoiceItem) => {
-    setEditingItem(item);
-    
     if (item.type === 'chapter' || item.type === 'section') {
-      setSectionFormOpen(true);
+      sectionFormModal.actions.open(item);
     } else if (item.type === 'discount') {
-      setDiscountFormOpen(true);
+      discountFormModal.actions.open(item);
     } else {
-      setItemFormOpen(true);
+      itemFormModal.actions.open(item);
     }
   };
 
@@ -489,34 +488,34 @@ export default function InvoiceEditor() {
   // Get section items for hierarchical display
   const getSectionItems = (parentId?: string) => {
     if (!invoice.items) return [];
-    return invoice.items.filter(item => item.parentId === parentId);
+    return invoice.items.filter(item => item.parent === parentId);
   };
 
   // Get root level items (no parent)
   const getRootItems = () => {
     if (!invoice.items) return [];
-    return invoice.items.filter(item => !item.parentId);
+    return invoice.items.filter(item => !item.parent);
   };
 
   // Calculate section total
   const getSectionTotal = (sectionId: string) => {
-    if (!invoice.items) return { totalHT: 0, totalTTC: 0 };
+    if (!invoice.items) return { totalHt: 0, totalTtc: 0 };
     
-    let totalHT = 0;
-    let totalTTC = 0;
+    let totalHt = 0;
+    let totalTtc = 0;
     
     // Get all items in this section
-    const sectionItems = invoice.items.filter(item => item.parentId === sectionId);
+    const sectionItems = invoice.items.filter(item => item.parent === sectionId);
     
     // Sum up the totals
     sectionItems.forEach(item => {
       if (item.type !== 'chapter' && item.type !== 'section') {
-        totalHT += item.totalHT;
-        totalTTC += item.totalTTC;
+        totalHt += item.totalHT;
+        totalTtc += item.totalTTC;
       }
     });
     
-    return { totalHT, totalTTC };
+    return { totalHt, totalTtc };
   };
 
   // Toggle tax included/excluded view
@@ -546,33 +545,44 @@ export default function InvoiceEditor() {
     }
   };
 
-  // Handle delete invoice
-  const handleDeleteInvoice = async () => {
-    if (!invoice.id) return;
+  // Handle delete invoice - Version sécurisée avec useModalState
+  const handleDeleteInvoice = () => {
+    if (!invoice.id || !invoice.number) return;
     
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette facture ? Cette action est irréversible.")) {
-      return;
-    }
-    
-    try {
-      setSaving(true);
-      await deleteInvoice(invoice.id);
+    deleteConfirmModal.actions.open({
+      invoiceId: invoice.id,
+      title: `Supprimer la facture ${invoice.number}`
+    });
+  };
+
+  const handleConfirmDelete = createSafeSubmitHandler(
+    deleteConfirmModal,
+    async (data: { invoiceId: string; title: string }) => {
+      await deleteInvoice(data.invoiceId);
+      
       toast({
         title: "Succès",
         description: "La facture a été supprimée avec succès",
       });
-      navigate("/factures");
-    } catch (err) {
-      console.error("Error deleting invoice:", err);
+      
+      // Navigation sécurisée avec cleanup automatique
+      setTimeout(() => {
+        navigate("/factures");
+      }, 500);
+    },
+    () => {
+      // Succès - la modale se ferme automatiquement avec cleanup
+    },
+    (error) => {
+      console.error("Error deleting invoice:", error);
       setError("Erreur lors de la suppression de la facture");
       toast({
         title: "Erreur",
         description: "Impossible de supprimer la facture",
         variant: "destructive",
       });
-      setSaving(false);
     }
-  };
+  );
 
   if (loading) {
     return (
@@ -605,7 +615,7 @@ export default function InvoiceEditor() {
     return items.map((item) => {
       // For chapters and sections, render with their children
       if (item.type === 'chapter' || item.type === 'section') {
-        const { totalHT, totalTTC } = getSectionTotal(item.id);
+        const { totalHt, totalTtc } = getSectionTotal(item.id);
         const childItems = getSectionItems(item.id);
         const hasChildren = childItems.length > 0;
         
@@ -627,11 +637,11 @@ export default function InvoiceEditor() {
                 </div>
               </TableCell>
               <TableCell className="text-right font-medium">
-                {formatCurrency(totalHT)} MAD
+                {formatCurrency(totalHt)} MAD
               </TableCell>
               {showTaxIncluded && (
                 <TableCell className="text-right font-semibold">
-                  {formatCurrency(totalTTC)} MAD
+                  {formatCurrency(totalTtc)} MAD
                 </TableCell>
               )}
               <TableCell>
@@ -800,7 +810,7 @@ export default function InvoiceEditor() {
                     <Label htmlFor="clientAddress">Adresse client</Label>
                     <Textarea
                       id="clientAddress"
-                      value={invoice.clientAddress}
+                      value={invoice.clientAddress || ""}
                       onChange={(e) => handleInputChange("clientAddress", e.target.value)}
                       className="Beenaya-input resize-none"
                       rows={3}
@@ -832,7 +842,7 @@ export default function InvoiceEditor() {
                     <Label htmlFor="projectAddress">Adresse du projet</Label>
                     <Textarea
                       id="projectAddress"
-                      value={invoice.projectAddress}
+                      value={invoice.projectAddress || ""}
                       onChange={(e) => handleInputChange("projectAddress", e.target.value)}
                       className="Beenaya-input resize-none"
                       rows={3}
@@ -937,8 +947,7 @@ export default function InvoiceEditor() {
                     variant="outline" 
                     size="sm"
                     onClick={() => {
-                      setEditingItem(null);
-                      setSectionFormOpen(true);
+                      sectionFormModal.actions.open();
                     }}
                   >
                     <Plus className="w-4 h-4 mr-2" />
@@ -949,8 +958,7 @@ export default function InvoiceEditor() {
                     variant="outline" 
                     size="sm"
                     onClick={() => {
-                      setEditingItem(null);
-                      setItemFormOpen(true);
+                      itemFormModal.actions.open();
                     }}
                   >
                     <Plus className="w-4 h-4 mr-2" />
@@ -961,8 +969,7 @@ export default function InvoiceEditor() {
                     variant="outline" 
                     size="sm"
                     onClick={() => {
-                      setEditingItem(null);
-                      setDiscountFormOpen(true);
+                      discountFormModal.actions.open();
                     }}
                   >
                     <Percent className="w-4 h-4 mr-2" />
@@ -1022,8 +1029,7 @@ export default function InvoiceEditor() {
                     <Button 
                       variant="outline" 
                       onClick={() => {
-                        setEditingItem(null);
-                        setSectionFormOpen(true);
+                        sectionFormModal.actions.open();
                       }}
                     >
                       <Plus className="w-4 h-4 mr-2" />
@@ -1031,8 +1037,7 @@ export default function InvoiceEditor() {
                     </Button>
                     <Button 
                       onClick={() => {
-                        setEditingItem(null);
-                        setItemFormOpen(true);
+                        itemFormModal.actions.open();
                       }}
                     >
                       <Plus className="w-4 h-4 mr-2" />
@@ -1072,7 +1077,7 @@ export default function InvoiceEditor() {
                   <Label htmlFor="notes">Notes</Label>
                   <Textarea
                     id="notes"
-                    value={invoice.notes}
+                    value={invoice.notes || ""}
                     onChange={(e) => handleInputChange("notes", e.target.value)}
                     className="Beenaya-input min-h-[100px]"
                     placeholder="Notes additionnelles pour le client"
@@ -1082,7 +1087,7 @@ export default function InvoiceEditor() {
                   <Label htmlFor="termsAndConditions">Conditions de paiement</Label>
                   <Textarea
                     id="termsAndConditions"
-                    value={invoice.termsAndConditions}
+                    value={invoice.termsAndConditions || ""}
                     onChange={(e) => handleInputChange("termsAndConditions", e.target.value)}
                     className="Beenaya-input min-h-[100px]"
                     placeholder="Conditions de paiement, coordonnées bancaires, etc."
@@ -1204,31 +1209,61 @@ export default function InvoiceEditor() {
         </div>
       </div>
 
-      {/* Modals */}
+      {/* Modals - Migré vers useModalState pour éviter les gels d'UI */}
       <InvoiceItemForm
-        open={itemFormOpen}
-        onOpenChange={setItemFormOpen}
-        onSubmit={editingItem ? handleUpdateItem : handleAddItem}
-        item={editingItem || undefined}
-        isEditing={!!editingItem}
+        open={itemFormModal.isOpen}
+        onOpenChange={(open) => !open && itemFormModal.actions.close()}
+        onSubmit={itemFormModal.data ? handleUpdateItem : handleAddItem}
+        item={itemFormModal.data}
+        isEditing={!!itemFormModal.data}
       />
       
       <SectionForm
-        open={sectionFormOpen}
-        onOpenChange={setSectionFormOpen}
-        onSubmit={editingItem ? handleUpdateItem : handleAddItem}
-        item={editingItem || undefined}
-        isEditing={!!editingItem}
+        open={sectionFormModal.isOpen}
+        onOpenChange={(open) => !open && sectionFormModal.actions.close()}
+        onSubmit={itemFormModal.data ? handleUpdateItem : handleAddItem}
+        item={itemFormModal.data}
+        isEditing={!!itemFormModal.data}
       />
       
       <DiscountForm
-        open={discountFormOpen}
-        onOpenChange={setDiscountFormOpen}
-        onSubmit={editingItem ? handleUpdateItem : handleAddGlobalDiscount}
-        item={editingItem || undefined}
-        isEditing={!!editingItem}
+        open={discountFormModal.isOpen}
+        onOpenChange={(open) => !open && discountFormModal.actions.close()}
+        onSubmit={itemFormModal.data ? handleUpdateItem : handleAddGlobalDiscount}
+        item={itemFormModal.data}
+        isEditing={!!itemFormModal.data}
         invoiceTotal={invoice.totalHT || 0}
       />
+
+      {/* Modale de confirmation de suppression */}
+      {deleteConfirmModal.isOpen && deleteConfirmModal.data && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-red-600 mb-4">
+              {deleteConfirmModal.data.title}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Êtes-vous sûr de vouloir supprimer cette facture ? Cette action est irréversible.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={deleteConfirmModal.actions.close}
+                disabled={deleteConfirmModal.isSubmitting}
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => handleConfirmDelete(deleteConfirmModal.data)}
+                disabled={deleteConfirmModal.isSubmitting}
+              >
+                {deleteConfirmModal.isSubmitting ? "Suppression..." : "Supprimer"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

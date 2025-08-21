@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { formatCurrency } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -73,7 +74,7 @@ export function SendInvoiceModal({
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-600 dark:text-neutral-400">Montant TTC:</span>
-                <span className="font-semibold">{invoice.totalTTC.toFixed(2)} MAD</span>
+                <span className="font-semibold">{formatCurrency(invoice.totalTTC)} MAD</span>
               </div>
             </div>
           </div>

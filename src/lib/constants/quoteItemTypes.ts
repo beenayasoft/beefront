@@ -7,6 +7,26 @@ import { QuoteItemType, QuoteItemTypeConfig, BTPUnits } from '@/features/documen
  * Configuration complète des types d'éléments
  */
 export const QUOTE_ITEM_TYPE_CONFIGS: Record<QuoteItemType, QuoteItemTypeConfig> = {
+  [QuoteItemType.MATERIAL]: {
+    type: QuoteItemType.MATERIAL,
+    label: 'Matériau',
+    description: 'Matériaux, fournitures, équipements',
+    icon: '📦',
+    allowPricing: true,
+    allowQuantity: true,
+    defaultUnit: BTPUnits.UNIT,
+    color: 'bg-blue-50 border-blue-200 text-blue-800'
+  },
+  [QuoteItemType.LABOR]: {
+    type: QuoteItemType.LABOR,
+    label: 'Main d\'œuvre',
+    description: 'Prestations, main d\'œuvre, études',
+    icon: '⚡',
+    allowPricing: true,
+    allowQuantity: true,
+    defaultUnit: BTPUnits.HOUR,
+    color: 'bg-green-50 border-green-200 text-green-800'
+  },
   [QuoteItemType.PRODUCT]: {
     type: QuoteItemType.PRODUCT,
     label: 'Produit',
@@ -82,6 +102,16 @@ export const QUOTE_ITEM_TYPE_CONFIGS: Record<QuoteItemType, QuoteItemTypeConfig>
     allowPricing: false,
     allowQuantity: false,
     color: 'bg-gray-100 border-gray-300 text-gray-600'
+  },
+  [QuoteItemType.ADVANCE_PAYMENT]: {
+    type: QuoteItemType.ADVANCE_PAYMENT,
+    label: 'Acompte',
+    description: 'Paiement d\'avance',
+    icon: '💳',
+    allowPricing: true,
+    allowQuantity: false,
+    defaultUnit: BTPUnits.PERCENT,
+    color: 'bg-orange-50 border-orange-200 text-orange-800'
   }
 };
 
@@ -110,7 +140,7 @@ export const BTP_UNITS_LABELS: Record<BTPUnits, string> = {
 export const QUOTE_ITEM_CATEGORIES = {
   content: {
     label: 'Contenu',
-    types: [QuoteItemType.PRODUCT, QuoteItemType.SERVICE, QuoteItemType.WORK]
+    types: [QuoteItemType.MATERIAL, QuoteItemType.LABOR, QuoteItemType.PRODUCT, QuoteItemType.SERVICE, QuoteItemType.WORK]
   },
   structure: {
     label: 'Structure',
@@ -122,7 +152,7 @@ export const QUOTE_ITEM_CATEGORIES = {
   },
   commercial: {
     label: 'Commercial',
-    types: [QuoteItemType.DISCOUNT]
+    types: [QuoteItemType.DISCOUNT, QuoteItemType.ADVANCE_PAYMENT]
   }
 };
 
@@ -130,26 +160,38 @@ export const QUOTE_ITEM_CATEGORIES = {
  * Fonction utilitaire pour obtenir la configuration d'un type
  */
 export const getQuoteItemTypeConfig = (type: QuoteItemType): QuoteItemTypeConfig => {
-  return QUOTE_ITEM_TYPE_CONFIGS[type];
+  return QUOTE_ITEM_TYPE_CONFIGS[type] || {
+    type,
+    label: 'Type inconnu',
+    description: 'Type non configuré',
+    icon: '❓',
+    allowPricing: true,
+    allowQuantity: true,
+    defaultUnit: BTPUnits.UNIT,
+    color: 'bg-gray-100 border-gray-300 text-gray-600'
+  };
 };
 
 /**
  * Fonction utilitaire pour vérifier si un type permet la tarification
  */
 export const allowsPricing = (type: QuoteItemType): boolean => {
-  return QUOTE_ITEM_TYPE_CONFIGS[type].allowPricing;
+  const config = QUOTE_ITEM_TYPE_CONFIGS[type];
+  return config ? config.allowPricing : true; // Par défaut, autorisé
 };
 
 /**
  * Fonction utilitaire pour vérifier si un type permet les quantités
  */
 export const allowsQuantity = (type: QuoteItemType): boolean => {
-  return QUOTE_ITEM_TYPE_CONFIGS[type].allowQuantity;
+  const config = QUOTE_ITEM_TYPE_CONFIGS[type];
+  return config ? config.allowQuantity : true; // Par défaut, autorisé
 };
 
 /**
  * Fonction utilitaire pour obtenir l'unité par défaut
  */
 export const getDefaultUnit = (type: QuoteItemType): BTPUnits | undefined => {
-  return QUOTE_ITEM_TYPE_CONFIGS[type].defaultUnit;
+  const config = QUOTE_ITEM_TYPE_CONFIGS[type];
+  return config ? config.defaultUnit : BTPUnits.UNIT; // Par défaut, unité
 };

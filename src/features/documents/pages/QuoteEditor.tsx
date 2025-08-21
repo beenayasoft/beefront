@@ -3,9 +3,9 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import QuoteForm from '../components/quotes/QuoteForm';
+import QuoteEditWizard from '../components/quotes/modern/QuoteEditWizard';
 import { quotesApi } from '../api/quotes';
-import { Quote, CreateQuoteData } from '../types/quotes.types';
+import { Quote } from '../types/quotes.types';
 import { handleApiError } from '@/lib/api/client';
 
 /**
@@ -18,10 +18,7 @@ const QuoteEditor: React.FC = () => {
   
   // États pour les données
   const [quote, setQuote] = useState<Quote | null>(null);
-  const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
-  const [vatRates, setVatRates] = useState<{ code: string; name: string; rate: number; isDefault: boolean }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   // Référence pour l'AbortController
@@ -49,14 +46,6 @@ const QuoteEditor: React.FC = () => {
         const quoteData = await quotesApi.getQuoteDetails(id, abortController.signal);
         setQuote(quoteData);
         
-        // Charger les taux de TVA
-        const rates = await quotesApi.getVATRates();
-        setVatRates(rates);
-        
-        // Charger les clients (à implémenter avec l'API clients)
-        // Cette partie dépend de l'API disponible pour les clients
-        // Pour l'instant, on utilise un tableau vide
-        // setClients(await clientsApi.getClients());
       } catch (error) {
         // Ne pas afficher d'erreur si la requête a été annulée
         if (error instanceof Error && error.name === 'AbortError') {
@@ -82,34 +71,41 @@ const QuoteEditor: React.FC = () => {
     };
   }, [id]);
   
-  // Gérer la soumission du formulaire
-  const handleSubmit = async (data: CreateQuoteData) => {
-    if (!id) return;
-    
-    setIsSubmitting(true);
-    setError(null);
-    
-    try {
-      // Mettre à jour le devis
-      const updatedQuote = await quotesApi.updateQuote(id, data);
-      
-      // Rediriger vers la page du devis mis à jour
-      navigate(`/devis/${updatedQuote.id}`);
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour du devis:', error);
-      setError(handleApiError(error, 'Erreur lors de la mise à jour du devis'));
-      setIsSubmitting(false);
-    }
+  // Gérer la sauvegarde réussie
+  const handleQuoteSaved = (quoteId: string) => {
+    navigate(`/devis/${quoteId}`);
+  };
+  
+  // Gérer l'annulation
+  const handleCancel = () => {
+    navigate(`/devis/${id}`);
   };
   
   // Si chargement en cours
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="h-64 bg-gray-100 rounded mb-4"></div>
-          <div className="h-96 bg-gray-100 rounded"></div>
+      <div className="p-6 space-y-6">
+        {/* Header de chargement */}
+        <div className="Beenaya-card Beenaya-gradient text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="h-8 bg-white/20 rounded w-48 mb-2 animate-pulse"></div>
+              <div className="h-4 bg-white/10 rounded w-64 animate-pulse"></div>
+            </div>
+            
+            <div className="flex space-x-2">
+              <div className="h-10 bg-white/20 rounded w-24 animate-pulse"></div>
+              <div className="h-10 bg-white rounded w-32 animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Contenu de chargement */}
+        <div className="container mx-auto max-w-4xl space-y-6">
+          <div className="h-6 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+          <div className="h-2 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-64 bg-gray-100 rounded animate-pulse"></div>
+          <div className="h-96 bg-gray-100 rounded animate-pulse"></div>
         </div>
       </div>
     );
@@ -118,42 +114,16 @@ const QuoteEditor: React.FC = () => {
   // Si erreur de chargement
   if (error && !quote) {
     return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="text-red-500 text-center">
-            <p>Erreur lors du chargement du devis</p>
-            <p className="text-sm">{error}</p>
-            <button
-              onClick={() => window.history.back()}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Retour
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  
-  return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="Beenaya-card Beenaya-gradient text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Modifier le devis {quote?.number}</h1>
-            <p className="text-Beenaya-100 mt-1">
-              Éditez les détails et éléments de votre devis
-            </p>
-          </div>
-          
-          <div className="flex space-x-2">
-            <button
-              onClick={() => navigate(`/devis/${id}`)}
-              className="px-4 py-2 bg-white/20 text-white rounded-md hover:bg-white/30 backdrop-blur-sm"
-            >
-              Prévisualiser
-            </button>
+      <div className="p-6 space-y-6">
+        {/* Header d'erreur */}
+        <div className="Beenaya-card Beenaya-gradient text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Erreur de chargement</h1>
+              <p className="text-Beenaya-100 mt-1">
+                Impossible de charger le devis
+              </p>
+            </div>
             
             <button
               onClick={() => navigate('/devis')}
@@ -163,20 +133,52 @@ const QuoteEditor: React.FC = () => {
             </button>
           </div>
         </div>
+        
+        {/* Message d'erreur */}
+        <div className="container mx-auto max-w-4xl">
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="text-red-500 text-center">
+              <div className="mb-4">
+                <svg className="w-16 h-16 mx-auto text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium mb-2">Erreur lors du chargement du devis</h3>
+              <p className="text-sm text-gray-600 mb-4">{error}</p>
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Réessayer
+                </button>
+                <button
+                  onClick={() => navigate('/devis')}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                >
+                  Retour
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      
-      {quote && (
-        <QuoteForm
-          quote={quote}
-          onSubmit={handleSubmit}
-          isLoading={isSubmitting}
-          error={error}
-          clients={clients}
-          vatRates={vatRates}
-        />
-      )}
-    </div>
-  );
+    );
+  }
+  
+  // Si le devis est chargé, afficher le wizard
+  if (quote) {
+    return (
+      <QuoteEditWizard
+        quote={quote}
+        onQuoteSaved={handleQuoteSaved}
+        onCancel={handleCancel}
+      />
+    );
+  }
+  
+  // Cas de fallback (ne devrait jamais arriver)
+  return null;
 };
 
 export default QuoteEditor;

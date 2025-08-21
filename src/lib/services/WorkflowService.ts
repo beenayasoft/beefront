@@ -3,15 +3,14 @@
  * Synchronisé avec la logique backend du Document-Service
  */
 
+// ✅ Statuts alignés avec le contrat backend document-service (CONTRAT_DONNEES.md)
 export type DocumentStatus = 
-  | 'draft' 
-  | 'pending_validation' 
-  | 'validated' 
-  | 'sent' 
-  | 'accepted' 
-  | 'rejected' 
-  | 'cancelled' 
-  | 'expired';
+  | 'draft'      // Brouillon
+  | 'sent'       // Envoyé
+  | 'accepted'   // Accepté
+  | 'rejected'   // Refusé
+  | 'expired'    // Expiré
+  | 'cancelled'; // Annulé
 
 export type DocumentType = 'quote' | 'invoice';
 

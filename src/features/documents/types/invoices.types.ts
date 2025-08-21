@@ -70,10 +70,12 @@ export interface Invoice {
   number: string;
   status: InvoiceStatus;
   statusDisplay?: string; // ✅ Ajouté pour affichage
-  // ❌ clientId et projectId supprimés - isolation automatique par schéma tenant
+  // IDs nécessaires pour l'éditeur
+  clientId?: string;
   clientName: string;
   clientAddress?: string;
   clientInfo?: any; // ✅ Ajouté pour cohérence
+  projectId?: string;
   projectName?: string;
   projectAddress?: string;
   projectReference?: string; // ✅ Ajouté
@@ -156,4 +158,35 @@ export interface InvoiceStats {
   paymentRate?: number; // ✅ Ajouté - taux de paiement
   averageAmount?: number; // ✅ Ajouté - montant moyen
   averagePaymentDelay: number; // Délai moyen de paiement en jours
+}
+
+// Interface pour la création d'une facture
+export interface CreateInvoiceData {
+  tier: string; // ID du client
+  client_name: string;
+  client_address?: string;
+  project_name?: string;
+  project_address?: string;
+  project_reference?: string;
+  issue_date: string;
+  due_date?: string;
+  payment_terms: number;
+  notes?: string;
+  terms_and_conditions?: string;
+  items: CreateInvoiceItemData[];
+}
+
+// Interface pour la création d'un élément de facture
+export interface CreateInvoiceItemData {
+  type: 'material' | 'labor' | 'work' | 'chapter' | 'section' | 'discount' | 'advance_payment';
+  parent?: string;
+  reference?: string;
+  designation: string;
+  description?: string;
+  unit?: string;
+  quantity: number;
+  unit_price: number;
+  discount?: number;
+  vat_rate: string;
+  work_id?: string;
 }

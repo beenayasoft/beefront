@@ -108,7 +108,7 @@ const tiersApiInternal = {
    */
   getTierDetails: async (id: string, signal?: AbortSignal): Promise<Tier> => {
     try {
-      const response = await apiClient.get(`/api/tiers/${id}/`, { 
+      const response = await apiClient.get(`/api/tiers/${encodeURIComponent(id)}/`, { 
         signal
       });
       return response.data;
@@ -375,9 +375,24 @@ const opportunitiesApi = {
   createOpportunity: async (data: CreateOpportunityData): Promise<Opportunity> => {
     try {
       // Log des données envoyées pour debug
-      console.log('📤 Création opportunité - Données envoyées:', data);
+      console.log('📤 Création opportunité - Données envoyées (snake_case):', data);
       
-      const response = await apiClient.post('/api/opportunities/', data);
+      // Transformer les données snake_case vers camelCase pour le sérialiseur Django
+      const transformedData = {
+        name: data.name,
+        tierId: data.tier, // tier → tierId
+        stage: data.stage,
+        estimatedAmount: data.estimated_amount, // estimated_amount → estimatedAmount  
+        probability: data.probability,
+        expectedCloseDate: data.expected_close_date, // expected_close_date → expectedCloseDate
+        source: data.source,
+        description: data.description,
+        assignedTo: data.assigned_to // assigned_to → assignedTo
+      };
+      
+      console.log('📦 Données transformées (camelCase):', transformedData);
+      
+      const response = await apiClient.post('/api/opportunities/', transformedData);
       
       console.log('✅ Création opportunité - Réponse:', response.data);
       return response.data;

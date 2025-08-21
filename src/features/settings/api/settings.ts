@@ -112,10 +112,34 @@ export const settingsApi = {
   // === NUMÉROTATION DES DOCUMENTS ===
   
   /**
+   * Récupérer la configuration de numérotation pour un type de document
+   */
+  getDocumentNumbering: async (documentType: string): Promise<DocumentNumbering | null> => {
+    try {
+      // Utiliser current_tenant_info qui fonctionne avec l'auth JWT
+      const tenantInfo = await settingsApi.getCurrentTenantInfo();
+      const numberingSettings = tenantInfo.document_numbering?.find(
+        (numbering) => numbering.document_type === documentType
+      );
+      return numberingSettings || null;
+    } catch (error) {
+      console.error(`Erreur lors de la récupération de la numérotation pour ${documentType}:`, error);
+      return null;
+    }
+  },
+
+  /**
    * Mettre à jour la configuration de numérotation des documents
    */
   updateDocumentNumbering: async (documentNumbering: DocumentNumbering[]): Promise<TenantInfo> => {
-    return settingsApi.updateCurrentTenant({ document_numbering: documentNumbering });
+    const result = await settingsApi.updateCurrentTenant({ document_numbering: documentNumbering });
+    
+    // Notifier les composants du changement
+    window.dispatchEvent(new CustomEvent('numberingSettingsChanged', { 
+      detail: { documentNumbering } 
+    }));
+    
+    return result;
   },
 
   /**

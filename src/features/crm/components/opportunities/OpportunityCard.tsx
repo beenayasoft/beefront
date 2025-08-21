@@ -197,7 +197,7 @@ export function OpportunityCard({
               <DollarSign className="w-3 h-3" />
               <span>Montant:</span>
             </div>
-            <span className="font-semibold">{formatCurrency(opportunity.estimatedAmount || 0)} MAD</span>
+            <span className="font-semibold">{formatCurrency(opportunity.estimatedAmount || 0, 2, true)} MAD</span>
           </div>
           
           <div className="flex items-center justify-between text-xs">

@@ -6,6 +6,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { CreateQuoteData, CreateQuoteItemData } from '../types/quotes.types';
 import { ClientOption, OpportunityOption } from '@/features/crm/types/crm.types';
 import { quotesApi } from '../api/quotes';
+import { settingsApi } from '@/features/settings/api/settings';
+import { formatNumberWithSettings, getDocumentFormat, getNextSequentialNumber } from '../utils/numberFormatting';
 
 export type WizardStep = 'client' | 'opportunity' | 'project' | 'items' | 'review';
 
@@ -35,6 +37,13 @@ export interface QuoteWizardState {
   // États
   isValid: Record<WizardStep, boolean>;
   isDirty: boolean;
+  
+  // Données de pré-remplissage
+  initialData?: {
+    preselectedTierId?: string;
+    opportunityId?: string;
+    opportunityName?: string;
+  };
 }
 
 export interface QuoteWizardActions {
@@ -55,7 +64,10 @@ export interface QuoteWizardActions {
   updateItem: (index: number, item: CreateQuoteItemData) => void;
   
   // Génération finale
-  generateQuoteData: () => CreateQuoteData;
+  generateQuoteData: () => Promise<CreateQuoteData>;
+  
+  // Gestion du compteur
+  incrementQuoteCounter: () => Promise<void>;
   
   // Validation
   validateStep: (step: WizardStep) => boolean;
@@ -67,8 +79,10 @@ export interface QuoteWizardActions {
 
 // Workflows selon le type de client
 const PROSPECT_WORKFLOW: WizardStep[] = ['client', 'opportunity', 'items', 'review'];
-const CLIENT_WORKFLOW: WizardStep[] = ['client', 'project', 'items', 'review'];
 const DEFAULT_WORKFLOW: WizardStep[] = ['client', 'opportunity', 'project', 'items', 'review'];
+
+// Note: CLIENT_WORKFLOW supprimé - on utilise maintenant DEFAULT_WORKFLOW pour tous les clients
+// Ceci garantit que l'étape opportunité est toujours présente dans le workflow
 
 const INITIAL_STATE: QuoteWizardState = {
   currentStep: 'client',
@@ -95,8 +109,36 @@ const INITIAL_STATE: QuoteWizardState = {
   isDirty: false
 };
 
-export const useQuoteWizard = (): QuoteWizardState & QuoteWizardActions => {
-  const [state, setState] = useState<QuoteWizardState>(INITIAL_STATE);
+interface InitialData {
+  preselectedTierId?: string;
+  opportunityId?: string;
+  opportunityName?: string;
+}
+
+export const useQuoteWizard = (initialData?: InitialData): QuoteWizardState & QuoteWizardActions => {
+  const [state, setState] = useState<QuoteWizardState>(() => {
+    // Créer l'état initial avec les données pré-remplies
+    let initialState = { ...INITIAL_STATE };
+    
+    if (initialData?.preselectedTierId) {
+      console.log('📋 Pré-remplissage du wizard avec tierId:', initialData.preselectedTierId);
+      // Le client sera récupéré et défini par ClientSelectionStep
+      initialState.isValid.client = false; // Sera mis à jour après récupération
+    }
+    
+    if (initialData?.opportunityId) {
+      console.log('📋 Pré-remplissage du wizard avec opportunityId:', initialData.opportunityId);
+      // L'opportunité sera récupérée et définie par OpportunityStep
+      initialState.isValid.opportunity = false; // Sera mis à jour après récupération
+    }
+    
+    // Stocker les données initiales dans l'état
+    if (initialData) {
+      initialState.initialData = initialData;
+    }
+    
+    return initialState;
+  });
   
   // Validation des étapes (accepte un état optionnel pour validation avec nouvel état)
   const validateStep = useCallback((step: WizardStep, stateToValidate?: QuoteWizardState): boolean => {
@@ -184,19 +226,19 @@ export const useQuoteWizard = (): QuoteWizardState & QuoteWizardActions => {
       let isProspectWorkflow: boolean;
       
       if (client?.relation === 'prospect') {
-        // Workflow prospect : Pas d'étape projet (se crée automatiquement si opportunité gagnée)
+        // Workflow prospect : Pas d'étape projet séparée (se crée automatiquement depuis l'opportunité)
         newSteps = PROSPECT_WORKFLOW;
         isProspectWorkflow = true;
         console.log('🎯 Workflow PROSPECT activé : Client → Opportunité → Articles → Review');
-      } else if (client?.relation === 'client') {
-        // Workflow client existant : Projet direct avec auto-génération de référence
-        newSteps = CLIENT_WORKFLOW;
+      } else {
+        // Workflow standard : toujours passer par opportunité puis projet
+        newSteps = DEFAULT_WORKFLOW;
         isProspectWorkflow = false;
-        console.log('🏗️ Workflow CLIENT activé : Client → Projet → Articles → Review');
+        console.log('📋 Workflow STANDARD activé : Client → Opportunité → Projet → Articles → Review');
         
-        // Auto-générer la référence et pré-remplir les détails pour les nouveaux clients
-        if (client?.id !== prev.client?.id) {
-          // Appeler l'API pour générer la référence de façon asynchrone
+        // Pour les clients existants, on peut pré-générer la référence projet si besoin
+        if (client?.relation === 'client' && client?.id !== prev.client?.id) {
+          // Appeler l'API pour pré-générer la référence de façon asynchrone
           quotesApi.getNextProjectReference().then(reference => {
             setState(current => updateValidation({
               ...current,
@@ -210,19 +252,14 @@ export const useQuoteWizard = (): QuoteWizardState & QuoteWizardActions => {
               }
             }));
             
-            console.log('📋 Auto-génération référence projet pour client:', {
+            console.log('📋 Pré-génération référence projet pour client existant:', {
               clientName: client.name,
               projectReference: reference
             });
           }).catch(error => {
-            console.error('Erreur lors de l\'auto-génération de la référence projet:', error);
+            console.error('Erreur lors de la pré-génération de la référence projet:', error);
           });
         }
-      } else {
-        // Workflow par défaut (rétrocompatibilité)
-        newSteps = DEFAULT_WORKFLOW;
-        isProspectWorkflow = false;
-        console.log('📋 Workflow DEFAULT activé');
       }
       
       // Ajuster l'étape courante si elle n'existe plus dans le nouveau workflow
@@ -321,9 +358,33 @@ export const useQuoteWizard = (): QuoteWizardState & QuoteWizardActions => {
   }, [updateValidation]);
   
   // Génération des données finales
-  const generateQuoteData = useCallback((): CreateQuoteData => {
+  const generateQuoteData = useCallback(async (): Promise<CreateQuoteData> => {
     if (!state.client || !state.opportunity) {
       throw new Error('Client et opportunité requis pour générer le devis');
+    }
+    
+    // Générer le numéro formaté selon la configuration
+    let formattedNumber: string;
+    try {
+      // Récupérer les informations du tenant pour obtenir la configuration de numérotation
+      const tenantInfo = await settingsApi.getCurrentTenantInfo();
+      const numberingSettings = tenantInfo.document_numbering || [];
+      
+      // Obtenir le format configuré pour les devis
+      const format = getDocumentFormat(numberingSettings, 'quote');
+      
+      // Obtenir le prochain numéro séquentiel
+      const nextNumber = getNextSequentialNumber(numberingSettings, 'quote');
+      
+      // Formater le numéro final
+      formattedNumber = formatNumberWithSettings(format, nextNumber);
+      
+      console.log('📊 CREATION DEVIS - Numéro généré:', formattedNumber);
+    } catch (error) {
+      console.error('Erreur lors de la génération du numéro formaté:', error);
+      // Fallback : utiliser l'API backend
+      formattedNumber = await quotesApi.getNextQuoteNumber();
+      console.log('📊 CREATION DEVIS - Numéro fallback:', formattedNumber);
     }
     
     return {
@@ -340,7 +401,8 @@ export const useQuoteWizard = (): QuoteWizardState & QuoteWizardActions => {
       validity_period: state.validityPeriod,
       notes: state.projectDetails.notes,
       terms_and_conditions: state.termsAndConditions,
-      items: state.items
+      items: state.items,
+      number: formattedNumber // Ajouter le numéro formaté
     };
   }, [state]);
   
@@ -351,6 +413,44 @@ export const useQuoteWizard = (): QuoteWizardState & QuoteWizardActions => {
     return requiredSteps.every(step => validateStep(step, currentState));
   }, [validateStep, state]);
   
+  // Incrémentation du compteur après création réussie
+  const incrementQuoteCounter = useCallback(async (): Promise<void> => {
+    try {
+      // Récupérer les informations du tenant pour obtenir la configuration de numérotation
+      const tenantInfo = await settingsApi.getCurrentTenantInfo();
+      const numberingSettings = tenantInfo.document_numbering || [];
+      
+      // Trouver la configuration pour les devis
+      const quoteSettings = numberingSettings.find(s => s.document_type === 'quote');
+      
+      if (quoteSettings && quoteSettings.id) {
+        // Incrémenter le compteur via l'API des settings
+        const updatedSettings = numberingSettings.map(setting => {
+          if (setting.document_type === 'quote') {
+            return {
+              ...setting,
+              next_number: (setting.next_number || 1) + 1
+            };
+          }
+          return setting;
+        });
+        
+        // Mettre à jour la configuration de numérotation
+        await settingsApi.updateDocumentNumbering(updatedSettings);
+        
+        console.log('📈 Compteur incrémenté:', {
+          ancien: quoteSettings.next_number,
+          nouveau: (quoteSettings.next_number || 1) + 1
+        });
+      } else {
+        console.warn('⚠️ Configuration de numérotation pour devis non trouvée');
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'incrémentation du compteur:', error);
+      throw error;
+    }
+  }, []);
+
   // Reset
   const reset = useCallback(() => {
     setState(INITIAL_STATE);
@@ -371,6 +471,7 @@ export const useQuoteWizard = (): QuoteWizardState & QuoteWizardActions => {
     removeItem,
     updateItem,
     generateQuoteData,
+    incrementQuoteCounter,
     validateStep,
     validateAll,
     reset

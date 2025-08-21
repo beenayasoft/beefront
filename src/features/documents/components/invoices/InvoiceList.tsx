@@ -22,6 +22,7 @@ import { formatCurrency } from "@/lib/utils";
 
 interface InvoiceListProps {
   invoices: Invoice[];
+  loading?: boolean;
   onView?: (invoice: Invoice) => void;
   onEdit?: (invoice: Invoice) => void;
   onDelete?: (invoice: Invoice) => void;
@@ -33,6 +34,7 @@ interface InvoiceListProps {
 
 export function InvoiceList({
   invoices,
+  loading = false,
   onView,
   onEdit,
   onDelete,
@@ -108,7 +110,22 @@ export function InvoiceList({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {invoices.length === 0 ? (
+          {loading ? (
+            // État de chargement - afficher des lignes skeleton
+            Array.from({ length: 5 }).map((_, index) => (
+              <TableRow key={`skeleton-${index}`}>
+                <TableCell><div className="h-6 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+                <TableCell><div className="h-4 bg-gray-200 rounded animate-pulse"></div></TableCell>
+              </TableRow>
+            ))
+          ) : invoices.length === 0 ? (
             <TableRow>
               <TableCell colSpan={9} className="text-center py-8 text-neutral-500">
                 Aucune facture trouvée

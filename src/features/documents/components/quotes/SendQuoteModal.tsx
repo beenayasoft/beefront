@@ -42,12 +42,24 @@ export function SendQuoteModal({
     message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSend({
+    e.stopPropagation();
+    
+    const dataToSend = {
       recipient_email: formData.recipient_email.trim(),
       message: formData.message.trim() || undefined,
-    });
+    };
+    
+    console.log('📧 SendQuoteModal - Données du formulaire:', dataToSend);
+    console.log('📧 SendQuoteModal - formData original:', formData);
+    
+    try {
+      await onSend(dataToSend);
+      console.log('📧 SendQuoteModal - onSend terminé');
+    } catch (error) {
+      console.error('📧 SendQuoteModal - Erreur dans onSend:', error);
+    }
   };
 
   // Fonction utilitaire pour s'assurer que totalTtc est un nombre
@@ -76,7 +88,7 @@ export function SendQuoteModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           {/* Informations du devis */}
           <div className="p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
             <div className="space-y-1">
@@ -136,14 +148,15 @@ export function SendQuoteModal({
               Annuler
             </Button>
             <Button
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               disabled={loading || !formData.recipient_email.trim()}
               className="Beenaya-button-primary"
             >
               {loading ? "Envoi..." : "Envoyer le devis"}
             </Button>
           </DialogFooter>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -7,16 +7,32 @@ import { Invoice, InvoiceItem, Payment, InvoiceStatus, InvoiceStats } from '../t
 
 // Types pour les réponses API
 export interface CreateInvoiceRequest {
+  number?: string; // ✅ Numéro de facture à utiliser (optionnel)
   tier: string;
   client_name?: string;
   client_address?: string;
   project_name?: string;
   project_address?: string;
   project_reference?: string;
+  quote_id?: string; // Référence vers le devis d'origine
+  quote_number?: string; // Numéro du devis d'origine
   issue_date: string;
   due_date?: string;
   payment_terms?: number;
-  items?: Omit<InvoiceItem, 'id'>[];
+  items?: {
+    type: string;
+    parent?: string | null;
+    position: number;
+    reference?: string;
+    designation: string;
+    description?: string;
+    unit?: string;
+    quantity: number;
+    unit_price: number; // ✅ snake_case
+    discount: number;
+    vat_rate: string; // ✅ snake_case
+    work_id?: string; // ✅ snake_case
+  }[];
   notes?: string;
   terms_and_conditions?: string;
 }
@@ -106,8 +122,8 @@ const transformInvoiceItem = (item: any): InvoiceItem => ({
   discount: item.discount || 0,
   vatRate: String(item.vatRate || '20'), // ✅ Conversion vers string
   vatRateDisplay: item.vatRateDisplay,
-  totalHt: item.totalHt || 0,
-  totalTtc: item.totalTtc || 0,
+  totalHT: item.totalHt || 0,
+  totalTTC: item.totalTtc || 0,
   workId: item.workId,
   invoiceNumber: item.invoiceNumber,
   invoice: item.invoice,
@@ -132,47 +148,70 @@ const transformPayment = (payment: any): Payment => ({
 /**
  * Transforme les données d'une facture du format backend vers frontend
  */
-const transformInvoice = (invoice: any): Invoice => ({
-  id: invoice.id,
-  number: invoice.number,
-  status: invoice.status,
-  statusDisplay: invoice.statusDisplay,
-  // ❌ clientId et projectId supprimés - isolation automatique par schéma tenant
-  clientName: invoice.clientName,
-  clientAddress: invoice.clientAddress,
-  clientInfo: invoice.clientInfo,
-  projectName: invoice.projectName,
-  projectAddress: invoice.projectAddress,
-  projectReference: invoice.projectReference,
-  projectInfo: invoice.projectInfo,
-  issueDate: invoice.issueDate,
-  issueDateFormatted: invoice.issueDateFormatted,
-  dueDate: invoice.dueDate,
-  dueDateFormatted: invoice.dueDateFormatted,
-  paymentTerms: invoice.paymentTerms || 30,
-  items: invoice.items?.map(transformInvoiceItem),
-  notes: invoice.notes,
-  termsAndConditions: invoice.termsAndConditions,
-  isCreditNote: invoice.isCreditNote,
-  totalHt: invoice.totalHt || 0,
-  totalVat: invoice.totalVat || 0,
-  totalTtc: invoice.totalTtc || 0,
-  paidAmount: invoice.paidAmount || 0,
-  remainingAmount: invoice.remainingAmount || 0,
-  itemsCount: invoice.itemsCount,
-  vatBreakdown: invoice.vatBreakdown,
-  payments: invoice.payments?.map(transformPayment),
-  quoteId: invoice.quoteId,
-  quoteNumber: invoice.quoteNumber,
-  quoteInfo: invoice.quoteInfo,
-  creditNoteId: invoice.creditNoteId,
-  originalInvoiceId: invoice.originalInvoiceId,
-  originalInvoiceInfo: invoice.originalInvoiceInfo,
-  createdAt: invoice.createdAt,
-  updatedAt: invoice.updatedAt,
-  createdBy: invoice.createdBy,
-  updatedBy: invoice.updatedBy,
-});
+const transformInvoice = (invoice: any): Invoice => {
+  // Log pour débugger les valeurs reçues du backend
+  console.log('🔍 Transform Invoice - Données reçues:', {
+    id: invoice.id,
+    number: invoice.number,
+    totalHt: invoice.totalHt,
+    totalHT: invoice.totalHT,
+    total_ht: invoice.total_ht,
+    totalVat: invoice.totalVat,
+    totalVAT: invoice.totalVAT,
+    total_vat: invoice.total_vat,
+    totalTtc: invoice.totalTtc,
+    totalTTC: invoice.totalTTC,
+    total_ttc: invoice.total_ttc,
+    clientName: invoice.clientName,
+    client_name: invoice.client_name,
+    items: invoice.items?.length
+  });
+
+  return {
+    id: invoice.id,
+    number: invoice.number,
+    status: invoice.status,
+    statusDisplay: invoice.statusDisplay,
+    // Ajouter les IDs nécessaires pour l'éditeur
+    clientId: invoice.tier || invoice.clientId || invoice.client_id,
+    clientName: invoice.clientName || invoice.client_name,
+    clientAddress: invoice.clientAddress || invoice.client_address,
+    clientInfo: invoice.clientInfo || invoice.client_info,
+    projectId: invoice.projectId || invoice.project_id,
+    projectName: invoice.projectName || invoice.project_name,
+    projectAddress: invoice.projectAddress || invoice.project_address,
+    projectReference: invoice.projectReference || invoice.project_reference,
+    projectInfo: invoice.projectInfo || invoice.project_info,
+    issueDate: invoice.issueDate || invoice.issue_date,
+    issueDateFormatted: invoice.issueDateFormatted || invoice.issue_date_formatted,
+    dueDate: invoice.dueDate || invoice.due_date,
+    dueDateFormatted: invoice.dueDateFormatted || invoice.due_date_formatted,
+    paymentTerms: invoice.paymentTerms || invoice.payment_terms || 30,
+    items: invoice.items?.map(transformInvoiceItem),
+    notes: invoice.notes,
+    termsAndConditions: invoice.termsAndConditions || invoice.terms_and_conditions,
+    isCreditNote: invoice.isCreditNote || invoice.is_credit_note,
+    // Gérer les différentes variantes de nommage pour les totaux
+    totalHT: invoice.totalHT || invoice.totalHt || invoice.total_ht || 0,
+    totalVAT: invoice.totalVAT || invoice.totalVat || invoice.total_vat || 0,
+    totalTTC: invoice.totalTTC || invoice.totalTtc || invoice.total_ttc || 0,
+    paidAmount: invoice.paidAmount || invoice.paid_amount || 0,
+    remainingAmount: invoice.remainingAmount || invoice.remaining_amount || 0,
+    itemsCount: invoice.itemsCount || invoice.items_count || invoice.items?.length || 0,
+    vatBreakdown: invoice.vatBreakdown || invoice.vat_breakdown,
+    payments: invoice.payments?.map(transformPayment),
+    quoteId: invoice.quoteId || invoice.quote_id,
+    quoteNumber: invoice.quoteNumber || invoice.quote_number,
+    quoteInfo: invoice.quoteInfo || invoice.quote_info,
+    creditNoteId: invoice.creditNoteId || invoice.credit_note_id,
+    originalInvoiceId: invoice.originalInvoiceId || invoice.original_invoice_id,
+    originalInvoiceInfo: invoice.originalInvoiceInfo || invoice.original_invoice_info,
+    createdAt: invoice.createdAt || invoice.created_at,
+    updatedAt: invoice.updatedAt || invoice.updated_at,
+    createdBy: invoice.createdBy || invoice.created_by,
+    updatedBy: invoice.updatedBy || invoice.updated_by,
+  };
+};
 
 /**
  * Service API pour les factures
@@ -342,8 +381,8 @@ const invoicesApi = {
    */
   validateInvoice: async (id: string, data?: { issue_date?: string }): Promise<Invoice> => {
     try {
-      const response = await apiClient.post(`/api/invoices/${id}/validate/`, data || {});
-      return response.data;
+      const response = await apiClient.post(`/invoices/${id}/validate/`, data || {});
+      return transformInvoice(response.data);
     } catch (error) {
       console.error(`Erreur lors de la validation de la facture ${id}:`, error);
       throw error;
@@ -423,7 +462,27 @@ const invoicesApi = {
    */
   sendInvoice: async (id: string, emailData: { recipient_email: string; message?: string }): Promise<void> => {
     try {
-      await apiClient.post(`/api/invoices/${id}/send/`, emailData);
+      console.log('📤 sendInvoice - Début de la fonction');
+      console.log('📤 sendInvoice - ID:', id);
+      console.log('📤 sendInvoice - Données reçues:', emailData);
+      
+      // Créer un objet propre sans propriétés héritées (comme pour les devis)
+      const cleanData = {
+        action: 'send',
+        recipient_email: emailData.recipient_email,
+        message: emailData.message
+      };
+      
+      console.log('📤 sendInvoice - Données nettoyées:', cleanData);
+      console.log('📤 sendInvoice - URL complète:', `/invoices/${id}/send/`);
+      
+      // Essai avec des headers explicites pour forcer JSON
+      await apiClient.post(`/invoices/${id}/send/`, cleanData, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log('📤 sendInvoice - Succès !');
     } catch (error) {
       console.error(`Erreur lors de l'envoi de la facture ${id}:`, error);
       throw error;
@@ -478,8 +537,9 @@ const invoicesApi = {
    */
   generateInvoicePdf: async (id: string, data?: { template?: string }): Promise<Blob> => {
     try {
-      const response = await apiClient.post(`/api/invoices/${id}/pdf/`, data || {}, {
-        responseType: 'blob'
+      const response = await apiClient.get(`/invoices/${id}/pdf/`, {
+        responseType: 'blob',
+        params: data || {}
       });
       return response.data;
     } catch (error) {
@@ -517,17 +577,36 @@ const invoicesApi = {
   },
 
   /**
-   * Simule l'impact d'un paiement sur une facture
+   * Simule l'impact d'un paiement sur une facture (calcul local)
    */
   getPaymentImpact: async (id: string, amount: number): Promise<{
     newStatus: string;
     newRemainingAmount: number;
   }> => {
     try {
-      const response = await apiClient.get(`/api/invoices/${id}/payment-impact/`, {
-        params: { amount }
-      });
-      return response.data;
+      // Récupérer les détails de la facture pour faire le calcul
+      const invoice = await invoicesApi.getInvoiceById(id);
+      
+      const currentPaidAmount = invoice.paidAmount || 0;
+      const totalAmount = invoice.totalTTC || 0;
+      
+      const newPaidAmount = currentPaidAmount + amount;
+      const newRemainingAmount = Math.max(0, totalAmount - newPaidAmount);
+      
+      // Déterminer le nouveau statut
+      let newStatus: string;
+      if (newRemainingAmount <= 0) {
+        newStatus = 'paid'; // Payée
+      } else if (newPaidAmount > 0) {
+        newStatus = 'partially_paid'; // Partiellement payée
+      } else {
+        newStatus = invoice.status; // Garder le statut actuel
+      }
+      
+      return {
+        newStatus,
+        newRemainingAmount
+      };
     } catch (error) {
       console.error(`Erreur lors du calcul de l'impact du paiement pour la facture ${id}:`, error);
       throw error;
@@ -547,7 +626,7 @@ const invoicesApi = {
     impact: string;
   }> => {
     try {
-      const response = await apiClient.post(`/api/invoices/${id}/credit-note-preview/`, data);
+      const response = await apiClient.post(`/invoices/${id}/credit_note_preview/`, data);
       return response.data;
     } catch (error) {
       console.error(`Erreur lors de l'aperçu de l'avoir pour la facture ${id}:`, error);

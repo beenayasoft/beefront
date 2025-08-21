@@ -38,7 +38,7 @@ import { RecordPaymentModal } from "../components/invoices/RecordPaymentModal";
 import { CreateCreditNoteModal } from "../components/invoices/CreateCreditNoteModal";
 import { SendInvoiceModal } from "../components/invoices/SendInvoiceModal";
 import { toast } from "@/components/ui/use-toast";
-import { getInvoiceById, sendInvoice } from "../api/invoices";
+import { getInvoiceById, sendInvoice, generateInvoicePdf } from "../api/invoices";
 import { Invoice, InvoiceStatus, Payment } from "../types/invoices.types";
 import { formatCurrency } from "@/lib/utils";
 
@@ -82,9 +82,36 @@ export default function InvoiceDetail() {
 
 
 
-  // Générer un PDF (placeholder)
-  const handleGeneratePDF = () => {
-    alert("Fonctionnalité de génération de PDF à implémenter");
+  // Télécharger la facture en PDF
+  const handleGeneratePDF = async () => {
+    if (!invoice) return;
+    
+    try {
+      const pdfBlob = await generateInvoicePdf(invoice.id);
+      
+      // Créer un lien de téléchargement
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Facture_${invoice.number || 'Brouillon'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "PDF téléchargé",
+        description: "La facture PDF a été téléchargée avec succès.",
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Erreur lors du téléchargement du PDF:', error);
+      toast({
+        title: "Erreur de téléchargement",
+        description: "Impossible de télécharger le PDF. Réessayez.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Envoyer par email
@@ -224,29 +251,29 @@ export default function InvoiceDetail() {
               <div className="text-xl font-bold">{formatCurrency(invoice.totalTTC)} MAD</div>
             </div>
             
-            <div className="flex">
+            <div className="flex items-center gap-2">
               <Button 
-                variant="ghost" 
+                variant="secondary"
                 size="icon" 
-                className="bg-white/10 hover:bg-white/20"
-                onClick={handleGeneratePDF}
-              >
-                <Printer className="w-4 h-4" />
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="bg-white/10 hover:bg-white/20"
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20"
                 onClick={handleGeneratePDF}
               >
                 <Download className="w-4 h-4" />
               </Button>
               
               <Button 
-                variant="ghost" 
+                variant="secondary"
                 size="icon" 
-                className="bg-white/10 hover:bg-white/20"
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+                onClick={() => navigate(`/factures/preview/${invoice.id}`)}
+              >
+                <Eye className="w-4 h-4" />
+              </Button>
+              
+              <Button 
+                variant="secondary"
+                size="icon" 
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20"
                 onClick={() => setSendModalOpen(true)}
               >
                 <Send className="w-4 h-4" />
@@ -600,7 +627,7 @@ export default function InvoiceDetail() {
               id: invoice.id,
               number: invoice.number,
               clientName: invoice.clientName,
-              totalTTC: invoice.totalTTC
+              totalTTC: invoice.totalTTC || 0
             }}
             onSend={handleSendEmail}
             loading={false}

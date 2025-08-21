@@ -24,10 +24,10 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createInvoice, CreateInvoiceRequest } from "../../api/invoices";
-import { tiersApi, TierData } from "@/features/crm/api";
 import { Invoice } from "../../types/invoices.types";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
+import { InvoiceClientSelector } from "./InvoiceClientSelector";
 import { cn } from "@/lib/utils";
 
 interface CreateInvoiceModalProps {
@@ -46,9 +46,7 @@ interface ClientSearchResult {
 export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvoiceModalProps) {
   // États du formulaire
   const [selectedClient, setSelectedClient] = useState<ClientSearchResult | null>(null);
-  const [clientSearch, setClientSearch] = useState("");
-  const [clientResults, setClientResults] = useState<ClientSearchResult[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // États des champs
   const [formData, setFormData] = useState({
@@ -64,8 +62,6 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
 
   // États de l'interface
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showClientSearch, setShowClientSearch] = useState(false);
 
   // Calcul automatique de la date d'échéance
   useEffect(() => {
@@ -80,46 +76,10 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
     }
   }, [formData.issueDate, formData.paymentTerms]);
   
-  // Recherche de clients avec debouncing
-  useEffect(() => {
-    const searchClients = async () => {
-      if (clientSearch.length < 2) {
-        setClientResults([]);
-        return;
-      }
-
-      setSearchLoading(true);
-      try {
-        const response = await tiersApi.getTiers({
-          search: clientSearch,
-          page_size: 20
-        });
-        
-        const clients = response.results.map((tier: any): ClientSearchResult => ({
-          id: tier.id,
-          name: tier.name,
-          address: tier.address,
-          type: tier.type || []
-        }));
-        
-        setClientResults(clients);
-      } catch (err) {
-        console.error('Erreur lors de la recherche de clients:', err);
-        setClientResults([]);
-      } finally {
-        setSearchLoading(false);
-      }
-    };
-
-    const debounceTimer = setTimeout(searchClients, 300);
-    return () => clearTimeout(debounceTimer);
-  }, [clientSearch]);
 
   // Réinitialisation du formulaire
   const resetForm = () => {
     setSelectedClient(null);
-    setClientSearch("");
-    setClientResults([]);
     setFormData({
       projectName: "",
       projectAddress: "",
@@ -131,7 +91,6 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
       termsAndConditions: "",
     });
     setError(null);
-    setShowClientSearch(false);
   };
 
   // Gestion de la fermeture
@@ -142,52 +101,6 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
     }
   };
 
-  // Sélection d'un client
-  const handleClientSelect = async (client: ClientSearchResult) => {
-    setSelectedClient(client);
-    setClientSearch(client.name);
-    setShowClientSearch(false);
-    
-    // Récupérer les détails complets du client
-    try {
-      const response = await tiersApi.getTiers({ search: client.id });
-      const tierDetails = response.results.find((t: any) => t.id === client.id);
-      
-      if (tierDetails) {
-        // Auto-remplissage basé sur les informations client
-        setSelectedClient(prev => ({
-          ...prev,
-          address: tierDetails.address || prev?.address || '',
-          ...(tierDetails.email && { email: tierDetails.email }),
-          ...(tierDetails.phone && { phone: tierDetails.phone })
-        }));
-        
-        // Mettre à jour le formulaire avec les données du client
-        setFormData(prev => ({
-          ...prev,
-          client_name: tierDetails.name || client.name,
-          client_address: tierDetails.address || '',
-          tier: client.id
-        }));
-        
-        // Si le client a une adresse de facturation spécifique, l'utiliser
-        if (tierDetails.address_facturation) {
-          setFormData(prev => ({
-            ...prev,
-            client_address: tierDetails.address_facturation
-          }));
-        }
-      }
-    } catch (error) {
-      console.error("Erreur lors de la récupération des détails du client:", error);
-      // En cas d'erreur, utiliser les données minimales disponibles
-      setFormData(prev => ({
-        ...prev,
-        client_name: client.name,
-        tier: client.id
-      }));
-    }
-  };
 
   // Soumission du formulaire
   const handleSubmit = async () => {
@@ -243,120 +156,94 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-Beenaya-600">
-            <FileText className="w-5 h-5" />
-            ✨ Nouvelle facture
-          </DialogTitle>
-          <DialogDescription>
-            Créez une nouvelle facture directe sans devis préalable
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-6">
-          {/* Section Client */}
-          <Card className="Beenaya-glass">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                <User className="w-4 h-4" />
-                Client (Obligatoire)
-              </CardTitle>
-              <CardDescription>
-                Point de départ obligatoire pour toute facture
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Recherche client */}
-            <div className="space-y-2">
-                <Label htmlFor="client-search">Rechercher un client</Label>
-                <div className="relative">
-                  <Input
-                    id="client-search"
-                    placeholder="Tapez le nom d'un client..."
-                    value={clientSearch}
-                    onChange={(e) => {
-                      setClientSearch(e.target.value);
-                      setShowClientSearch(true);
-                    }}
-                    onFocus={() => setShowClientSearch(true)}
-                    className={cn(
-                      "bg-white/60 backdrop-blur-sm",
-                      selectedClient && "border-green-500/50"
-                    )}
-                  />
-                  
-                  {/* Résultats de recherche */}
-                  {showClientSearch && clientSearch.length >= 2 && (
-                    <div className="absolute top-full left-0 right-0 z-50 bg-white border rounded-md shadow-lg max-h-40 overflow-y-auto">
-                      {searchLoading ? (
-                        <div className="p-3 text-center text-slate-500">
-                          Recherche en cours...
-                        </div>
-                      ) : clientResults.length > 0 ? (
-                        clientResults.map((client) => (
-                          <button
-                            key={client.id}
-                            className="w-full p-3 text-left hover:bg-slate-50 border-b last:border-b-0"
-                            onClick={() => handleClientSelect(client)}
-                          >
-                            <div className="font-medium">{client.name}</div>
-                            {client.address && (
-                              <div className="text-xs text-slate-500">{client.address}</div>
-                            )}
-                            <div className="flex gap-1 mt-1">
-                              {client.type.map((type) => (
-                                <Badge key={type} variant="secondary" className="text-xs">
-                                  {type}
-                                </Badge>
-                              ))}
-                            </div>
-                          </button>
-                        ))
-                      ) : (
-                        <div className="p-3 text-center text-slate-500">
-                          Aucun client trouvé
-                        </div>
-              )}
+      <DialogContent className="sm:max-w-[800px] max-w-[95vw] max-h-[95vh] overflow-y-auto bg-white">
+        <DialogHeader className="space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-Beenaya-500 to-Beenaya-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-semibold">📊</span>
             </div>
-                  )}
+            <div className="flex-1">
+              <DialogTitle className="text-xl font-semibold">
+                Nouvelle facture
+              </DialogTitle>
+              <DialogDescription className="text-sm text-neutral-600 mt-1">
+                Créez une nouvelle facture directe sans devis préalable
+              </DialogDescription>
             </div>
           </div>
+        </DialogHeader>
 
-              {/* Informations client sélectionné */}
-              {selectedClient && (
-                <Alert className="border-green-500/20 bg-green-50/50">
-                  <Check className="w-4 h-4 text-green-600" />
-                  <AlertDescription>
-                    <div className="font-medium text-green-900">{selectedClient.name}</div>
-                    {selectedClient.address && (
-                      <div className="text-sm text-green-700 mt-1">{selectedClient.address}</div>
-                    )}
-                  </AlertDescription>
-                </Alert>
-              )}
+        <div className="space-y-6 pt-6">
+          {/* Informations client */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <span className="text-blue-600">👥</span>
+                Informations client
+              </CardTitle>
+              <CardDescription>
+                Sélectionnez le client pour lequel créer la facture
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6 p-6">
+              {/* Sélecteur de client moderne */}
+              <InvoiceClientSelector
+                value={selectedClient?.id || ""}
+                onValueChange={(clientId) => {
+                  // Cette fonction sera appelée quand un client est sélectionné
+                  console.log('Client ID sélectionné:', clientId);
+                }}
+                selectedClientData={selectedClient ? {
+                  id: selectedClient.id,
+                  name: selectedClient.name,
+                  type: selectedClient.type,
+                  relation: selectedClient.relation || 'client',
+                  address: selectedClient.address,
+                  email: selectedClient.email,
+                  phone: selectedClient.phone
+                } : null}
+                onSelectedClientChange={(client) => {
+                  if (client) {
+                    setSelectedClient({
+                      id: client.id,
+                      name: client.name,
+                      type: client.type,
+                      relation: client.relation,
+                      address: client.address,
+                      email: client.email,
+                      phone: client.phone
+                    });
+                  } else {
+                    setSelectedClient(null);
+                  }
+                }}
+                placeholder="Rechercher un client ou prospect..."
+                required
+                error={!selectedClient && error}
+              />
+
             </CardContent>
           </Card>
 
-          {/* Section Projet */}
-          <Card className="Beenaya-glass">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                <Building2 className="w-4 h-4" />
-                Projet/Chantier (Optionnel)
+          {/* Détails du projet */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <span className="text-purple-600">🏢</span>
+                Détails du projet
               </CardTitle>
               <CardDescription>
-                Informations du projet pour organisation et classification
+                Informations sur le projet ou service à facturer
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6 p-6">
               <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
                   <Label htmlFor="project-name">Nom du projet</Label>
                   <Input
                     id="project-name"
                     placeholder="Villa Moderne..."
-                    value={formData.projectName}
+                    value={formData.projectName || ""}
                     onChange={(e) => setFormData(prev => ({ ...prev, projectName: e.target.value }))}
                     className="bg-white/60 backdrop-blur-sm"
               />
@@ -366,7 +253,7 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
                   <Input
                     id="project-reference"
                     placeholder="PROJ-2025-001"
-                    value={formData.projectReference}
+                    value={formData.projectReference || ""}
                     onChange={(e) => setFormData(prev => ({ ...prev, projectReference: e.target.value }))}
                     className="bg-white/60 backdrop-blur-sm"
               />
@@ -377,7 +264,7 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
                 <Textarea
                   id="project-address"
                   placeholder="123 Rue de la Paix, Casablanca"
-                  value={formData.projectAddress}
+                  value={formData.projectAddress || ""}
                   onChange={(e) => setFormData(prev => ({ ...prev, projectAddress: e.target.value }))}
                   className="bg-white/60 backdrop-blur-sm"
                   rows={2}
@@ -386,25 +273,25 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
             </CardContent>
           </Card>
 
-          {/* Section Conditions */}
-          <Card className="Beenaya-glass">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                <Calendar className="w-4 h-4" />
-                Conditions de paiement
+          {/* Dates et paiement */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <span className="text-emerald-600">📅</span>
+                Dates et paiement
               </CardTitle>
               <CardDescription>
-                Dates et délais pour le paiement de cette facture
+                Définissez les dates d'émission et d'échéance
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6 p-6">
               <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
                   <Label htmlFor="issue-date">Date d'émission</Label>
               <Input
                     id="issue-date"
                 type="date"
-                value={formData.issueDate}
+                value={formData.issueDate || ""}
                     onChange={(e) => setFormData(prev => ({ ...prev, issueDate: e.target.value }))}
                     className="bg-white/60 backdrop-blur-sm"
                   />
@@ -431,7 +318,7 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
               <Input
                     id="due-date"
                 type="date"
-                value={formData.dueDate}
+                value={formData.dueDate || ""}
                     onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
                     className="bg-white/60 backdrop-blur-sm"
                   />
@@ -441,21 +328,24 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
             </CardContent>
           </Card>
 
-          {/* Section Notes */}
-          <Card className="Beenaya-glass">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm font-medium">
-                <FileText className="w-4 h-4" />
-                Notes et conditions (Optionnel)
+          {/* Notes et conditions */}
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <span className="text-amber-600">📝</span>
+                Notes et conditions
               </CardTitle>
+              <CardDescription>
+                Ajoutez des notes et conditions générales
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6 p-6">
             <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"
                   placeholder="Informations spécifiques à ce projet..."
-                value={formData.notes}
+                value={formData.notes || ""}
                   onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                   className="bg-white/60 backdrop-blur-sm"
                   rows={2}
@@ -466,7 +356,7 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
               <Textarea
                   id="terms"
                   placeholder="Paiement à 30 jours..."
-                value={formData.termsAndConditions}
+                value={formData.termsAndConditions || ""}
                   onChange={(e) => setFormData(prev => ({ ...prev, termsAndConditions: e.target.value }))}
                   className="bg-white/60 backdrop-blur-sm"
                 rows={3}
@@ -492,18 +382,20 @@ export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvo
           </div>
         </div>
 
-        <DialogFooter className="pt-4 border-t">
+        <DialogFooter className="flex flex-col-reverse md:flex-row gap-4 pt-6 border-t border-neutral-200">
           <Button
+            type="button"
             variant="outline"
             onClick={handleClose}
             disabled={loading}
+            className="w-full md:w-auto"
           >
             Annuler
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={!selectedClient || loading}
-            className="gap-2 bg-Beenaya-600 hover:bg-Beenaya-700"
+            className="w-full md:w-auto gap-2 bg-Beenaya-600 hover:bg-Beenaya-700"
           >
             {loading ? (
               <>

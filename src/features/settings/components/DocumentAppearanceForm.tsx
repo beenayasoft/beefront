@@ -311,6 +311,8 @@ export function DocumentAppearanceForm({ appearanceSettings, onChange }: Documen
   const [isLoadingTenant, setIsLoadingTenant] = useState(true);
   const [autoThemeFromLogo, setAutoThemeFromLogo] = useState(false);
   const [isExtractingColors, setIsExtractingColors] = useState(false);
+  // État local pour les changements en temps réel dans l'aperçu
+  const [livePreviewSettings, setLivePreviewSettings] = useState<any>({});
   
   // Utiliser le hook pour gérer les paramètres d'apparence
   const { settings: apiSettings, isLoading: isLoadingSettings, updateSettings } = useDocumentAppearance();
@@ -359,7 +361,15 @@ export function DocumentAppearanceForm({ appearanceSettings, onChange }: Documen
     showSectionSubtotals: true,
   };
   
-  // Utiliser les paramètres de l'API en priorité, puis les props si disponibles, sinon les valeurs par défaut
+  // Paramètres pour l'aperçu : utiliser les paramètres de l'API + changements en temps réel
+  const previewSettings = {
+    ...defaultSettings,
+    ...appearanceSettings, // Props from Settings.tsx (lower priority)
+    ...apiSettings,        // API settings have highest priority
+    ...livePreviewSettings // Changements locaux en temps réel pour l'aperçu
+  };
+  
+  // Paramètres pour les formulaires : utiliser la même logique
   const settings = {
     ...defaultSettings,
     ...appearanceSettings, // Props from Settings.tsx (lower priority)
@@ -379,6 +389,12 @@ export function DocumentAppearanceForm({ appearanceSettings, onChange }: Documen
       cleanValue = typeof cleanValue === 'number' ? cleanValue : Number(cleanValue);
     }
     
+    // Mettre à jour l'aperçu immédiatement
+    setLivePreviewSettings(prev => ({
+      ...prev,
+      [field]: cleanValue
+    }));
+    
     const newSettings = { ...settings, [field]: cleanValue };
     
     console.log('🔄 DocumentAppearanceForm.handleInputChange - Field:', field, 'Original value:', value, 'Clean value:', cleanValue);
@@ -397,6 +413,12 @@ export function DocumentAppearanceForm({ appearanceSettings, onChange }: Documen
       console.log('✅ DocumentAppearanceForm.handleInputChange - Saved successfully');
     } catch (error) {
       console.error('❌ DocumentAppearanceForm.handleInputChange - Error saving:', error);
+      // En cas d'erreur, annuler le changement dans l'aperçu
+      setLivePreviewSettings(prev => {
+        const updated = { ...prev };
+        delete updated[field];
+        return updated;
+      });
     }
   };
 
@@ -455,6 +477,14 @@ export function DocumentAppearanceForm({ appearanceSettings, onChange }: Documen
 
     fetchTenantInfo();
   }, []);
+  
+  // Réinitialiser les paramètres d'aperçu en temps réel quand les paramètres API changent
+  useEffect(() => {
+    if (apiSettings && Object.keys(apiSettings).length > 0) {
+      console.log('🔄 Réinitialisation des paramètres d\'aperçu avec les paramètres API:', apiSettings);
+      setLivePreviewSettings({}); // Reset des changements locaux
+    }
+  }, [apiSettings]);
 
   const colorPresets = [
     { name: "Bleu Beenaya", value: "#1B333F" },
@@ -501,7 +531,7 @@ export function DocumentAppearanceForm({ appearanceSettings, onChange }: Documen
                         document={previewType === "invoice" ? getDynamicSampleData().baseInvoice : getDynamicSampleData().baseQuote} 
                         documentType={previewType} 
                         tenantInfo={tenantInfo}
-                        appearanceSettings={settings} 
+                        appearanceSettings={previewSettings} 
                       />
                     </div>
                   )}
@@ -955,14 +985,19 @@ export function DocumentAppearanceForm({ appearanceSettings, onChange }: Documen
                       document={previewType === "invoice" ? getDynamicSampleData().baseInvoice : getDynamicSampleData().baseQuote} 
                       documentType={previewType} 
                       tenantInfo={tenantInfo}
-                      appearanceSettings={settings} 
+                      appearanceSettings={previewSettings} 
                     />
                   )}
                 </div>
               </div>
               
-              <div className="text-xs text-neutral-500 text-center">
-                💡 L'aperçu se met à jour automatiquement
+              <div className="text-xs text-neutral-500 text-center space-y-1">
+                <div>💡 L'aperçu se met à jour automatiquement</div>
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="text-xs text-blue-600">
+                    Debug: Couleur={previewSettings.primaryColor}, Police={previewSettings.fontFamily}, Logo={previewSettings.showLogo ? 'Oui' : 'Non'}
+                  </div>
+                )}
               </div>
             </div>
           </div>

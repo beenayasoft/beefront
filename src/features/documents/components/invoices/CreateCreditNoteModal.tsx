@@ -61,6 +61,18 @@ interface CreditNotePreview {
   totalVAT: number;
   totalTTC: number;
   impact: string;
+  selected_items_details: {
+    id: string;
+    designation: string;
+    quantity: number;
+    unit_price: number;
+    total_ht: number;
+    vat_rate: number;
+    total_ttc: number;
+  }[];
+  new_remaining_amount: number;
+  original_remaining_amount: number;
+  items_count: number;
 }
 
 // Raisons prédéfinies pour les avoirs
@@ -487,7 +499,7 @@ export function CreateCreditNoteModal({
                                 )}
                               </div>
                               <div className="text-right space-y-1">
-                                <div className="font-medium">{formatCurrency(item.totalTTC)} MAD</div>
+                                <div className="font-medium">{formatCurrency(item.totalTtc)} MAD</div>
                                 <div className="text-sm text-neutral-600">
                                   {item.quantity} {item.unit} × {formatCurrency(item.unitPrice)} MAD
                                 </div>
@@ -578,6 +590,43 @@ export function CreateCreditNoteModal({
                         </div>
                       )}
                     </div>
+
+                    {/* Impact sur le solde de la facture */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <h4 className="font-medium text-blue-900 mb-2">Impact sur la facture</h4>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-blue-700">Restant dû actuel:</span>
+                          <div className="font-medium">{formatCurrency(creditPreview.original_remaining_amount)} MAD</div>
+                        </div>
+                        <div>
+                          <span className="text-blue-700">Nouveau restant dû:</span>
+                          <div className="font-medium">{formatCurrency(creditPreview.new_remaining_amount)} MAD</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Détail des éléments sélectionnés (pour avoir partiel) */}
+                    {!formData.isFullCreditNote && creditPreview.selected_items_details.length > 0 && (
+                      <div>
+                        <h4 className="font-medium text-neutral-900 mb-3">Éléments inclus dans l'avoir</h4>
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {creditPreview.selected_items_details.map((item) => (
+                            <div key={item.id} className="flex justify-between items-center p-2 bg-neutral-50 rounded text-sm">
+                              <div className="flex-1">
+                                <div className="font-medium">{item.designation}</div>
+                                <div className="text-neutral-600">
+                                  {item.quantity} × {formatCurrency(item.unit_price)} MAD (TVA {item.vat_rate}%)
+                                </div>
+                              </div>
+                              <div className="text-right font-medium">
+                                -{formatCurrency(item.total_ttc)} MAD
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-neutral-500">
