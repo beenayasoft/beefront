@@ -38,7 +38,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { recordPayment, getPaymentImpact } from "@/features/documents/api/invoices";
 import { Invoice, PaymentMethod } from "@/features/documents/types/invoices.types";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -69,6 +69,8 @@ export function RecordPaymentModal({
   invoice,
   onSuccess
 }: RecordPaymentModalProps) {
+  const { formatCurrency } = useCurrency();
+  
   // État du formulaire
   const [formData, setFormData] = useState<PaymentFormData>({
     date: new Date().toISOString().split('T')[0],
@@ -196,7 +198,7 @@ export function RecordPaymentModal({
       if (isNaN(amount) || amount <= 0) {
         newErrors.amount = 'Le montant doit être supérieur à 0';
       } else if (amount > invoice.remainingAmount) {
-        newErrors.amount = `Le montant ne peut pas dépasser ${formatCurrency(invoice.remainingAmount)} MAD`;
+        newErrors.amount = `Le montant ne peut pas dépasser ${formatCurrency(invoice.remainingAmount)}`;
       }
     }
 
@@ -231,7 +233,7 @@ export function RecordPaymentModal({
       const result = await recordPayment(invoice.id, paymentData);
       
       toast.success("Paiement enregistré", {
-        description: `${formatCurrency(paymentData.amount)} MAD enregistré avec succès`
+        description: `${formatCurrency(paymentData.amount)} enregistré avec succès`
       });
 
       if (onSuccess) {
@@ -307,12 +309,12 @@ export function RecordPaymentModal({
                 </div>
                 <div>
                   <span className="text-neutral-600 text-sm">Montant total:</span>
-                  <div className="font-medium">{formatCurrency(invoice.totalTTC)} MAD</div>
+                  <div className="font-medium">{formatCurrency(invoice.totalTtc)}</div>
                 </div>
                 <div>
                   <span className="text-neutral-600 text-sm">Reste à payer:</span>
                   <div className="font-bold text-Beenaya-600">
-                    {formatCurrency(invoice.remainingAmount)} MAD
+                    {formatCurrency(invoice.remainingAmount)}
                   </div>
                 </div>
               </div>
@@ -466,7 +468,7 @@ export function RecordPaymentModal({
                       "font-bold",
                       paymentImpact.isFullyPaid ? "text-green-600" : "text-orange-600"
                     )}>
-                      {formatCurrency(paymentImpact.newRemainingAmount)} MAD
+                      {formatCurrency(paymentImpact.newRemainingAmount)}
                     </span>
                   </div>
 

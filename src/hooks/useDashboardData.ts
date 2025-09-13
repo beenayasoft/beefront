@@ -54,8 +54,8 @@ export const useDashboardData = () => {
     const freshMetrics = [
       {
         title: "Chiffre d'affaires",
-        value: "0,00",
-        currency: "MAD",
+        value: 0,
+        currency: true,
         change: "+0% ce mois",
         changeType: "neutral" as const,
       },

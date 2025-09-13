@@ -7,7 +7,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { MetricCard } from "@/components/dashboard/MetricCard";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface InvoiceStatsProps {
   stats?: {
@@ -26,6 +26,8 @@ interface InvoiceStatsProps {
 }
 
 export function InvoiceStats({ stats }: InvoiceStatsProps) {
+  const { formatCurrency } = useCurrency();
+  
   // Valeurs par défaut sécurisées pour éviter les erreurs undefined
   const safeStats = {
     total: stats?.total ?? 0,
@@ -53,21 +55,20 @@ export function InvoiceStats({ stats }: InvoiceStatsProps) {
       <MetricCard
         title="En attente"
         value={safeStats.sent.toString()}
-        change={formatCurrency(Math.max(0, safeStats.remainingAmount - safeStats.overdueAmount)) + " MAD"}
+        change={formatCurrency(Math.max(0, safeStats.remainingAmount - safeStats.overdueAmount))}
         changeType="neutral"
         icon={<Clock className="h-5 w-5 text-Beenaya-600" />}
       />
       <MetricCard
         title="En retard"
         value={safeStats.overdue.toString()}
-        change={formatCurrency(safeStats.overdueAmount) + " MAD"}
+        change={formatCurrency(safeStats.overdueAmount)}
         changeType="negative"
         icon={<AlertTriangle className="h-5 w-5 text-orange-600" />}
       />
       <MetricCard
         title="Montant encaissé"
         value={formatCurrency(safeStats.paidAmount)}
-        currency="MAD"
         change={`${safeStats.paid} factures payées`}
         changeType="positive"
         icon={<DollarSign className="h-5 w-5 text-green-600" />}

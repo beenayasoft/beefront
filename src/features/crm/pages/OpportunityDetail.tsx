@@ -17,6 +17,9 @@ import {
   Plus,
   Loader2,
   Eye,
+  Send,
+  Download,
+  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,13 +46,19 @@ import { OpportunityForm } from "@/features/crm/components/opportunities/Opportu
 import { OpportunityLossForm } from "@/features/crm/components/opportunities/OpportunityLossForm";
 import { Opportunity, OpportunityStatus, LossReason } from "@/features/crm/types/opportunities.types";
 import { opportunitiesApi } from "@/features/crm/api/opportunities";
+import { Quote } from "@/features/documents/types/quotes.types";
+import { quotesApi } from "@/features/documents/api/quotes";
+import { QuotePreviewModal } from "@/features/documents/components/quotes/QuotePreviewModal";
+import QuoteCreateWizard from "@/features/documents/components/quotes/modern/QuoteCreateWizard";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { syncService, useSyncListener } from "@/lib/services/syncService";
+import { useFormatCurrency } from "@/contexts/CurrencyContext";
 
 export default function OpportunityDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const formatCurrencyWithSymbol = useFormatCurrency();
   
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,6 +67,10 @@ export default function OpportunityDetail() {
   const [lossFormOpen, setLossFormOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [quotesLoading, setQuotesLoading] = useState(false);
+  const [quoteFormDialogOpen, setQuoteFormDialogOpen] = useState(false);
+  const [selectedQuoteForPreview, setSelectedQuoteForPreview] = useState<Quote | null>(null);
 
   // 🏷️ Titre dynamique basé sur le nom de l'opportunité
   const pageTitle = opportunity ? `${opportunity.name}` : 'Détail opportunité';
@@ -80,6 +93,29 @@ export default function OpportunityDetail() {
     }
   };
 
+  // ✅ NOUVELLE FONCTION : Chargement des devis associés
+  const loadAssociatedQuotes = async () => {
+    if (!id) return;
+
+    try {
+      setQuotesLoading(true);
+      console.log(`📄 Chargement des devis pour l'opportunité ${id}...`);
+      
+      const quotesResponse = await quotesApi.getQuotes(1, 50, { 
+        opportunityId: id 
+      });
+      
+      if (quotesResponse.results) {
+        setQuotes(quotesResponse.results);
+        console.log(`✅ ${quotesResponse.results.length} devis chargés pour l'opportunité ${id}`);
+      }
+    } catch (error) {
+      console.error(`❌ Erreur lors du chargement des devis:`, error);
+    } finally {
+      setQuotesLoading(false);
+    }
+  };
+
   // ✅ SYNCHRONISATION AUTOMATIQUE : Écouter tous les changements liés à cette opportunité
   useSyncListener('opportunity_updated', id || '', (event) => {
     console.log(`🔄 Synchronisation automatique opportunité ${id}:`, event);
@@ -99,6 +135,7 @@ export default function OpportunityDetail() {
     if (event.relatedEntityId === id) {
       console.log(`📄 Nouveau devis créé pour l'opportunité ${id}:`, event);
       reloadOpportunity(); // Recharger pour afficher le nouveau devis
+      loadAssociatedQuotes(); // Recharger la liste des devis
       toast({
         title: "Nouveau devis",
         description: "Un devis a été créé pour cette opportunité",
@@ -111,6 +148,7 @@ export default function OpportunityDetail() {
     if (event.relatedEntityId === id) {
       console.log(`📄 Statut devis modifié pour l'opportunité ${id}:`, event);
       reloadOpportunity(); // Recharger pour afficher le nouveau statut
+      loadAssociatedQuotes(); // Recharger la liste des devis
       
       const statusLabels = {
         'sent': 'envoyé',
@@ -132,6 +170,7 @@ export default function OpportunityDetail() {
     if (event.relatedEntityId === id) {
       console.log(`📄 Devis supprimé pour l'opportunité ${id}:`, event);
       reloadOpportunity(); // Recharger pour retirer le devis supprimé
+      loadAssociatedQuotes(); // Recharger la liste des devis
       toast({
         title: "Devis supprimé",
         description: "Un devis associé a été supprimé",
@@ -159,6 +198,9 @@ export default function OpportunityDetail() {
         if (opportunityData) {
           setOpportunity(opportunityData);
           console.log(`✅ Opportunité ${id} chargée avec succès:`, opportunityData);
+          
+          // Charger les devis associés après avoir chargé l'opportunité
+          await loadAssociatedQuotes();
         } else {
           throw new Error("Opportunité non trouvée");
         }
@@ -222,26 +264,37 @@ export default function OpportunityDetail() {
   };
 
   // Gérer la création d'un devis
-  const handleCreateQuote = async () => {
+  const handleCreateQuote = () => {
     if (!opportunity) return;
-    
+    console.log(`📄 Ouverture du wizard de création de devis pour l'opportunité ${opportunity.id}...`);
+    setQuoteFormDialogOpen(true);
+  };
+
+  // Gérer la création réussie d'un devis
+  const handleQuoteCreated = async (quoteId: string) => {
     try {
-      console.log(`📄 Redirection vers création de devis pour l'opportunité ${opportunity.id}...`);
-      // TODO: Implémenter createQuote dans opportunitiesApi quand le endpoint sera disponible
-      navigate(`/quotes/new?opportunityId=${opportunity.id}&tierId=${opportunity.tierId}`);
+      console.log("✅ Devis créé avec succès, ID:", quoteId);
       
+      // Afficher une notification de succès
       toast({
-        title: "Redirection",
-        description: "Redirection vers la création de devis",
+        title: "Devis créé",
+        description: "Le devis a été créé avec succès",
       });
+      
+      // Fermer le formulaire
+      setQuoteFormDialogOpen(false);
+      
+      // Recharger les devis associés à l'opportunité
+      await loadAssociatedQuotes();
+      
     } catch (error) {
-      console.error(`❌ Erreur lors de la redirection:`, error);
-      toast({
-        title: "Erreur",
-        description: "Impossible d'accéder à la création de devis",
-        variant: "destructive",
-      });
+      console.error("❌ Erreur lors du traitement post-création:", error);
     }
+  };
+
+  // Gérer l'annulation de la création de devis
+  const handleQuoteCancel = () => {
+    setQuoteFormDialogOpen(false);
   };
 
   // Marquer comme gagnée
@@ -329,6 +382,126 @@ export default function OpportunityDetail() {
         description: error instanceof Error ? error.message : "Impossible de mettre à jour l'opportunité",
         variant: "destructive",
       });
+    }
+  };
+
+  // ✅ GESTION DES ACTIONS SUR LES DEVIS
+  const handleViewQuote = (quote: Quote) => {
+    navigate(`/devis/${quote.id}`);
+  };
+
+  const handleEditQuote = (quote: Quote) => {
+    navigate(`/devis/edit/${quote.id}`);
+  };
+
+  const handleSendQuote = async (quote: Quote) => {
+    console.log("Envoi du devis:", quote);
+    // Ici on pourrait ouvrir un modal pour saisir l'email et envoyer
+    toast({
+      title: "Action non implémentée",
+      description: "L'envoi de devis sera implémenté prochainement",
+      variant: "destructive",
+    });
+  };
+
+  const handleDownloadQuote = (quote: Quote) => {
+    console.log(`📄 Ouverture aperçu pour le devis ${quote.id}...`);
+    setSelectedQuoteForPreview(quote);
+  };
+
+  const handleDuplicateQuote = async (quote: Quote) => {
+    try {
+      console.log(`📄 Duplication du devis ${quote.id}...`);
+      const duplicatedQuote = await quotesApi.duplicateQuote(quote.id);
+      
+      await loadAssociatedQuotes(); // Recharger la liste
+      
+      toast({
+        title: "Devis dupliqué",
+        description: `Le devis a été dupliqué vers ${duplicatedQuote.number}`,
+      });
+    } catch (error) {
+      console.error("Erreur lors de la duplication:", error);
+      toast({
+        title: "Erreur de duplication",
+        description: "Impossible de dupliquer le devis",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteQuote = async (quote: Quote) => {
+    try {
+      console.log(`🗑️ Suppression du devis ${quote.id}...`);
+      await quotesApi.deleteQuote(quote.id);
+      
+      await loadAssociatedQuotes(); // Recharger la liste
+      
+      toast({
+        title: "Devis supprimé",
+        description: `Le devis ${quote.number} a été supprimé`,
+      });
+    } catch (error) {
+      console.error("Erreur lors de la suppression:", error);
+      toast({
+        title: "Erreur de suppression",
+        description: "Impossible de supprimer le devis",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleConvertToInvoice = (quote: Quote) => {
+    navigate(`/factures/nouvelle?quoteId=${quote.id}`);
+  };
+
+  // ✅ BADGE DE STATUT POUR LES DEVIS
+  const getQuoteStatusBadge = (status: string) => {
+    switch (status) {
+      case 'draft':
+        return (
+          <Badge variant="secondary" className="bg-neutral-100 border border-neutral-300 text-neutral-800 font-semibold">
+            <div className="w-2 h-2 bg-neutral-400 rounded-full mr-1"></div>
+            Brouillon
+          </Badge>
+        );
+      case 'sent':
+        return (
+          <Badge variant="secondary" className="bg-blue-100 border border-blue-300 text-blue-800 font-semibold">
+            <Send className="w-3 h-3 mr-1" />
+            Envoyé
+          </Badge>
+        );
+      case 'accepted':
+        return (
+          <Badge variant="secondary" className="bg-green-100 border border-green-300 text-green-800 font-semibold">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            Accepté
+          </Badge>
+        );
+      case 'rejected':
+        return (
+          <Badge variant="secondary" className="bg-red-100 border border-red-300 text-red-800 font-semibold">
+            <XCircle className="w-3 h-3 mr-1" />
+            Refusé
+          </Badge>
+        );
+      case 'expired':
+        return (
+          <Badge variant="secondary" className="bg-amber-100 border border-amber-300 text-amber-800 font-semibold">
+            <AlertCircle className="w-3 h-3 mr-1" />
+            Expiré
+          </Badge>
+        );
+      case 'cancelled':
+        return (
+          <Badge variant="secondary" className="bg-neutral-100 border border-neutral-300 text-neutral-800 font-semibold">
+            <XCircle className="w-3 h-3 mr-1" />
+            Annulé
+          </Badge>
+        );
+      default:
+        return <Badge variant="secondary" className="bg-neutral-100 border border-neutral-300 text-neutral-800 font-semibold">—</Badge>;
     }
   };
 
@@ -544,7 +717,7 @@ export default function OpportunityDetail() {
                   <div>
                     <h4 className="text-sm font-medium text-neutral-500 mb-2">Montant estimé</h4>
                     <div className="text-2xl font-bold text-Beenaya-600">
-                      {formatCurrency(opportunity.estimatedAmount || 0)} MAD
+                      {formatCurrencyWithSymbol(opportunity.estimatedAmount || 0, { showSymbol: true })}
                     </div>
                   </div>
                   
@@ -569,7 +742,7 @@ export default function OpportunityDetail() {
                   <div>
                     <h4 className="text-sm font-medium text-neutral-500 mb-2">Montant pondéré</h4>
                     <div className="text-2xl font-bold text-green-600">
-                      {formatCurrency((opportunity.estimatedAmount || 0) * (opportunity.probability || 0) / 100)} MAD
+                      {formatCurrencyWithSymbol((opportunity.estimatedAmount || 0) * (opportunity.probability || 0) / 100, { showSymbol: true })}
                     </div>
                     <div className="text-sm text-neutral-500 mt-1">
                       Valeur attendue
@@ -596,6 +769,112 @@ export default function OpportunityDetail() {
                     )}
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Section des devis associés */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-Beenaya-600" />
+                  Devis associés
+                  {quotes.length > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {quotes.length}
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {quotesLoading ? (
+                  <div className="space-y-3">
+                    {[...Array(2)].map((_, index) => (
+                      <div key={index} className="animate-pulse">
+                        <div className="h-16 bg-gray-100 rounded-lg"></div>
+                      </div>
+                    ))}
+                  </div>
+                ) : quotes.length === 0 ? (
+                  <div className="text-center py-8 text-neutral-500">
+                    <FileText className="w-8 h-8 mx-auto mb-4 opacity-50" />
+                    <p>Aucun devis associé à cette opportunité</p>
+                    <Button 
+                      className="mt-4 Beenaya-button-primary"
+                      onClick={handleCreateQuote}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Créer le premier devis
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {quotes.map((quote) => (
+                      <div key={quote.id} className="border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-medium text-sm">
+                                {quote.number || 'Brouillon'}
+                              </h4>
+                              {getQuoteStatusBadge(quote.status)}
+                            </div>
+                            <div className="text-xs text-neutral-600 space-y-1">
+                              <div>Créé le {new Date(quote.createdAt).toLocaleDateString('fr-FR')}</div>
+                              {quote.expiryDate && (
+                                <div>Expire le {new Date(quote.expiryDate).toLocaleDateString('fr-FR')}</div>
+                              )}
+                              <div className="font-semibold text-Beenaya-600">
+                                {formatCurrencyWithSymbol(quote.totalTtc || 0, { showSymbol: true })}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleViewQuote(quote)}
+                              title="Voir le devis"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            {quote.status !== 'draft' && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleDownloadQuote(quote)}
+                                title="Télécharger PDF"
+                              >
+                                <Download className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {quote.status === 'draft' && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => handleEditQuote(quote)}
+                                title="Modifier le devis"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleDuplicateQuote(quote)}
+                              title="Dupliquer le devis"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -846,6 +1125,36 @@ export default function OpportunityDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modale de création de devis */}
+      <Dialog open={quoteFormDialogOpen} onOpenChange={setQuoteFormDialogOpen}>
+        <DialogContent className="max-w-7xl max-h-[95vh] w-[98vw] sm:w-full mx-auto overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nouveau devis pour {opportunity?.name}</DialogTitle>
+            <DialogDescription>
+              Assistant de création de devis étape par étape
+            </DialogDescription>
+          </DialogHeader>
+          
+          <QuoteCreateWizard
+            onQuoteCreated={handleQuoteCreated}
+            onCancel={handleQuoteCancel}
+            initialData={{
+              preselectedTierId: opportunity?.tierId,
+              preselectedOpportunityId: opportunity?.id
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal d'aperçu des devis */}
+      {selectedQuoteForPreview && (
+        <QuotePreviewModal
+          quote={selectedQuoteForPreview}
+          isOpen={selectedQuoteForPreview !== null}
+          onClose={() => setSelectedQuoteForPreview(null)}
+        />
+      )}
     </>
   );
 };

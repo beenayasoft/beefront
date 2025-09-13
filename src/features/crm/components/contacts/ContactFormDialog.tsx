@@ -13,9 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Form,
   FormControl,
@@ -26,17 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { 
-  Loader2, 
-  User, 
-  Mail, 
-  Phone, 
-  Briefcase, 
-  CheckCircle2, 
-  AlertCircle, 
-  Crown,
-  FileText,
-  UserPlus,
-  Sparkles
+  Loader2
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { contactsApi, type UpdateContactRequest } from "../../api/contacts";
@@ -134,12 +121,7 @@ export function ContactFormDialog({
     },
   });
 
-  const { handleSubmit, formState: { isSubmitting, errors }, reset, watch } = form;
-  
-  // Surveiller les changements pour calculer la progression
-  const watchedValues = watch();
-  const formProgress = calculateFormProgress(watchedValues);
-  const hasImportantRole = watchedValues.is_contact_principal_devis || watchedValues.is_contact_principal_facture;
+  const { handleSubmit, formState: { isSubmitting }, reset } = form;
 
   // Configuration selon le mode
   const isEditing = mode === 'edit';
@@ -148,9 +130,6 @@ export function ContactFormDialog({
     description: isEditing 
       ? `Contact de ${tierName}` 
       : `Ajouter un contact à ${tierName}`,
-    icon: isEditing ? User : UserPlus,
-    iconColor: isEditing ? "text-blue-600" : "text-green-600",
-    iconBg: isEditing ? "bg-blue-50 dark:bg-blue-950/20" : "bg-green-50 dark:bg-green-950/20",
     submitText: isEditing ? "Sauvegarder" : "Créer le contact",
     loadingText: isEditing ? "Sauvegarde..." : "Création...",
     successTitle: isEditing ? "✅ Contact modifié avec succès" : "✅ Contact créé avec succès",
@@ -255,392 +234,190 @@ export function ContactFormDialog({
     }
   };
 
-  const getContactTypeDisplay = () => {
-    if (watchedValues.is_contact_principal_devis && watchedValues.is_contact_principal_facture) {
-      return (
-        <Badge variant="default" className="bg-purple-100 text-purple-800 border-purple-200 animate-pulse">
-          <Crown className="w-3 h-3 mr-1" />
-          Contact principal
-        </Badge>
-      );
-    }
-    if (watchedValues.is_contact_principal_devis) {
-      return (
-        <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
-          <FileText className="w-3 h-3 mr-1" />
-          Devis
-        </Badge>
-      );
-    }
-    if (watchedValues.is_contact_principal_facture) {
-      return (
-        <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
-          <FileText className="w-3 h-3 mr-1" />
-          Facturation
-        </Badge>
-      );
-    }
-    return (
-      <Badge variant="outline" className="text-gray-600">
-        <User className="w-3 h-3 mr-1" />
-        Contact standard
-      </Badge>
-    );
-  };
-
-  const IconComponent = dialogConfig.icon;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px] max-h-[95vh] overflow-hidden flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`flex items-center justify-center w-10 h-10 ${dialogConfig.iconBg} rounded-full`}>
-                <IconComponent className={`h-5 w-5 ${dialogConfig.iconColor}`} />
-              </div>
-              <div>
-                <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  {dialogConfig.title}
-                  {!isEditing && <Sparkles className="inline ml-2 h-4 w-4 text-yellow-500" />}
-                </DialogTitle>
-                <DialogDescription className="text-sm text-muted-foreground">
-                  {dialogConfig.description}
-                </DialogDescription>
-              </div>
-            </div>
-            
-            {/* Progression et statut */}
-            <div className="flex items-center gap-3">
-              {getContactTypeDisplay()}
-              <div className="flex items-center gap-2">
-                <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full transition-all duration-500 ${
-                      formProgress === 100 ? 'bg-green-500' : (isEditing ? 'bg-blue-600' : 'bg-green-600')
-                    }`}
-                    style={{ width: `${formProgress}%` }}
-                  />
-                </div>
-                <span className="text-xs font-medium text-muted-foreground min-w-[3ch]">
-                  {formProgress}%
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Message contextuel pour la création */}
-          {!isEditing && (
-            <Alert className="border-green-200 bg-green-50 dark:bg-green-950/10 mt-4">
-              <UserPlus className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800 dark:text-green-200">
-                <strong>Astuce :</strong> Un particulier peut avoir plusieurs contacts (conjoint, personne de confiance, conseiller...).
-              </AlertDescription>
-            </Alert>
-          )}
+      <DialogContent className="max-w-2xl max-h-[90vh] w-[95vw] sm:w-full mx-auto overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{dialogConfig.title}</DialogTitle>
+          <DialogDescription>
+            {dialogConfig.description}
+          </DialogDescription>
         </DialogHeader>
 
-        {/* Erreurs globales */}
-        {Object.keys(errors).length > 0 && (
-          <Alert variant="destructive" className="flex-shrink-0">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Veuillez corriger les erreurs ci-dessous avant de continuer.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Formulaire avec scroll */}
-        <div className="flex-1 overflow-y-auto pr-2">
-          <Form {...form}>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 py-2">
+        <Form {...form}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="prenom"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Prénom</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Prénom du contact"
+                        disabled={isSubmitting}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
-              {/* Section Identité */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-blue-600" />
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    Identité
-                  </h3>
-                  <Separator className="flex-1" />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="prenom"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Prénom</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Prénom du contact"
-                            disabled={isSubmitting}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="nom"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-1">
-                          Nom
-                          <span className="text-red-500">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Nom du contact"
-                            disabled={isSubmitting}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="fonction"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Briefcase className="h-4 w-4" />
-                        Fonction
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder={isEditing 
-                            ? "Directeur, Manager, Technicien..." 
-                            : "Conjoint(e), Personne de confiance, Conseiller..."
-                          }
-                          disabled={isSubmitting}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription className="text-xs">
-                        {isEditing 
-                          ? "Poste ou rôle occupé dans l'entreprise"
-                          : "Relation ou rôle de cette personne"
-                        }
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Section Contact */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-green-600" />
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    Informations de contact
-                  </h3>
-                  <Separator className="flex-1" />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          <Mail className="h-4 w-4" />
-                          Email
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="email"
-                            placeholder="contact@exemple.com"
-                            disabled={isSubmitting}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="telephone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                          <Phone className="h-4 w-4" />
-                          Téléphone
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="+33123456789 ou 0123456789"
-                            disabled={isSubmitting}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-
-              {/* Section Rôles */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Crown className="h-4 w-4 text-purple-600" />
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    Rôles et responsabilités
-                  </h3>
-                  <Separator className="flex-1" />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="is_contact_principal_devis"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col space-y-3 rounded-lg border p-4 hover:bg-accent/5 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-blue-600" />
-                            <FormLabel className="text-sm font-medium cursor-pointer">
-                              Contact devis
-                            </FormLabel>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              disabled={isSubmitting}
-                            />
-                          </FormControl>
-                        </div>
-                        <FormDescription className="text-xs text-muted-foreground">
-                          Reçoit les communications relatives aux devis et estimations
-                        </FormDescription>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="is_contact_principal_facture"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col space-y-3 rounded-lg border p-4 hover:bg-accent/5 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-green-600" />
-                            <FormLabel className="text-sm font-medium cursor-pointer">
-                              Contact facturation
-                            </FormLabel>
-                          </div>
-                          <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              disabled={isSubmitting}
-                            />
-                          </FormControl>
-                        </div>
-                        <FormDescription className="text-xs text-muted-foreground">
-                          Reçoit les factures et communications financières
-                        </FormDescription>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {hasImportantRole && (
-                  <Alert className="border-purple-200 bg-purple-50 dark:bg-purple-950/10">
-                    <Crown className="h-4 w-4 text-purple-600" />
-                    <AlertDescription className="text-purple-800 dark:text-purple-200">
-                      Ce contact aura des responsabilités importantes dans la relation commerciale.
-                    </AlertDescription>
-                  </Alert>
+              <FormField
+                control={form.control}
+                name="nom"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Nom <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nom du contact"
+                        disabled={isSubmitting}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </div>
-            </form>
-          </Form>
-        </div>
+              />
+            </div>
 
-        {/* Actions fixes en bas */}
-        <DialogFooter className="flex-shrink-0 border-t pt-4">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {formProgress === 100 ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  <span className="text-green-600 font-medium">
-                    Prêt à {isEditing ? 'sauvegarder' : 'créer'}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="w-4 h-4 text-amber-500" />
-                  <span>Informations de base {isEditing ? 'modifiées' : 'saisies'}</span>
-                </>
+            <FormField
+              control={form.control}
+              name="fonction"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Fonction</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={isEditing 
+                        ? "Directeur, Manager, Technicien..." 
+                        : "Conjoint(e), Personne de confiance, Conseiller..."
+                      }
+                      disabled={isSubmitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
-            
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={isSubmitting}
-              >
-                Annuler
-              </Button>
-              <Button
-                onClick={handleSubmit(onSubmit)}
-                disabled={isSubmitting || Object.keys(errors).length > 0}
-                className={`gap-2 min-w-[140px] ${
-                  !isEditing ? 'bg-green-600 hover:bg-green-700' : ''
-                }`}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    {dialogConfig.loadingText}
-                  </>
-                ) : (
-                  <>
-                    {isEditing ? (
-                      <CheckCircle2 className="w-4 h-4" />
-                    ) : (
-                      <UserPlus className="w-4 h-4" />
-                    )}
-                    {dialogConfig.submitText}
-                  </>
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="contact@exemple.com"
+                        disabled={isSubmitting}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </Button>
+              />
+
+              <FormField
+                control={form.control}
+                name="telephone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Téléphone</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="+212 6 XX XX XX XX"
+                        disabled={isSubmitting}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-          </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="is_contact_principal_devis"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Contact devis</FormLabel>
+                      <FormDescription>
+                        Reçoit les devis et estimations
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={isSubmitting}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="is_contact_principal_facture"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Contact facturation</FormLabel>
+                      <FormDescription>
+                        Reçoit les factures et relances
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={isSubmitting}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </div>
+          </form>
+        </Form>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isSubmitting}
+          >
+            Annuler
+          </Button>
+          <Button
+            onClick={handleSubmit(onSubmit)}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                {dialogConfig.loadingText}
+              </>
+            ) : (
+              dialogConfig.submitText
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-}
-
-// Helper function to calculate form completion percentage
-function calculateFormProgress(values: ContactFormValues): number {
-  const fields = ['nom', 'prenom', 'email', 'telephone', 'fonction'];
-  const filledFields = fields.filter(field => {
-    const value = values[field as keyof ContactFormValues];
-    return typeof value === 'string' && value.trim() !== '';
-  });
-  
-  const baseProgress = (filledFields.length / fields.length) * 80;
-  const roleProgress = (values.is_contact_principal_devis || values.is_contact_principal_facture) ? 20 : 0;
-  
-  return Math.round(baseProgress + roleProgress);
 }

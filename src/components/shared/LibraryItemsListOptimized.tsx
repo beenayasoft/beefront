@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../ui/table";
 import { Work, Material, Labor } from "@/features/library/types/workLibrary";
+import { useFormatCurrency } from "@/contexts/CurrencyContext";
 
 interface LibraryItemsListOptimizedProps {
   items: (Work | Material | Labor)[];
@@ -19,6 +20,7 @@ const LibraryItemsListOptimized = memo(function LibraryItemsListOptimized({
   onItemEdit,
   isLoading = false,
 }: LibraryItemsListOptimizedProps) {
+  const formatCurrencyWithSymbol = useFormatCurrency();
   
   // Callbacks optimisés
   const handleItemClick = useCallback((item: Work | Material | Labor) => {
@@ -43,12 +45,8 @@ const LibraryItemsListOptimized = memo(function LibraryItemsListOptimized({
   // Prix formaté optimisé
   const formatPrice = useCallback((item: Work | Material | Labor) => {
     const price = "recommendedPrice" in item ? item.recommendedPrice : item.unitPrice;
-    return new Intl.NumberFormat("fr-FR", {
-      style: "currency",
-      currency: "MAD",
-      minimumFractionDigits: 2,
-    }).format(price);
-  }, []);
+    return formatCurrencyWithSymbol(price, { showSymbol: true });
+  }, [formatCurrencyWithSymbol]);
 
   if (isLoading) {
     return (

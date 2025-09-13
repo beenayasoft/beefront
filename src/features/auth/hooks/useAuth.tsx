@@ -60,6 +60,8 @@ interface AuthContextType {
   getTenantName: () => string;
   getTenantInfo: () => ExtendedTenantInfo | null;
   getUserDisplayName: () => string;
+  // Fonction pour mettre à jour les données utilisateur
+  updateUser: (userData: User) => void;
 }
 
 // Création du contexte avec une valeur par défaut undefined
@@ -262,6 +264,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return user?.username || 'Utilisateur';
   };
 
+  // Fonction pour mettre à jour les données utilisateur
+  const updateUser = (userData: User) => {
+    setUser(userData);
+  };
+
   // Valeur du contexte
   const value = {
     user,
@@ -273,7 +280,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     error,
     getTenantName,
     getTenantInfo,
-    getUserDisplayName
+    getUserDisplayName,
+    updateUser
   };
 
   return (

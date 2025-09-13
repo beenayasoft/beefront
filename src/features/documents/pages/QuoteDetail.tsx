@@ -2,26 +2,31 @@
  * Page de détail d'un devis
  */
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { quotesApi } from '../api/quotes';
 import { Quote, QuoteItem } from '../types/quotes.types';
 import { handleApiError } from '@/lib/api/client';
-import { formatCurrency, formatDate } from '@/lib/utils/formatters';
-import { ValidateQuoteModal, SendQuoteModal, ConvertToInvoiceModal } from '../components/quotes';
+import { formatDate } from '@/lib/utils/formatters';
+import { useCurrency } from '@/contexts/CurrencyContext';
+import { ValidateQuoteModal, SendQuoteModal, ConvertToInvoiceModal, QuotePreviewModal } from '../components/quotes';
 import { useModalState } from '@/hooks/useModalState';
-import QuoteA4Preview from '../components/quotes/QuoteA4Preview';
 import { SuccessModal } from '@/components/ui/SuccessModal';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { useToast } from '@/components/ui/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { User, Building, Calendar, Info, DollarSign, FileText, Eye } from 'lucide-react';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 
 /**
  * Page de détail d'un devis
  */
 const QuoteDetail: React.FC = () => {
+  const { formatCurrency } = useCurrency();
   // Récupérer l'ID du devis depuis l'URL
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { getUserDisplayName } = useAuth();
   
   // États pour les données
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -31,10 +36,15 @@ const QuoteDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  
+  // États pour la pagination des articles
+  const [showAllItems, setShowAllItems] = useState(false);
+  const ITEMS_DISPLAY_LIMIT = 5; // Limite d'affichage par défaut
   // États pour les modals
   const validateModal = useModalState();
   const sendModal = useModalState();
   const convertModal = useModalState();
+  const previewModal = useModalState();
   
   // États pour les nouvelles modales de succès et confirmation
   const [successModal, setSuccessModal] = useState<{
@@ -406,92 +416,6 @@ const QuoteDetail: React.FC = () => {
     }
   };
   
-  // Gérer l'export du devis en PDF avec paramètres d'apparence backend
-  const handleExportPdf = async () => {
-    if (!id || !quote) return;
-    
-    setIsActionLoading(true);
-    setActionError(null);
-    
-    try {
-      console.log(`🔄 Export PDF backend en cours pour le devis ${quote.number}...`);
-      
-      // Récupérer les paramètres d'apparence et infos tenant
-      let appearanceSettings = null;
-      let tenantInfo = null;
-      
-      try {
-        const [settingsModule, tenantModule] = await Promise.all([
-          import('@/lib/api/documentAppearance'),
-          import('@/lib/api/tenant')
-        ]);
-        
-        appearanceSettings = await settingsModule.documentAppearanceAPI.getAppearanceSettings();
-        tenantInfo = await tenantModule.tenantApi.getCurrentTenantInfo();
-        
-        console.log('🎨 Paramètres récupérés pour PDF backend');
-      } catch (settingsError) {
-        console.warn('⚠️ Impossible de récupérer les paramètres, utilisation des valeurs par défaut:', settingsError);
-      }
-      
-      // Préparer les données complètes pour le backend
-      const pdfRequestData = {
-        appearance_settings: appearanceSettings,
-        tenant_info: tenantInfo,
-        quote_data: {
-          id: quote.id,
-          number: quote.number,
-          clientName: quote.clientName,
-          projectName: quote.projectName,
-          totalHt: quote.totalHt,
-          totalVat: quote.totalVat,
-          totalTtc: quote.totalTtc,
-          items: quote.items,
-          issueDate: quote.issueDate,
-          expiryDate: quote.expiryDate,
-          notes: quote.notes,
-          termsAndConditions: quote.termsAndConditions
-        }
-      };
-      
-      console.log('📤 Envoi données complètes au backend pour PDF:', pdfRequestData);
-      
-      const blob = await quotesApi.exportQuoteToPdf(id, pdfRequestData);
-      
-      // Vérifier que le blob est valide
-      if (!blob || blob.size === 0) {
-        throw new Error('PDF vide ou invalide reçu du serveur');
-      }
-      
-      console.log(`📄 PDF reçu - Taille: ${blob.size} bytes, Type: ${blob.type}`);
-      
-      // Créer un blob avec le type MIME correct pour PDF
-      const pdfBlob = new Blob([blob], { type: 'application/pdf' });
-      
-      // Créer un URL pour le blob et le télécharger
-      const url = window.URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `devis_${quote.number.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      
-      // Nettoyer après un délai pour permettre le téléchargement
-      setTimeout(() => {
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-      }, 100);
-      
-      console.log(`✅ Export PDF backend réussi pour le devis ${quote.number} avec paramètres d'apparence`);
-    } catch (error) {
-      console.error(`❌ Erreur export PDF pour le devis ${quote.number}:`, error);
-      const errorMessage = handleApiError(error, 'Erreur lors de l\'export du devis en PDF');
-      setActionError(`Export PDF impossible: ${errorMessage}`);
-    } finally {
-      setIsActionLoading(false);
-    }
-  };
   
   // Si chargement en cours
   if (isLoading) {
@@ -588,48 +512,16 @@ const QuoteDetail: React.FC = () => {
                 <div className="text-xl font-bold">{formatCurrency(quote.totalTtc)}</div>
               </div>
               
-              <div className="flex">
+              <div className="flex gap-2">
                 <button
-                  onClick={() => setIsFullScreen(true)}
+                  onClick={() => previewModal.actions.open()}
                   className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-                  title="Voir en plein écran"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                  </svg>
-                </button>
-                
-                <button
-                  onClick={handleExportPdf}
-                  className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50"
-                  title="Télécharger PDF"
+                  title="Aperçu PDF"
                   disabled={isActionLoading}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+                  <Eye className="w-5 h-5" />
                 </button>
                 
-                <button
-                  onClick={handleDuplicateQuote}
-                  className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50"
-                  title="Dupliquer"
-                  disabled={isActionLoading}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </button>
-                
-                <Link
-                  to={`/devis/edit/${id}`}
-                  className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-                  title="Modifier"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </Link>
               </div>
             </div>
           </div>
@@ -642,143 +534,166 @@ const QuoteDetail: React.FC = () => {
           </div>
         )}
 
+        {/* Plus de debug nécessaire - DocumentPreview fonctionne ! */}
+
         {/* Layout principal exactement comme l'image */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Colonnes principales (2/3) */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Section Client et Projet (une seule card) */}
-          <div className="bg-white rounded-lg shadow-sm border p-6">
+          {/* Section Client et Projet - Style moderne */}
+          <Card className="group hover:shadow-lg hover:-translate-y-1 transition-all duration-200 bg-gradient-to-r from-white to-neutral-50/50">
+            <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 
                 {/* Client */}
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <h3 className="font-medium text-gray-900">Client</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg">
+                      <User className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <h3 className="font-semibold text-gray-900">Client</h3>
                   </div>
-                  <div className="space-y-1">
-                    <div className="font-medium text-gray-900">{quote.clientName}</div>
+                  <div className="space-y-3 ml-10">
+                    <div className="font-medium text-gray-900 text-lg">{quote.clientName}</div>
                     {quote.clientAddress && (
-                      <div className="text-sm text-gray-600">{quote.clientAddress}</div>
+                      <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{quote.clientAddress}</div>
                     )}
                   </div>
                 </div>
 
                 {/* Projet */}
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                    <h3 className="font-medium text-gray-900">Projet</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg">
+                      <Building className="w-5 h-5 text-green-600" />
+                    </div>
+                    <h3 className="font-semibold text-gray-900">Projet</h3>
                   </div>
-                  <div className="space-y-1">
-                    <div className="font-medium text-gray-900">{quote.projectName || 'Devis - Opportunité normale'}</div>
+                  <div className="space-y-3 ml-10">
+                    <div className="font-medium text-gray-900 text-lg">{quote.projectName || 'Devis - Opportunité normale'}</div>
                     {quote.projectAddress && (
-                      <div className="text-sm text-gray-600">{quote.projectAddress}</div>
+                      <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">{quote.projectAddress}</div>
                     )}
                   </div>
                 </div>
 
                 {/* Dates */}
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <h3 className="font-medium text-gray-900">Dates</h3>
-                  </div>
-                  <div className="space-y-2">
-                    <div>
-                      <div className="text-xs text-gray-500">Date d'émission</div>
-                      <div className="text-sm text-gray-900">{formatDate(quote.issueDate) || '25/06/2025'}</div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-gradient-to-br from-orange-50 to-yellow-50 rounded-lg">
+                      <Calendar className="w-5 h-5 text-orange-600" />
                     </div>
-                    <div>
-                      <div className="text-xs text-gray-500">Date d'expiration</div>
-                      <div className="text-sm text-gray-900">{quote.expiryDate ? formatDate(quote.expiryDate) : '25/07/2025'}</div>
+                    <h3 className="font-semibold text-gray-900">Dates</h3>
+                  </div>
+                  <div className="space-y-3 ml-10">
+                    <div className="bg-orange-50 p-3 rounded-lg">
+                      <div className="text-xs font-medium text-orange-600 uppercase tracking-wide">Date d'émission</div>
+                      <div className="text-sm font-medium text-gray-900 mt-1">{formatDate(quote.issueDate) || '25/06/2025'}</div>
+                    </div>
+                    <div className="bg-red-50 p-3 rounded-lg">
+                      <div className="text-xs font-medium text-red-600 uppercase tracking-wide">Date d'expiration</div>
+                      <div className="text-sm font-medium text-gray-900 mt-1">{quote.expiryDate ? formatDate(quote.expiryDate) : '25/07/2025'}</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Informations */}
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <h3 className="font-medium text-gray-900">Informations</h3>
-                  </div>
-                  <div className="space-y-2">
-                    <div>
-                      <div className="text-xs text-gray-500">Validité</div>
-                      <div className="text-sm text-gray-900">{quote.validityPeriod || '30 jours'}</div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg">
+                      <Info className="w-5 h-5 text-purple-600" />
                     </div>
-                    <div>
-                      <div className="text-xs text-gray-500">Créé le</div>
-                      <div className="text-sm text-gray-900">{formatDate(quote.createdAt) || '25/06/2025'}</div>
+                    <h3 className="font-semibold text-gray-900">Informations</h3>
+                  </div>
+                  <div className="space-y-3 ml-10">
+                    <div className="bg-purple-50 p-3 rounded-lg">
+                      <div className="text-xs font-medium text-purple-600 uppercase tracking-wide">Validité</div>
+                      <div className="text-sm font-medium text-gray-900 mt-1">{quote.validityPeriod || '30 jours'}</div>
+                    </div>
+                    <div className="bg-indigo-50 p-3 rounded-lg">
+                      <div className="text-xs font-medium text-indigo-600 uppercase tracking-wide">Créé le</div>
+                      <div className="text-sm font-medium text-gray-900 mt-1">{formatDate(quote.createdAt) || '25/06/2025'}</div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Détail du devis */}
-            <div className="bg-white rounded-lg shadow-sm border">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Détail du devis</h2>
-              </div>
+            {/* Détail du devis - Style moderne */}
+            <Card className="group hover:shadow-lg hover:-translate-y-1 transition-all duration-200 bg-gradient-to-r from-white to-slate-50/50">
+              <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-100">
+                <CardTitle className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-slate-50 to-gray-100 rounded-lg">
+                    <FileText className="w-5 h-5 text-slate-600" />
+                  </div>
+                  Détail du devis
+                </CardTitle>
+              </CardHeader>
               
-              <div className="overflow-x-auto">
-                <table className="min-w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Désignation</th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Quantité</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Prix unitaire</th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">TVA</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total HT</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total TTC</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-100">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead className="bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Désignation</th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Quantité</th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Prix unitaire</th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">TVA</th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Total HT</th>
+                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Total TTC</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-50">
                     {quoteItems.length > 0 ? (
-                      quoteItems.map((item) => (
-                        <tr key={item.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4">
-                            <div className="text-sm font-medium text-gray-900">{item.designation || item.description}</div>
-                            {item.description && item.description !== item.designation && (
-                              <div className="text-sm text-gray-500 mt-1">{item.description}</div>
-                            )}
+                      // Affichage paginé des articles
+                      (showAllItems ? quoteItems : quoteItems.slice(0, ITEMS_DISPLAY_LIMIT)).map((item, index) => (
+                        <tr key={item.id} className="hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-slate-50/30 transition-all duration-200">
+                          <td className="px-6 py-5">
+                            <div className="flex items-start gap-3">
+                              <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-50 to-slate-50 rounded-lg flex items-center justify-center">
+                                <span className="text-xs font-semibold text-blue-600">{index + 1}</span>
+                              </div>
+                              <div>
+                                <div className="text-sm font-semibold text-gray-900">{item.designation || item.description}</div>
+                                {item.description && item.description !== item.designation && (
+                                  <div className="text-xs text-gray-500 mt-1 bg-gray-50 px-2 py-1 rounded">{item.description}</div>
+                                )}
+                              </div>
+                            </div>
                           </td>
-                          <td className="px-6 py-4 text-center text-sm text-gray-900">
-                            {item.quantity}
+                          <td className="px-6 py-5 text-center">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                              {item.quantity}
+                            </span>
                           </td>
-                          <td className="px-6 py-4 text-right text-sm text-gray-900">
-                            {formatCurrency(item.unitPrice)}
+                          <td className="px-6 py-5 text-right">
+                            <span className="text-sm font-semibold text-gray-900">{formatCurrency(item.unitPrice)}</span>
                           </td>
-                          <td className="px-6 py-4 text-center text-sm text-gray-900">
-                            {item.vatRate}%
+                          <td className="px-6 py-5 text-center">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                              {item.vatRate}%
+                            </span>
                           </td>
-                          <td className="px-6 py-4 text-right text-sm text-gray-900">
-                            {formatCurrency(item.totalHt)}
+                          <td className="px-6 py-5 text-right">
+                            <span className="text-sm font-semibold text-gray-900">{formatCurrency(item.totalHt)}</span>
                           </td>
-                          <td className="px-6 py-4 text-right text-sm font-medium text-gray-900">
-                            {formatCurrency(item.totalTtc)}
+                          <td className="px-6 py-5 text-right">
+                            <span className="text-sm font-bold text-Beenaya-600">{formatCurrency(item.totalTtc)}</span>
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center">
-                          <div className="text-gray-400">
-                            <svg className="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <p className="text-sm">Aucun élément dans ce devis</p>
+                        <td colSpan={6} className="px-6 py-16 text-center">
+                          <div className="flex flex-col items-center justify-center text-gray-400">
+                            <div className="w-16 h-16 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl flex items-center justify-center mb-4">
+                              <FileText className="w-8 h-8 text-gray-400" />
+                            </div>
+                            <p className="text-sm font-medium">Aucun élément dans ce devis</p>
+                            <p className="text-xs text-gray-400 mt-1">Les éléments du devis apparaîtront ici</p>
                           </div>
                         </td>
                       </tr>
@@ -787,83 +702,108 @@ const QuoteDetail: React.FC = () => {
                 </table>
               </div>
 
-              {/* Totaux - Exactement comme l'image */}
-              <div className="px-6 py-4 border-t border-gray-200">
+              {/* Bouton pour afficher plus/moins d'articles */}
+              {quoteItems.length > ITEMS_DISPLAY_LIMIT && (
+                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                  <button
+                    onClick={() => setShowAllItems(!showAllItems)}
+                    className="w-full text-center text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 py-2 px-4 rounded-lg transition-colors duration-200"
+                  >
+                    {showAllItems ? (
+                      <>Masquer les articles ({quoteItems.length - ITEMS_DISPLAY_LIMIT} de plus)</>
+                    ) : (
+                      <>Afficher tous les articles ({quoteItems.length - ITEMS_DISPLAY_LIMIT} de plus)</>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Totaux - Style moderne */}
+              <div className="px-6 py-6 bg-gradient-to-r from-slate-50 to-gray-50 border-t border-gray-100">
                 <div className="flex justify-end">
-                  <div className="text-right space-y-2">
-                    <div className="flex justify-between items-center min-w-[200px]">
-                      <span className="text-sm text-gray-600">Total HT:</span>
-                      <span className="text-sm font-medium">{formatCurrency(quote.totalHt)}</span>
+                  <div className="space-y-3 min-w-[250px]">
+                    <div className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
+                      <span className="text-sm font-medium text-gray-600">Total HT:</span>
+                      <span className="text-sm font-bold text-gray-900">{formatCurrency(quote.totalHt)}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Total TVA:</span>
-                      <span className="text-sm font-medium">{formatCurrency(quote.totalVat)}</span>
+                    <div className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
+                      <span className="text-sm font-medium text-gray-600">Total TVA:</span>
+                      <span className="text-sm font-bold text-gray-900">{formatCurrency(quote.totalVat)}</span>
                     </div>
-                    <div className="flex justify-between items-center border-t pt-2">
-                      <span className="text-lg font-bold text-gray-900">Total TTC:</span>
-                      <span className="text-lg font-bold text-gray-900">{formatCurrency(quote.totalTtc)}</span>
+                    <div className="flex justify-between items-center p-4 bg-gradient-to-r from-Beenaya-50 to-blue-50 rounded-lg shadow-md border border-Beenaya-200">
+                      <span className="text-lg font-bold text-Beenaya-900">Total TTC:</span>
+                      <span className="text-xl font-bold text-Beenaya-600">{formatCurrency(quote.totalTtc)}</span>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+              </CardContent>
+            </Card>
 
           </div>
 
-          {/* Colonne de droite - Statut et actions exactement comme l'image (1/3) */}
+          {/* Colonne de droite - Style moderne */}
           <div className="lg:col-span-1 space-y-6">
             
-            {/* Statut et actions - Design exact de l'image */}
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Statut et actions</h3>
+            {/* Statut et actions - Style moderne */}
+            <Card className="group hover:shadow-lg hover:-translate-y-1 transition-all duration-200 bg-gradient-to-br from-white to-slate-50/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg">
+                    <Eye className="w-5 h-5 text-purple-600" />
+                  </div>
+                  Statut et actions
+                </CardTitle>
+              </CardHeader>
               
-              {/* Statut actuel - Centré comme l'image */}
-              <div className="text-center mb-6">
-                <div className="text-sm font-medium text-gray-700 mb-3">Statut actuel</div>
-                <div className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
-                  quote.status === 'draft' ? 'bg-gray-100 text-gray-800 border border-gray-300' :
-                  quote.status === 'sent' ? 'bg-blue-100 text-blue-800 border border-blue-300' :
-                  quote.status === 'accepted' ? 'bg-green-100 text-green-800 border border-green-300' :
-                  'bg-red-100 text-red-800 border border-red-300'
-                }`}>
-                  <div className={`w-2 h-2 rounded-full mr-2 ${
-                    quote.status === 'draft' ? 'bg-gray-500' :
-                    quote.status === 'sent' ? 'bg-blue-500' :
-                    quote.status === 'accepted' ? 'bg-green-500' :
-                    'bg-red-500'
-                  }`}></div>
-                  {quote.status === 'draft' ? 'Brouillon' : 
-                   quote.status === 'sent' ? 'Envoyé' :
-                   quote.status === 'accepted' ? 'Accepté' :
-                   quote.statusDisplay || quote.status}
+              <CardContent className="space-y-6">
+                {/* Statut actuel - Style moderne */}
+                <div className="text-center">
+                  <div className="text-sm font-medium text-gray-500 mb-4 uppercase tracking-wide">Statut actuel</div>
+                  <div className={`inline-flex items-center px-6 py-3 rounded-2xl text-sm font-semibold shadow-lg transition-all duration-200 ${
+                    quote.status === 'draft' ? 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-800 border border-gray-300 shadow-gray-200' :
+                    quote.status === 'sent' ? 'bg-gradient-to-r from-blue-100 to-sky-100 text-blue-800 border border-blue-300 shadow-blue-200' :
+                    quote.status === 'accepted' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border border-green-300 shadow-green-200' :
+                    'bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border border-red-300 shadow-red-200'
+                  }`}>
+                    <div className={`w-3 h-3 rounded-full mr-3 ${
+                      quote.status === 'draft' ? 'bg-gray-500' :
+                      quote.status === 'sent' ? 'bg-blue-500' :
+                      quote.status === 'accepted' ? 'bg-green-500' :
+                      'bg-red-500'
+                    }`}></div>
+                    {quote.status === 'draft' ? 'Brouillon' : 
+                     quote.status === 'sent' ? 'Envoyé' :
+                     quote.status === 'accepted' ? 'Accepté' :
+                     quote.statusDisplay || quote.status}
+                  </div>
                 </div>
-              </div>
 
-              {/* Montants - Disposition exacte de l'image */}
-              <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Total HT:</span>
-                  <span className="font-medium text-gray-900">{formatCurrency(quote.totalHt)}</span>
+                {/* Montants - Style moderne */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-sky-50 rounded-lg">
+                    <span className="text-sm font-medium text-blue-700">Total HT:</span>
+                    <span className="font-bold text-blue-900">{formatCurrency(quote.totalHt)}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg">
+                    <span className="text-sm font-medium text-orange-700">TVA:</span>
+                    <span className="font-bold text-orange-900">{formatCurrency(quote.totalVat)}</span>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-gradient-to-r from-Beenaya-50 to-purple-50 rounded-xl shadow-md border border-Beenaya-200">
+                    <span className="font-bold text-Beenaya-900">Total TTC:</span>
+                    <span className="font-bold text-xl text-Beenaya-600">
+                      {formatCurrency(quote.totalTtc)}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">TVA:</span>
-                  <span className="font-medium text-gray-900">{formatCurrency(quote.totalVat)}</span>
-                </div>
-                <div className="flex justify-between font-semibold border-t border-gray-200 dark:border-gray-700 pt-2">
-                  <span>Total TTC:</span>
-                  <span className="text-slate-700">
-                    {formatCurrency(quote.totalTtc)}
-                  </span>
-                </div>
-              </div>
 
-              {/* Actions principales - Design exact de l'image */}
-              <div className="space-y-3">
+                {/* Actions principales - Style moderne */}
+                <div className="space-y-3">
                 {/* Actions avec thème Benaya */}
                 {quote.status === 'draft' && (
                   <>
                     <button
-                      className="w-full flex items-center justify-center px-4 py-3 bg-Beenaya-600 text-white rounded-lg hover:bg-Beenaya-700 transition-colors font-medium gap-2"
+                      className="w-full flex items-center justify-center px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium gap-2"
                       onClick={() => sendModal.actions.open()}
                       disabled={isActionLoading}
                     >
@@ -937,73 +877,94 @@ const QuoteDetail: React.FC = () => {
                   Dupliquer
                 </button>
 
-                <button
-                  className="w-full border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
-                  onClick={handleExportPdf}
-                  disabled={isActionLoading}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Télécharger PDF
-                </button>
               </div>
-            </div>
+              </CardContent>
+            </Card>
 
-            {/* Résumé - Design exact de l'image */}
-            <div className="bg-white rounded-lg shadow-sm border p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Résumé</h3>
+            {/* Résumé - Style moderne */}
+            <Card className="group hover:shadow-lg hover:-translate-y-1 transition-all duration-200 bg-gradient-to-br from-white to-emerald-50/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-emerald-50 to-green-50 rounded-lg">
+                    <DollarSign className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  Résumé
+                </CardTitle>
+              </CardHeader>
               
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Éléments:</span>
-                  <span className="font-medium text-gray-900 text-right">{quoteItems.length || 0}</span>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg hover:shadow-md transition-shadow duration-200">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-blue-700">Éléments:</span>
+                  </div>
+                  <span className="font-bold text-blue-900 bg-white px-2 py-1 rounded-full text-sm">{quoteItems.length || 0}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Validité:</span>
-                  <span className="font-medium text-gray-900 text-right">{quote.validityPeriod || '30 jours'}</span>
+                <div className="flex justify-between items-center p-3 bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg hover:shadow-md transition-shadow duration-200">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-orange-700">Validité:</span>
+                  </div>
+                  <span className="font-bold text-orange-900 bg-white px-2 py-1 rounded-full text-sm">{quote.validityPeriod || '30 jours'}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Créé par:</span>
-                  <span className="font-medium text-gray-900 text-right">{quote.createdBy || 'elvislex@live.fr'}</span>
+                <div className="flex justify-between items-center p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg hover:shadow-md transition-shadow duration-200">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <span className="text-sm font-medium text-purple-700">Créé par:</span>
+                  </div>
+                  <span className="font-bold text-purple-900 bg-white px-2 py-1 rounded-full text-sm">{quote.createdBy || getUserDisplayName()}</span>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
-            {/* Notes et conditions */}
+            {/* Notes et conditions - Style moderne */}
             {(quote.notes || quote.terms) && (
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Notes et conditions</h3>
+              <Card className="group hover:shadow-lg hover:-translate-y-1 transition-all duration-200 bg-gradient-to-br from-white to-amber-50/30">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg">
+                      <FileText className="w-5 h-5 text-amber-600" />
+                    </div>
+                    Notes et conditions
+                  </CardTitle>
+                </CardHeader>
                 
-                <div className="space-y-4">
+                <CardContent className="space-y-6">
                   {quote.notes && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Notes</h4>
-                      <p className="text-sm text-gray-600 whitespace-pre-line">{quote.notes}</p>
+                    <div className="p-4 bg-gradient-to-r from-blue-50 to-sky-50 rounded-lg border border-blue-100">
+                      <h4 className="text-sm font-semibold text-blue-700 mb-3 uppercase tracking-wide flex items-center gap-2">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        Notes
+                      </h4>
+                      <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{quote.notes}</p>
                     </div>
                   )}
                   
                   {quote.terms && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Conditions</h4>
-                      <p className="text-sm text-gray-600 whitespace-pre-line">{quote.terms}</p>
+                    <div className="p-4 bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg border border-emerald-100">
+                      <h4 className="text-sm font-semibold text-emerald-700 mb-3 uppercase tracking-wide flex items-center gap-2">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                        Conditions
+                      </h4>
+                      <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{quote.terms}</p>
                     </div>
                   )}
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             )}
 
           </div>
         </div>
       </div>
 
-    {/* Prévisualisation A4 */}
-    <QuoteA4Preview
-      quote={quote}
-      isOpen={isFullScreen}
-      onClose={() => setIsFullScreen(false)}
-      onDownloadPdf={handleExportPdf}
-    />
+    {/* Modal d'aperçu PDF */}
+    {quote && (
+      <QuotePreviewModal
+        quote={quote}
+        isOpen={previewModal.isOpen}
+        onClose={() => previewModal.actions.close()}
+      />
+    )}
 
     {/* Ancien Modal Plein Écran - SUPPRIMER APRÈS */}
     {false && isFullScreen && quote && (
@@ -1173,7 +1134,7 @@ const QuoteDetail: React.FC = () => {
       <>
         <ValidateQuoteModal
             open={validateModal.isOpen}
-            onOpenChange={validateModal.actions.setOpen}
+            onOpenChange={(open) => open ? validateModal.actions.open() : validateModal.actions.close()}
             quote={{
               id: quote.id,
               number: quote.number,
@@ -1187,7 +1148,7 @@ const QuoteDetail: React.FC = () => {
 
           <SendQuoteModal
             open={sendModal.isOpen}
-            onOpenChange={sendModal.actions.setOpen}
+            onOpenChange={(open) => open ? sendModal.actions.open() : sendModal.actions.close()}
             quote={{
               id: quote.id,
               number: quote.number,
@@ -1200,7 +1161,7 @@ const QuoteDetail: React.FC = () => {
 
           <ConvertToInvoiceModal
             open={convertModal.isOpen}
-            onOpenChange={convertModal.actions.setOpen}
+            onOpenChange={(open) => open ? convertModal.actions.open() : convertModal.actions.close()}
             quote={{
               id: quote.id,
               number: quote.number,

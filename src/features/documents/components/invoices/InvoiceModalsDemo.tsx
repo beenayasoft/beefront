@@ -53,14 +53,14 @@ export function InvoiceModalsDemo() {
         quantity: 1,
         unitPrice: 15000,
         vatRate: 20,
-        totalHT: 15000,
-        totalTTC: 18000
+        totalHt: 15000,
+        totalTtc: 18000
       }
     ],
     notes: "Travaux de qualité supérieure",
-    totalHT: 15000,
+    totalHt: 15000,
     totalVAT: 3000,
-    totalTTC: 18000,
+    totalTtc: 18000,
     paidAmount: 5000,
     remainingAmount: 13000,
     payments: [],
@@ -101,7 +101,7 @@ export function InvoiceModalsDemo() {
         <CreateInvoiceFromQuoteModal
           open={createFromQuoteOpen}
           onOpenChange={setCreateFromQuoteOpen}
-          quote={{ id: "quote_001", number: "DEV-2024-001", clientName: "Entreprise ABC", totalTTC: 18000 }}
+          quote={{ id: "quote_001", number: "DEV-2024-001", clientName: "Entreprise ABC", totalTtc: 18000 }}
           onSuccess={(invoice) => {
             console.log("Facture créée depuis devis:", invoice);
           }}

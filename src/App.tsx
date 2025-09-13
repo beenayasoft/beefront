@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/features/auth/hooks/useAuth";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { crmQueryClient } from "@/features/crm/config/queryClient";
 import { PageTitleProvider } from "@/components/common/PageTitleProvider";
+import { CurrencyProvider } from "@/contexts/CurrencyContext";
 
 // Import statique uniquement pour Auth (nécessaire au démarrage)
 import Auth from "@/features/auth/pages/Auth";
@@ -26,12 +27,10 @@ const DevisNew = lazy(() => import("@/features/documents/pages/DevisNew"));
 const Devis = lazy(() => import("@/features/documents/pages/Devis"));
 const QuoteEditor = lazy(() => import("@/features/documents/pages/QuoteEditor"));
 const QuoteDetail = lazy(() => import("@/features/documents/pages/QuoteDetail"));
-const QuotePreview = lazy(() => import("@/features/documents/pages/QuotePreview"));
 const Factures = lazy(() => import("@/features/documents/pages/Factures"));
 const InvoiceCreate = lazy(() => import("@/features/documents/pages/InvoiceCreate"));
 const InvoiceDetail = lazy(() => import("@/features/documents/pages/InvoiceDetail"));
 const InvoiceEditor = lazy(() => import("@/features/documents/pages/InvoiceEditor"));
-const InvoicePreview = lazy(() => import("@/features/documents/pages/InvoicePreview"));
 
 // ✅ FEATURES - CRM (optimisé)
 const Tiers = lazy(() => import("@/features/crm/pages/Tiers"));
@@ -92,8 +91,9 @@ export default function App() {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <QueryClientProvider client={crmQueryClient}>
         <AuthProvider>
-          <BrowserRouter>
-            <PageTitleProvider />
+          <CurrencyProvider autoInitialize={true}>
+            <BrowserRouter>
+              <PageTitleProvider />
           <Routes>
             {/* Auth routes - rediriger si déjà connecté */}
             <Route path="/auth" element={
@@ -151,11 +151,6 @@ export default function App() {
                   <QuoteEditor />
                 </Suspense>
               } />
-              <Route path="devis/preview/:id" element={
-                <Suspense fallback={<PageLoader />}>
-                  <QuotePreview />
-                </Suspense>
-              } />
               <Route path="devis/:id" element={
                 <Suspense fallback={<PageLoader />}>
                   <QuoteDetail />
@@ -180,11 +175,6 @@ export default function App() {
               <Route path="factures/edit/:id" element={
                 <Suspense fallback={<PageLoader />}>
                   <InvoiceEditor />
-                </Suspense>
-              } />
-              <Route path="factures/preview/:id" element={
-                <Suspense fallback={<PageLoader />}>
-                  <InvoicePreview />
                 </Suspense>
               } />
               <Route path="interventions" element={
@@ -251,7 +241,8 @@ export default function App() {
               </Suspense>
             } />
           </Routes>
-          </BrowserRouter>
+            </BrowserRouter>
+          </CurrencyProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>

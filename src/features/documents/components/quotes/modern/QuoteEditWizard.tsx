@@ -17,7 +17,6 @@ import { useToast } from '@/components/ui/use-toast';
 import { Quote, CreateQuoteData } from '../../../types/quotes.types';
 import { quotesApi } from '../../../api/quotes';
 import { useQuoteWizard } from '../../../hooks/useQuoteWizard';
-import QuoteA4Preview from '../QuoteA4Preview';
 
 // Import des étapes (réutilisables pour l'édition)
 import { EditClientStep } from './steps/EditClientStep';
@@ -102,13 +101,70 @@ const QuoteEditWizard: React.FC<QuoteEditWizardProps> = ({
           };
 
           wizard.setClient?.(editModeClient);
+
+          // Récupérer les vraies données de l'opportunité si elle existe
+          if (quote.opportunityId) {
+            (async () => {
+              try {
+                console.log('📞 Récupération opportunité:', quote.opportunityId);
+                // Importer l'API CRM de façon dynamique pour éviter les dépendances circulaires
+                const { opportunitiesApi } = await import('@/features/crm/api/opportunities');
+                const fullOpportunity = await opportunitiesApi.getOpportunity(quote.opportunityId);
+                
+                // Convertir vers OpportunityOption pour le wizard
+                const opportunityOption = {
+                  id: fullOpportunity.id,
+                  name: fullOpportunity.name,
+                  stage: fullOpportunity.stage,
+                  estimatedAmount: fullOpportunity.estimatedAmount,
+                  probability: fullOpportunity.probability,
+                  tierId: fullOpportunity.tierId,
+                  tierName: fullOpportunity.tierName
+                };
+                
+                console.log('✅ Opportunité récupérée:', opportunityOption);
+                wizard.setOpportunity?.(opportunityOption);
+              } catch (error) {
+                console.warn('⚠️ Impossible de récupérer l\'opportunité:', error);
+                // Fallback vers un objet minimal si l'API échoue
+                const editModeOpportunity = {
+                  id: quote.opportunityId,
+                  name: quote.projectName || 'Opportunité associée',
+                  stage: 'new' as const,
+                  estimatedAmount: quote.totalTtc,
+                  probability: 0,
+                  tierId: editModeClient.id,
+                  tierName: editModeClient.name
+                };
+                wizard.setOpportunity?.(editModeOpportunity);
+              }
+            })();
+          }
+
           wizard.updateProjectDetails?.({
             name: quote.projectName || '',
             address: quote.projectAddress || '',
             reference: quote.projectReference || '',
             notes: quote.notes || ''
           });
-          wizard.updateItems?.(quote.items || []);
+          // Convertir les QuoteItem existants vers CreateQuoteItemData
+          const existingItems = (quote.items || []).map((item, index) => ({
+            type: item.type,
+            parent: item.parent,
+            position: index,
+            reference: item.reference,
+            designation: item.designation,
+            description: item.description,
+            unit: item.unit,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            discount: item.discount,
+            vatRate: item.vatRate,
+            margin: item.margin,
+            workId: item.workId
+          }));
+          console.log('🔄 Initialisation items existants:', existingItems);
+          wizard.updateItems?.(existingItems);
 
           // Forcer la validation de l'étape client pour l'édition
           // En mode édition, nous considérons que l'étape client est valide
@@ -142,8 +198,25 @@ const QuoteEditWizard: React.FC<QuoteEditWizardProps> = ({
     setSubmitError(null);
     
     try {
-      const quoteData = wizard.generateQuoteData();
-      const updatedQuote = await quotesApi.updateQuote(quote.id, quoteData);
+      const quoteData = await wizard.generateQuoteData();
+      console.log('📤 Données générées:', quoteData);
+      
+      // Pour l'édition, on envoie seulement les champs modifiables
+      const editData = {
+        client_name: quoteData.client_name,
+        client_address: quoteData.client_address,
+        project_name: quoteData.project_name,
+        project_address: quoteData.project_address,
+        project_reference: quoteData.project_reference,
+        notes: quoteData.notes,
+        terms_and_conditions: quoteData.terms_and_conditions,
+        items: quoteData.items
+      };
+      
+      console.log('📤 Données d\'édition à envoyer:', editData);
+      console.log('📤 Nombre d\'items à sauvegarder:', editData.items?.length || 0);
+      console.log('📤 Détail des items à sauvegarder:', editData.items);
+      const updatedQuote = await quotesApi.updateQuote(quote.id, editData);
       
       toast({
         title: 'Devis mis à jour',
@@ -402,31 +475,7 @@ const QuoteEditWizard: React.FC<QuoteEditWizardProps> = ({
         </CardContent>
       </Card>
 
-      {/* Prévisualisation A4 */}
-      <QuoteA4Preview
-        quote={quote}
-        isOpen={showA4Preview}
-        onClose={() => setShowA4Preview(false)}
-        onDownloadPdf={async () => {
-          try {
-            const blob = await quotesApi.exportQuoteToPdf(quote.id);
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `devis-${quote.number}.pdf`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-          } catch (error) {
-            toast({
-              title: 'Erreur',
-              description: 'Impossible de télécharger le PDF',
-              variant: 'destructive'
-            });
-          }
-        }}
-      />
+      {/* TODO: Réimplémenter l'aperçu PDF */}
     </div>
   );
 };

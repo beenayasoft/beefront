@@ -3,6 +3,8 @@
  */
 import { useState, useEffect } from 'react';
 import { crmApi } from '@/features/crm/api';
+import { quotesApi } from '@/features/documents/api/quotes';
+import { invoicesApi } from '@/features/documents/api/invoices';
 
 export interface SidebarStats {
   opportunities?: number;
@@ -32,11 +34,22 @@ export function useSidebarStats(): UseSidebarStatsResult {
       setLoading(true);
       setError(null);
 
+      console.log('🔄 Début récupération stats sidebar');
+
       // Récupérer les statistiques en parallèle
-      const [opportunityStatsResult, tiersStatsResult] = await Promise.allSettled([
+      const [opportunityStatsResult, tiersStatsResult, quotesStatsResult, invoicesStatsResult] = await Promise.allSettled([
         crmApi.opportunities.getOpportunityStats(),
-        crmApi.tiers.getStats()
+        crmApi.tiers.getStats(),
+        quotesApi.getStats(),
+        invoicesApi.getInvoiceStats()
       ]);
+
+      console.log('📊 Résultats stats sidebar:', {
+        opportunities: opportunityStatsResult,
+        tiers: tiersStatsResult,
+        quotes: quotesStatsResult,
+        invoices: invoicesStatsResult
+      });
 
       const newStats: SidebarStats = {};
 
@@ -74,6 +87,45 @@ export function useSidebarStats(): UseSidebarStatsResult {
         console.warn('⚠️ Erreur récupération stats tiers:', tiersStatsResult.reason);
       }
 
+      // Traiter les résultats des devis
+      if (quotesStatsResult.status === 'fulfilled') {
+        const quotesData = quotesStatsResult.value;
+        console.log('📊 Statistiques devis récupérées:', quotesData);
+        
+        // Adapter selon la structure de réponse de l'API devis
+        if (typeof quotesData.total_count === 'number') {
+          newStats.devis = quotesData.total_count;
+        } else if (typeof quotesData.total === 'number') {
+          newStats.devis = quotesData.total;
+        } else if (typeof quotesData.count === 'number') {
+          newStats.devis = quotesData.count;
+        } else if (Array.isArray(quotesData)) {
+          newStats.devis = quotesData.length;
+        }
+      } else {
+        console.warn('⚠️ Erreur récupération stats devis:', quotesStatsResult.reason);
+      }
+
+      // Traiter les résultats des factures
+      if (invoicesStatsResult.status === 'fulfilled') {
+        const invoicesData = invoicesStatsResult.value;
+        console.log('📊 Statistiques factures récupérées:', invoicesData);
+        
+        // Adapter selon la structure de réponse de l'API factures
+        if (typeof invoicesData.total_count === 'number') {
+          newStats.factures = invoicesData.total_count;
+        } else if (typeof invoicesData.total === 'number') {
+          newStats.factures = invoicesData.total;
+        } else if (typeof invoicesData.count === 'number') {
+          newStats.factures = invoicesData.count;
+        } else if (Array.isArray(invoicesData)) {
+          newStats.factures = invoicesData.length;
+        }
+      } else {
+        console.warn('⚠️ Erreur récupération stats factures:', invoicesStatsResult.reason);
+      }
+
+      console.log('✅ Stats finales sidebar:', newStats);
       setStats(newStats);
       
     } catch (err) {

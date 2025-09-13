@@ -56,7 +56,7 @@ export const OpportunityClientSelector: React.FC<Props> = ({
   error = false
 }) => {
   // ÉTAT LOCAL MINIMAL (3 variables seulement)
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(selectedClientData?.name || '');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   
@@ -89,7 +89,7 @@ export const OpportunityClientSelector: React.FC<Props> = ({
       console.log('📊 Résultats:', results.length);
       return results;
     },
-    enabled: searchQuery.length >= 2,
+    enabled: Boolean(searchQuery && searchQuery.length >= 2),
     staleTime: 30000,
     refetchOnWindowFocus: false
   });
@@ -176,10 +176,15 @@ export const OpportunityClientSelector: React.FC<Props> = ({
 
   // SYNCHRONISATION AVEC PROPS EXTERNES
   useEffect(() => {
-    if (selectedClientData && !searchQuery) {
+    if (selectedClientData) {
+      // Toujours afficher le nom du client sélectionné
       setSearchQuery(selectedClientData.name);
+      // Fermer le dropdown si le composant est désactivé
+      if (disabled) {
+        setIsDropdownOpen(false);
+      }
     }
-  }, [selectedClientData, searchQuery]);
+  }, [selectedClientData, disabled]);
 
   // HELPERS D'AFFICHAGE
   const formatClientType = (type: string) => type === 'entreprise' ? 'Entreprise' : 'Particulier';
@@ -190,6 +195,36 @@ export const OpportunityClientSelector: React.FC<Props> = ({
 
   return (
     <div className="space-y-2">
+      {/* INFO CLIENT PRÉSÉLECTIONNÉ */}
+      {disabled && selectedClientData && (
+        <div className="flex items-center gap-2 p-2 bg-emerald-50 border border-emerald-200 rounded-lg">
+          <Check className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              {selectedClientData.type === 'entreprise' ? (
+                <Building2 className="h-4 w-4 text-blue-600 flex-shrink-0" />
+              ) : (
+                <User className="h-4 w-4 text-green-600 flex-shrink-0" />
+              )}
+              <span className="font-medium text-emerald-800 truncate">
+                {selectedClientData.name}
+              </span>
+              <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700">
+                {formatClientType(selectedClientData.type)}
+              </Badge>
+              <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700">
+                {formatRelation(selectedClientData.relation)}
+              </Badge>
+            </div>
+            {selectedClientData.adressePrincipale && (
+              <p className="text-xs text-emerald-600 mt-1 truncate">
+                📍 {formatAddress(selectedClientData.adressePrincipale)}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+      
       {/* CONTENEUR PRINCIPAL */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         
@@ -201,24 +236,30 @@ export const OpportunityClientSelector: React.FC<Props> = ({
               type="text"
               value={searchQuery}
               onChange={handleInputChange}
-              placeholder={placeholder}
+              placeholder={disabled ? (selectedClientData ? selectedClientData.name : "Client sélectionné") : placeholder}
               disabled={disabled}
+              readOnly={disabled}
               className={cn(
                 "h-11 pl-10 pr-8 Beenaya-input",
                 error && "border-red-500",
+                disabled && "bg-gray-50 text-gray-700 cursor-not-allowed",
                 className
               )}
               onFocus={() => {
-                if (searchQuery.length >= 2) {
+                if (!disabled && searchQuery && searchQuery.length >= 2) {
                   setIsDropdownOpen(true);
                 }
               }}
             />
             
             {/* ICÔNES INPUT */}
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            {disabled && selectedClientData ? (
+              <Check className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-emerald-600" />
+            ) : (
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            )}
             
-            {searchQuery && (
+            {searchQuery && !disabled && (
               <button
                 type="button"
                 onClick={handleClearSelection}
@@ -230,7 +271,7 @@ export const OpportunityClientSelector: React.FC<Props> = ({
           </div>
 
           {/* DROPDOWN RÉSULTATS - ABSOLU, PAS DE PORTAL */}
-          {isDropdownOpen && (
+          {isDropdownOpen && !disabled && (
             <div
               ref={dropdownRef}
               className="absolute top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg z-50 max-h-60 sm:max-h-80 overflow-y-auto"
@@ -298,7 +339,7 @@ export const OpportunityClientSelector: React.FC<Props> = ({
               )}
 
               {/* AUCUN RÉSULTAT */}
-              {!isLoading && !searchError && searchResults.length === 0 && searchQuery.length >= 2 && (
+              {!isLoading && !searchError && searchResults.length === 0 && searchQuery && searchQuery.length >= 2 && (
                 <div className="p-4 text-center">
                   <p className="text-sm text-muted-foreground mb-3">
                     Aucun client trouvé pour "{searchQuery}"

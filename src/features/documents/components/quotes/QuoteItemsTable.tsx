@@ -3,6 +3,7 @@
  * Utilise les nouveaux types corrigés (QuoteItem avec vatRate: string)
  */
 import React from 'react';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import {
   Table,
   TableBody,
@@ -18,12 +19,6 @@ interface QuoteItemsTableProps {
   className?: string;
 }
 
-/**
- * Formate un montant en MAD
- */
-const formatAmount = (amount: number): string => {
-  return `${amount.toFixed(2)} MAD`;
-};
 
 /**
  * Formate le taux de TVA pour l'affichage
@@ -54,6 +49,8 @@ export const QuoteItemsTable: React.FC<QuoteItemsTableProps> = ({
   items,
   className
 }) => {
+  const { formatCurrency } = useCurrency();
+  
   if (!items || items.length === 0) {
     return (
       <div className="text-center py-8 text-slate-500">
@@ -114,7 +111,7 @@ export const QuoteItemsTable: React.FC<QuoteItemsTableProps> = ({
               </TableCell>
               
               <TableCell className="text-right">
-                {formatAmount(item.unitPrice)}
+                {formatCurrency(item.unitPrice)}
               </TableCell>
               
               <TableCell className="text-center">
@@ -124,11 +121,11 @@ export const QuoteItemsTable: React.FC<QuoteItemsTableProps> = ({
               </TableCell>
               
               <TableCell className="text-right font-medium">
-                {formatAmount(item.totalHt)}
+                {formatCurrency(item.totalHt)}
               </TableCell>
               
               <TableCell className="text-right font-medium">
-                {formatAmount(item.totalTtc)}
+                {formatCurrency(item.totalTtc)}
               </TableCell>
             </TableRow>
           ))}

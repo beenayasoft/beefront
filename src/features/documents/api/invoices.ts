@@ -118,12 +118,12 @@ const transformInvoiceItem = (item: any): InvoiceItem => ({
   description: item.description,
   unit: item.unit,
   quantity: item.quantity,
-  unitPrice: item.unitPrice || 0,
+  unitPrice: item.unitPrice || item.unit_price || 0,
   discount: item.discount || 0,
   vatRate: String(item.vatRate || '20'), // ✅ Conversion vers string
   vatRateDisplay: item.vatRateDisplay,
-  totalHT: item.totalHt || 0,
-  totalTTC: item.totalTtc || 0,
+  totalHt: item.totalHt || item.totalHt || item.total_ht || 0,
+  totalTtc: item.totalTtc || item.totalTtc || item.total_ttc || 0,
   workId: item.workId,
   invoiceNumber: item.invoiceNumber,
   invoice: item.invoice,
@@ -154,13 +154,13 @@ const transformInvoice = (invoice: any): Invoice => {
     id: invoice.id,
     number: invoice.number,
     totalHt: invoice.totalHt,
-    totalHT: invoice.totalHT,
+    totalHt: invoice.totalHt,
     total_ht: invoice.total_ht,
     totalVat: invoice.totalVat,
     totalVAT: invoice.totalVAT,
     total_vat: invoice.total_vat,
     totalTtc: invoice.totalTtc,
-    totalTTC: invoice.totalTTC,
+    totalTtc: invoice.totalTtc,
     total_ttc: invoice.total_ttc,
     clientName: invoice.clientName,
     client_name: invoice.client_name,
@@ -192,9 +192,9 @@ const transformInvoice = (invoice: any): Invoice => {
     termsAndConditions: invoice.termsAndConditions || invoice.terms_and_conditions,
     isCreditNote: invoice.isCreditNote || invoice.is_credit_note,
     // Gérer les différentes variantes de nommage pour les totaux
-    totalHT: invoice.totalHT || invoice.totalHt || invoice.total_ht || 0,
-    totalVAT: invoice.totalVAT || invoice.totalVat || invoice.total_vat || 0,
-    totalTTC: invoice.totalTTC || invoice.totalTtc || invoice.total_ttc || 0,
+    totalHt: invoice.totalHt || invoice.totalHt || invoice.total_ht || 0,
+    totalVat: invoice.totalVAT || invoice.totalVat || invoice.total_vat || 0,
+    totalTtc: invoice.totalTtc || invoice.totalTtc || invoice.total_ttc || 0,
     paidAmount: invoice.paidAmount || invoice.paid_amount || 0,
     remainingAmount: invoice.remainingAmount || invoice.remaining_amount || 0,
     itemsCount: invoice.itemsCount || invoice.items_count || invoice.items?.length || 0,
@@ -507,7 +507,7 @@ const invoicesApi = {
    */
   exportInvoiceToPdf: async (id: string): Promise<Blob> => {
     try {
-      const response = await apiClient.get(`/api/invoices/${id}/export/pdf/`, {
+      const response = await apiClient.get(`/api/invoices/${id}/pdf/`, {
         responseType: 'blob'
       });
       return response.data;
@@ -588,7 +588,7 @@ const invoicesApi = {
       const invoice = await invoicesApi.getInvoiceById(id);
       
       const currentPaidAmount = invoice.paidAmount || 0;
-      const totalAmount = invoice.totalTTC || 0;
+      const totalAmount = invoice.totalTtc || 0;
       
       const newPaidAmount = currentPaidAmount + amount;
       const newRemainingAmount = Math.max(0, totalAmount - newPaidAmount);
@@ -620,9 +620,9 @@ const invoicesApi = {
     is_full: boolean;
     selected_items?: string[];
   }): Promise<{
-    totalHT: number;
+    totalHt: number;
     totalVAT: number;
-    totalTTC: number;
+    totalTtc: number;
     impact: string;
   }> => {
     try {

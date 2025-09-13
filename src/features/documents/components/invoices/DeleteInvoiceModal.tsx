@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { deleteInvoice, getInvoiceDeletionConstraints } from "../../api/invoices";
 import { Invoice } from "../../types/invoices.types";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 
 interface DeleteInvoiceModalProps {
@@ -36,6 +36,8 @@ export function DeleteInvoiceModal({
   invoice, 
   onSuccess 
 }: DeleteInvoiceModalProps) {
+  const { formatCurrency } = useCurrency();
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [constraints, setConstraints] = useState<DeletionConstraint[]>([]);
@@ -192,7 +194,7 @@ export function DeleteInvoiceModal({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-neutral-600">Montant TTC:</span>
-                    <span className="font-medium">{formatCurrency(invoice.totalTTC)} MAD</span>
+                    <span className="font-medium">{formatCurrency(invoice.totalTtc)}</span>
                   </div>
                   {invoice.projectName && (
                     <div className="flex justify-between">

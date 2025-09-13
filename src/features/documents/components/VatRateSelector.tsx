@@ -53,7 +53,7 @@ export const VatRateSelector: React.FC<VatRateSelectorProps> = ({
   return (
     <div className={cn('space-y-2', className)}>
       {label && (
-        <Label className="text-sm font-medium">
+        <Label className="text-sm">
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </Label>

@@ -6,7 +6,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Building2, MapPin, Phone, Mail, Save, X, AlertCircle, Loader2 } from 'lucide-react';
+import { Building2, MapPin, Phone, Mail, Save, X, AlertCircle, Loader2, User } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,22 +15,26 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Schéma de validation pour fournisseur
 const supplierSchema = z.object({
   nom: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
+  type: z.enum(['entreprise', 'particulier'], {
+    required_error: 'Le type de fournisseur est requis'
+  }),
   
-  // Informations entreprise
+  // Informations entreprise (optionnelles)
   siret: z.string().optional(),
   numero_tva: z.string().optional(),
   
-  // Adresse
+  // Adresse (maintenant optionnelle)
   adresse: z.object({
-    rue: z.string().min(1, 'La rue est requise'),
-    ville: z.string().min(1, 'La ville est requise'),
-    code_postal: z.string().min(4, 'Le code postal doit contenir au moins 4 caractères'),
+    rue: z.string().optional(),
+    ville: z.string().optional(),
+    code_postal: z.string().optional(),
     pays: z.string().default('France')
-  }),
+  }).optional(),
   
   // Contact principal
   email: z.string().email('Email invalide').optional().or(z.literal('')),
@@ -61,6 +65,7 @@ export const SupplierQuickCreateForm: React.FC<SupplierQuickCreateFormProps> = (
     resolver: zodResolver(supplierSchema),
     defaultValues: {
       nom: defaultName,
+      type: 'entreprise', // Par défaut entreprise
       siret: '',
       numero_tva: '',
       adresse: {
@@ -76,7 +81,8 @@ export const SupplierQuickCreateForm: React.FC<SupplierQuickCreateFormProps> = (
     }
   });
 
-  const { register, handleSubmit, formState: { errors }, watch } = form;
+  const { register, handleSubmit, formState: { errors }, watch, setValue } = form;
+  const selectedType = watch('type');
 
   const handleFormSubmit = async (data: SupplierFormData) => {
     setIsSubmitting(true);
@@ -103,23 +109,72 @@ export const SupplierQuickCreateForm: React.FC<SupplierQuickCreateFormProps> = (
         </Alert>
       )}
 
+      {/* Sélecteur de type */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <User className="w-4 h-4 text-purple-600" />
+            Type de fournisseur
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <Label htmlFor="type" className="text-sm">
+              Type <span className="text-destructive">*</span>
+            </Label>
+            <Select
+              value={selectedType}
+              onValueChange={(value) => setValue('type', value as 'entreprise' | 'particulier')}
+            >
+              <SelectTrigger className={`Beenaya-input ${errors.type ? "border-destructive" : ""}`}>
+                <SelectValue placeholder="Sélectionner le type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="entreprise">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-blue-600" />
+                    <span>Entreprise</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="particulier">
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-green-600" />
+                    <span>Particulier</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.type && (
+              <p className="text-xs text-destructive flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                {errors.type.message}
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Informations générales */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-blue-600" />
+            {selectedType === 'entreprise' ? (
+              <Building2 className="w-4 h-4 text-blue-600" />
+            ) : (
+              <User className="w-4 h-4 text-green-600" />
+            )}
             Informations générales
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="nom" className="text-sm font-medium">
-              Nom du fournisseur <span className="text-destructive">*</span>
+            <Label htmlFor="nom" className="text-sm">
+              {selectedType === 'entreprise' ? 'Nom de l\'entreprise' : 'Nom du particulier'} <span className="text-destructive">*</span>
             </Label>
             <Input
               id="nom"
               {...register('nom')}
-              placeholder="Nom de l'entreprise"
+              placeholder={selectedType === 'entreprise' ? "Ex: BTP Matériaux SARL" : "Ex: M. Jean Dupont"}
               className={errors.nom ? "border-destructive" : ""}
             />
             {errors.nom && (
@@ -130,94 +185,75 @@ export const SupplierQuickCreateForm: React.FC<SupplierQuickCreateFormProps> = (
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="siret" className="text-sm font-medium">SIRET</Label>
-              <Input
-                id="siret"
-                {...register('siret')}
-                placeholder="12345678901234"
-              />
+          {selectedType === 'entreprise' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="siret" className="text-sm">SIRET</Label>
+                <Input
+                  id="siret"
+                  {...register('siret')}
+                  placeholder="12345678901234"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="numero_tva" className="text-sm">N° TVA</Label>
+                <Input
+                  id="numero_tva"
+                  {...register('numero_tva')}
+                  placeholder="FR12345678901"
+                />
+              </div>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="numero_tva" className="text-sm font-medium">N° TVA</Label>
-              <Input
-                id="numero_tva"
-                {...register('numero_tva')}
-                placeholder="FR12345678901"
-              />
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Adresse */}
+      {/* Adresse (optionnelle) */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <MapPin className="w-4 h-4 text-green-600" />
-            Adresse
+            Adresse <span className="text-xs text-neutral-500 font-normal">(optionnelle)</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="rue" className="text-sm font-medium">
-              Rue <span className="text-destructive">*</span>
+            <Label htmlFor="rue" className="text-sm">
+              Rue
             </Label>
             <Input
               id="rue"
               {...register('adresse.rue')}
               placeholder="123 Rue de la Paix"
-              className={errors.adresse?.rue ? "border-destructive" : ""}
             />
-            {errors.adresse?.rue && (
-              <p className="text-xs text-destructive flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" />
-                {errors.adresse.rue.message}
-              </p>
-            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="code_postal" className="text-sm font-medium">
-                Code postal <span className="text-destructive">*</span>
+              <Label htmlFor="code_postal" className="text-sm">
+                Code postal
               </Label>
               <Input
                 id="code_postal"
                 {...register('adresse.code_postal')}
                 placeholder="75001"
-                className={errors.adresse?.code_postal ? "border-destructive" : ""}
               />
-              {errors.adresse?.code_postal && (
-                <p className="text-xs text-destructive flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  {errors.adresse.code_postal.message}
-                </p>
-              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="ville" className="text-sm font-medium">
-                Ville <span className="text-destructive">*</span>
+              <Label htmlFor="ville" className="text-sm">
+                Ville
               </Label>
               <Input
                 id="ville"
                 {...register('adresse.ville')}
                 placeholder="Paris"
-                className={errors.adresse?.ville ? "border-destructive" : ""}
               />
-              {errors.adresse?.ville && (
-                <p className="text-xs text-destructive flex items-center gap-1">
-                  <AlertCircle className="w-3 h-3" />
-                  {errors.adresse.ville.message}
-                </p>
-              )}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pays" className="text-sm font-medium">Pays</Label>
+              <Label htmlFor="pays" className="text-sm">Pays</Label>
               <Input
                 id="pays"
                 {...register('adresse.pays')}
@@ -239,12 +275,12 @@ export const SupplierQuickCreateForm: React.FC<SupplierQuickCreateFormProps> = (
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+              <Label htmlFor="email" className="text-sm">Email</Label>
               <Input
                 id="email"
                 type="email"
                 {...register('email')}
-                placeholder="contact@fournisseur.fr"
+                placeholder={selectedType === 'entreprise' ? "contact@fournisseur.fr" : "jean.dupont@email.fr"}
                 className={errors.email ? "border-destructive" : ""}
               />
               {errors.email && (
@@ -256,7 +292,7 @@ export const SupplierQuickCreateForm: React.FC<SupplierQuickCreateFormProps> = (
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="telephone" className="text-sm font-medium">Téléphone</Label>
+              <Label htmlFor="telephone" className="text-sm">Téléphone</Label>
               <Input
                 id="telephone"
                 {...register('telephone')}
@@ -266,11 +302,11 @@ export const SupplierQuickCreateForm: React.FC<SupplierQuickCreateFormProps> = (
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="site_web" className="text-sm font-medium">Site web</Label>
+            <Label htmlFor="site_web" className="text-sm">Site web</Label>
             <Input
               id="site_web"
               {...register('site_web')}
-              placeholder="https://www.fournisseur.fr"
+              placeholder={selectedType === 'entreprise' ? "https://www.fournisseur.fr" : "https://artisan-dupont.fr"}
               className={errors.site_web ? "border-destructive" : ""}
             />
             {errors.site_web && (
@@ -282,11 +318,11 @@ export const SupplierQuickCreateForm: React.FC<SupplierQuickCreateFormProps> = (
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes" className="text-sm font-medium">Notes</Label>
+            <Label htmlFor="notes" className="text-sm">Notes</Label>
             <Textarea
               id="notes"
               {...register('notes')}
-              placeholder="Notes ou commentaires..."
+              placeholder="Notes ou commentaires sur ce fournisseur..."
               rows={3}
               className="resize-none"
             />

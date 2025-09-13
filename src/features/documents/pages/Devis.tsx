@@ -28,11 +28,22 @@ import { QuoteList } from "../components/quotes/QuoteList";
 import { SendQuoteModal } from "../components/quotes/SendQuoteModal";
 import { ConvertToInvoiceModal } from "../components/quotes/ConvertToInvoiceModal";
 import { DeleteQuoteModal } from "../components/quotes/DeleteQuoteModal";
-import { DuplicateQuoteModal } from "../components/quotes/DuplicateQuoteModal";
 import { toast } from "@/components/ui/use-toast";
 import { quotesApi } from "../api/quotes";
 import { Quote, QuoteStatus, QuoteFilters as FilterType, PaginatedQuotesResponse } from "../types/quotes.types";
 import { useModalState } from "@/hooks/useModalState";
+
+// Debug pour vérifier les états bloqués
+if (typeof window !== 'undefined') {
+  (window as any).debugQuotePage = () => {
+    console.log('🔍 État des modales devis:', {
+      sendQuoteModal: document.querySelector('[data-radix-dialog-overlay]'),
+      modalOrphans: document.querySelectorAll('[data-radix-dialog-overlay]').length,
+      bodyStyle: document.body.style.overflow,
+      bodyPointerEvents: document.body.style.pointerEvents,
+    });
+  };
+}
 
 export default function Devis() {
   const navigate = useNavigate();
@@ -67,7 +78,6 @@ export default function Devis() {
   const sendQuoteModal = useModalState<Quote>();
   const convertToInvoiceModal = useModalState<Quote>();
   const deleteQuoteModal = useModalState<Quote>();
-  const duplicateQuoteModal = useModalState<Quote>();
 
   // Charger les devis depuis l'API
   const loadQuotes = async () => {
@@ -327,140 +337,68 @@ export default function Devis() {
     }
   };
 
-  // Duplicate quote
-  const handleDuplicateQuote = (quote: Quote) => {
-    duplicateQuoteModal.actions.open(quote);
-  };
-
-  // Gérer le succès de duplication
-  const handleDuplicateQuoteSuccess = async (duplicatedQuote: Quote) => {
-    // Rafraîchir la liste
-    await loadQuotes();
-    
-    toast({
-      title: "Devis dupliqué avec succès",
-      description: `Le devis ${duplicatedQuote.number} a été créé par duplication`,
-      variant: 'default'
-    });
-    
-    // Rediriger vers le nouveau devis
-    if (duplicatedQuote && duplicatedQuote.id) {
-      setTimeout(() => {
-        navigate(`/devis/edit/${duplicatedQuote.id}`);
-      }, 200);
-    }
-  };
 
   // Delete quote
   const handleDeleteQuote = (quote: Quote) => {
     deleteQuoteModal.actions.open(quote);
   };
 
-  // Gérer le succès de suppression
-  const handleDeleteQuoteSuccess = async () => {
+  // Gérer le succès de suppression - SOLUTION ADAPTÉE DES TIERS
+  const handleDeleteQuoteSuccess = () => {
     try {
-      // La modal se ferme automatiquement avec cleanup
+      console.log('🎉 Suppression réussie, fermeture de la modale en premier');
       
-      // Rafraîchir la liste
-      await loadQuotes();
+      // 🚀 FERMER D'ABORD la modale pour libérer l'UI (comme dans Tiers.tsx:337)
+      deleteQuoteModal.actions.close();
+      
+      // Mise à jour optimiste - retirer le devis supprimé de la liste
+      if (deleteQuoteModal.data?.id) {
+        setQuotes(prevQuotes => 
+          prevQuotes.filter(quote => quote.id !== deleteQuoteModal.data?.id)
+        );
+        
+        // Mettre à jour les statistiques
+        setStats(prevStats => ({
+          ...prevStats,
+          all: Math.max(0, prevStats.all - 1),
+          [deleteQuoteModal.data?.status || 'draft']: Math.max(0, prevStats[deleteQuoteModal.data?.status as keyof typeof prevStats] - 1)
+        }));
+      }
       
       toast({
         title: "Devis supprimé avec succès",
         description: "Le devis a été définitivement supprimé",
         variant: 'default'
       });
+      
+      // 🔄 PUIS recharger APRÈS un délai pour éviter les conflits (comme dans Tiers.tsx:340)
+      setTimeout(async () => {
+        try {
+          await loadQuotes();
+          console.log('✅ Rechargement terminé avec succès après suppression');
+        } catch (reloadError) {
+          console.error('❌ Erreur lors du rechargement après suppression:', reloadError);
+          // L'UI reste fonctionnelle même si le rechargement échoue
+        }
+      }, 100); // Délai minimal pour permettre à la modale de se fermer complètement
+      
     } catch (error) {
-      console.error("Erreur lors du rechargement après suppression:", error);
+      console.error("Erreur lors du traitement après suppression:", error);
       toast({
-        title: "Attention",
-        description: "Le devis a été supprimé mais la liste n'a pas pu être rafraîchie",
+        title: "Attention",  
+        description: "Une erreur s'est produite lors de la mise à jour",
         variant: "destructive",
       });
     }
   };
 
-  // Download quote with backend PDF generation
+  // Download quote - FONCTIONNALITÉ TEMPORAIREMENT DÉSACTIVÉE
   const handleDownloadQuote = async (quote: Quote) => {
-    try {
-      console.log(`🔄 Téléchargement PDF backend pour le devis ${quote.number}...`);
-      
-      // Récupérer les paramètres d'apparence et infos tenant
-      let appearanceSettings = null;
-      let tenantInfo = null;
-      
-      try {
-        const [settingsModule, tenantModule] = await Promise.all([
-          import('@/lib/api/documentAppearance'),
-          import('@/lib/api/tenant')
-        ]);
-        
-        appearanceSettings = await settingsModule.documentAppearanceAPI.getAppearanceSettings();
-        tenantInfo = await tenantModule.tenantApi.getCurrentTenantInfo();
-        
-        console.log('🎨 Paramètres récupérés pour PDF backend');
-      } catch (settingsError) {
-        console.warn('⚠️ Impossible de récupérer les paramètres:', settingsError);
-      }
-      
-      // Préparer les données complètes pour le backend
-      const pdfRequestData = {
-        appearance_settings: appearanceSettings,
-        tenant_info: tenantInfo,
-        quote_data: {
-          id: quote.id,
-          number: quote.number,
-          clientName: quote.clientName,
-          projectName: quote.projectName,
-          totalHt: quote.totalHt,
-          totalVat: quote.totalVat,
-          totalTtc: quote.totalTtc,
-          items: quote.items,
-          issueDate: quote.issueDate,
-          expiryDate: quote.expiryDate,
-          notes: quote.notes,
-          termsAndConditions: quote.termsAndConditions
-        }
-      };
-      
-      console.log('📤 Envoi données complètes au backend pour PDF:', pdfRequestData);
-      
-      // Utiliser l'API backend avec tous les paramètres
-      const pdfBlob = await quotesApi.exportQuoteToPdf(quote.id, pdfRequestData);
-      
-      // Vérifier que le blob est valide
-      if (!pdfBlob || pdfBlob.size === 0) {
-        throw new Error('PDF vide ou invalide reçu du serveur');
-      }
-      
-      console.log(`📄 PDF reçu - Taille: ${pdfBlob.size} bytes`);
-      
-      // Créer un blob avec le type MIME correct pour PDF
-      const correctedBlob = new Blob([pdfBlob], { type: 'application/pdf' });
-      
-      const url = window.URL.createObjectURL(correctedBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `devis-${quote.number.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      
-      // Nettoyer après un délai
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      }, 100);
-      
-      console.log(`✅ PDF backend téléchargé avec succès pour le devis ${quote.number}`);
-      
-    } catch (error) {
-      console.error("❌ Erreur lors du téléchargement:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de télécharger le devis",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "Fonctionnalité temporairement indisponible",
+      description: "L'export PDF est en cours de refonte et sera disponible prochainement",
+      variant: "default",
+    });
   };
 
   return (
@@ -536,7 +474,6 @@ export default function Devis() {
           onEdit={handleEditQuote}
           onSend={handleSendQuote}
           onConvertToInvoice={handleOpenConvertToInvoice}
-          onDuplicate={handleDuplicateQuote}
           onDelete={handleDeleteQuote}
           onDownload={handleDownloadQuote}
         />
@@ -544,65 +481,85 @@ export default function Devis() {
 
       {/* Modals */}
       
-      {/* Modales avec nouvelle gestion useModalState */}
-      {(sendQuoteModal.data || convertToInvoiceModal.data || duplicateQuoteModal.data || deleteQuoteModal.data) && (
-        <>
-          <SendQuoteModal
-            open={sendQuoteModal.isOpen}
-            onOpenChange={(open) => !open && sendQuoteModal.actions.close()}
-            quote={sendQuoteModal.data}
-            onSend={async (data: { recipient_email: string; message?: string }) => {
-              try {
-                console.log('📧 Début envoi devis:', sendQuoteModal.data?.id, data);
-                if (!sendQuoteModal.data?.id) {
-                  throw new Error('Aucun devis sélectionné');
+      {/* Modales avec nouvelle gestion useModalState - rendu toujours présent */}
+      <SendQuoteModal
+        open={sendQuoteModal.isOpen}
+        onOpenChange={(open) => !open && sendQuoteModal.actions.close()}
+        quote={sendQuoteModal.data}
+        onSend={async (data: { recipient_email: string; message?: string }) => {
+          try {
+            console.log('📧 Début envoi devis:', sendQuoteModal.data?.id, data);
+            if (!sendQuoteModal.data?.id) {
+              throw new Error('Aucun devis sélectionné');
+            }
+            await quotesApi.sendQuote(sendQuoteModal.data.id, data);
+            console.log('📧 Envoi réussi');
+            
+            // Fermer le modal avec cleanup automatique
+            sendQuoteModal.actions.close();
+            
+            // Toast simple sans autres actions
+            toast({
+              title: "Succès",
+              description: `Le devis a été envoyé`,
+            });
+            
+            console.log('📧 Traitement terminé');
+          } catch (error) {
+            console.error('Erreur lors de l\'envoi:', error);
+            toast({
+              title: "Erreur",
+              description: "Impossible d'envoyer le devis",
+              variant: "destructive",
+            });
+          }
+        }}
+      />
+
+      <ConvertToInvoiceModal
+        open={convertToInvoiceModal.isOpen}
+        onOpenChange={(open) => !open && convertToInvoiceModal.actions.close()}
+        quote={convertToInvoiceModal.data}
+        onConvert={handleConvertToInvoice}
+      />
+
+
+      <DeleteQuoteModal
+        open={deleteQuoteModal.isOpen}
+        onOpenChange={(open) => {
+          if (!open && !deleteQuoteModal.isSubmitting) {
+            console.log('🚪 Fermeture sécurisée de la modale de suppression');
+            deleteQuoteModal.actions.close();
+            
+            // 🛡️ NETTOYAGE des overlays orphelins (comme dans Tiers.tsx:368-380)
+            setTimeout(() => {
+              const overlays = document.querySelectorAll('[data-radix-popper-content-wrapper], [data-radix-focus-guard], [data-radix-portal], [data-radix-dialog-overlay]');
+              overlays.forEach(el => {
+                if (el.parentNode) {
+                  console.log('🧹 Suppression overlay orphelin:', el);
+                  el.parentNode.removeChild(el);
                 }
-                await quotesApi.sendQuote(sendQuoteModal.data.id, data);
-                console.log('📧 Envoi réussi');
-                
-                // Fermer le modal avec cleanup automatique
-                sendQuoteModal.actions.close();
-                
-                // Toast simple sans autres actions
-                toast({
-                  title: "Succès",
-                  description: `Le devis a été envoyé`,
-                });
-                
-                console.log('📧 Traitement terminé');
-              } catch (error) {
-                console.error('Erreur lors de l\'envoi:', error);
-                toast({
-                  title: "Erreur",
-                  description: "Impossible d'envoyer le devis",
-                  variant: "destructive",
-                });
+              });
+              
+              // Débloquer le scroll au cas où
+              document.body.style.overflow = '';
+              document.documentElement.style.overflow = '';
+              document.body.style.pointerEvents = '';
+            }, 500); // Délai pour les microservices avec latence
+            
+            // 🔄 Recharger APRÈS fermeture complète si annulation
+            setTimeout(async () => {
+              try {
+                await loadQuotes();
+              } catch (reloadError) {
+                console.error('❌ Erreur lors du rechargement après fermeture:', reloadError);
               }
-            }}
-          />
-
-          <ConvertToInvoiceModal
-            open={convertToInvoiceModal.isOpen}
-            onOpenChange={(open) => !open && convertToInvoiceModal.actions.close()}
-            quote={convertToInvoiceModal.data}
-            onConvert={handleConvertToInvoice}
-          />
-
-          <DuplicateQuoteModal
-            open={duplicateQuoteModal.isOpen}
-            onOpenChange={(open) => !open && duplicateQuoteModal.actions.close()}
-            quote={duplicateQuoteModal.data}
-            onSuccess={handleDuplicateQuoteSuccess}
-          />
-
-          <DeleteQuoteModal
-            open={deleteQuoteModal.isOpen}
-            onOpenChange={(open) => !open && deleteQuoteModal.actions.close()}
-            quote={deleteQuoteModal.data}
-            onSuccess={handleDeleteQuoteSuccess}
-          />
-        </>
-      )}
+            }, 150);
+          }
+        }}
+        quote={deleteQuoteModal.data}
+        onSuccess={handleDeleteQuoteSuccess}
+      />
     </div>
   );
 }

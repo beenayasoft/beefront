@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import CurrencyService from '@/lib/services/currencyService';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -14,7 +15,7 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function formatCurrency(value?: number | string | null, fractionDigits = 2, useShortFormat = false): string {
   if (value === undefined || value === null) {
-    return '0,00';
+    return CurrencyService.formatCurrency(0, { decimalPlaces: fractionDigits, showSymbol: false });
   }
   
   // Convertir en nombre si c'est une chaîne
@@ -22,17 +23,18 @@ export function formatCurrency(value?: number | string | null, fractionDigits = 
   
   // Vérifier si c'est un nombre valide
   if (isNaN(numValue)) {
-    return '0,00';
+    return CurrencyService.formatCurrency(0, { decimalPlaces: fractionDigits, showSymbol: false });
   }
   
   // Si le format court est activé et la valeur est suffisamment grande
   if (useShortFormat) {
     const absValue = Math.abs(numValue);
+    const config = CurrencyService.getCurrentConfig();
     
     // Millions (≥ 1 000 000)
     if (absValue >= 1000000) {
       const millions = numValue / 1000000;
-      return `${millions.toLocaleString('fr-FR', {
+      return `${millions.toLocaleString(config.locale, {
         minimumFractionDigits: millions % 1 === 0 ? 0 : 1,
         maximumFractionDigits: 1,
       })}M`;
@@ -41,16 +43,16 @@ export function formatCurrency(value?: number | string | null, fractionDigits = 
     // Milliers (≥ 10 000)
     if (absValue >= 10000) {
       const thousands = numValue / 1000;
-      return `${thousands.toLocaleString('fr-FR', {
+      return `${thousands.toLocaleString(config.locale, {
         minimumFractionDigits: thousands % 1 === 0 ? 0 : 1,
         maximumFractionDigits: 1,
       })}k`;
     }
   }
   
-  // Format normal
-  return numValue.toLocaleString('fr-FR', {
-    minimumFractionDigits: fractionDigits,
-    maximumFractionDigits: fractionDigits,
+  // Format normal sans symbole de devise (comme l'original)
+  return CurrencyService.formatCurrency(numValue, { 
+    decimalPlaces: fractionDigits, 
+    showSymbol: false 
   });
 }

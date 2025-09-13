@@ -2,9 +2,9 @@
  * Wizard moderne de création de devis
  * Interface utilisateur cohérente avec le design system
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Circle, ArrowLeft, ArrowRight, Save, Send } from 'lucide-react';
+import { CheckCircle2, Circle, ArrowLeft, ArrowRight, Save, Send, AlertTriangle } from 'lucide-react';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,16 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 import { useQuoteWizard, WizardStep } from '../../../hooks/useQuoteWizard';
 import { quotesApi } from '../../../api/quotes';
@@ -80,6 +90,7 @@ const QuoteCreateWizard: React.FC<QuoteCreateWizardProps> = ({
   const wizard = useQuoteWizard(initialData);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   
   // Calcul du progrès (utilise le workflow dynamique)
   const currentStepIndex = wizard.steps.indexOf(wizard.currentStep);
@@ -147,13 +158,23 @@ const QuoteCreateWizard: React.FC<QuoteCreateWizardProps> = ({
   
   // Gestion de l'annulation
   const handleCancel = () => {
-    if (wizard.isDirty) {
-      if (window.confirm('Êtes-vous sûr de vouloir abandonner ? Toutes les modifications seront perdues.')) {
-        wizard.reset();
-        onCancel?.() || navigate('/devis');
-      }
+    // Toujours demander confirmation pour une meilleure UX
+    setShowCancelDialog(true);
+  };
+
+  const handleConfirmCancel = () => {
+    wizard.reset();
+    setShowCancelDialog(false);
+    
+    // Debug: Vérifier si onCancel est défini
+    console.log('🚪 handleConfirmCancel - onCancel défini:', !!onCancel);
+    
+    if (onCancel) {
+      console.log('✅ Appel de onCancel (fermeture modale)');
+      onCancel();
     } else {
-      onCancel?.() || navigate('/devis');
+      console.log('🔄 Pas de onCancel défini, navigation vers /devis');
+      navigate('/devis');
     }
   };
   
@@ -360,6 +381,37 @@ const QuoteCreateWizard: React.FC<QuoteCreateWizardProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialogue de confirmation d'annulation */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Abandonner la création du devis
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir abandonner la création de ce devis ?
+              {wizard.isDirty && (
+                <span className="block mt-2 text-amber-600 font-medium">
+                  Toutes les informations saisies seront perdues et ne pourront pas être récupérées.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              Continuer l'édition
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmCancel}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Oui, abandonner
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

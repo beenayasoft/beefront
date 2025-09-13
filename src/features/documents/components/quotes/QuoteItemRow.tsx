@@ -3,7 +3,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { CreateQuoteItemData, QuoteItemType, BTPUnits, DiscountType } from '@/features/documents/types';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { getQuoteItemTypeConfig, allowsPricing, allowsQuantity, getDefaultUnit, BTP_UNITS_LABELS } from '@/lib/constants/quoteItemTypes';
 import ItemTypeSelector from './ItemTypeSelector';
 
@@ -26,6 +26,8 @@ export const QuoteItemRow: React.FC<QuoteItemRowProps> = ({
   isLoading = false,
   level = 0
 }) => {
+  const { formatCurrency } = useCurrency();
+  
   const [isExpanded, setIsExpanded] = useState(false);
   let config = getQuoteItemTypeConfig(item.type);
   

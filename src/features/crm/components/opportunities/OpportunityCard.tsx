@@ -24,6 +24,7 @@ import {
 import { Opportunity, OpportunityStatus } from "../../types/opportunity";
 import { formatCurrency } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { useFormatCurrency } from "@/contexts/CurrencyContext";
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
@@ -52,6 +53,7 @@ export function OpportunityCard({
   onDisableDrag,
   onEnableDrag,
 }: OpportunityCardProps) {
+  const formatCurrencyWithSymbol = useFormatCurrency();
   // Formater la date
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return '—';
@@ -197,7 +199,7 @@ export function OpportunityCard({
               <DollarSign className="w-3 h-3" />
               <span>Montant:</span>
             </div>
-            <span className="font-semibold">{formatCurrency(opportunity.estimatedAmount || 0, 2, true)} MAD</span>
+            <span className="font-semibold">{formatCurrencyWithSymbol(opportunity.estimatedAmount || 0, { showSymbol: true })}</span>
           </div>
           
           <div className="flex items-center justify-between text-xs">

@@ -13,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Quote } from "../../types/quotes.types";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { createInvoiceFromQuote, CreateInvoiceFromQuoteRequest } from "../../api/invoices";
 import { toast } from "sonner";
 
@@ -30,6 +30,8 @@ export function CreateInvoiceFromQuoteModal({
   quote,
   onSubmit,
 }: CreateInvoiceFromQuoteModalProps) {
+  const { formatCurrency } = useCurrency();
+  
   const [invoiceType, setInvoiceType] = useState<'advance' | 'total'>('total');
   const [advancePercentage, setAdvancePercentage] = useState<number>(30);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -37,7 +39,7 @@ export function CreateInvoiceFromQuoteModal({
 
   // Calculer le montant de l'acompte
   const calculateAdvanceAmount = () => {
-    return (quote.totalTTC * advancePercentage) / 100;
+    return (quote.totalTtc * advancePercentage) / 100;
   };
 
   // Valider le formulaire
@@ -116,7 +118,7 @@ export function CreateInvoiceFromQuoteModal({
             </div>
             <div className="flex justify-between font-semibold border-t border-neutral-200 dark:border-neutral-700 pt-2">
               <span>Montant total:</span>
-              <span className="text-Beenaya-900 dark:text-Beenaya-200">{formatCurrency(quote.totalTTC)} MAD</span>
+              <span className="text-Beenaya-900 dark:text-Beenaya-200">{formatCurrency(quote.totalTtc)}</span>
             </div>
           </div>
 
@@ -187,7 +189,7 @@ export function CreateInvoiceFromQuoteModal({
                 <div className="flex justify-between font-semibold">
                   <span>Montant de l'acompte:</span>
                   <span className="text-Beenaya-900 dark:text-Beenaya-200">
-                    {formatCurrency(calculateAdvanceAmount())} MAD
+                    {formatCurrency(calculateAdvanceAmount())}
                   </span>
                 </div>
               </div>

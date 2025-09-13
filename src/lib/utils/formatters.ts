@@ -2,31 +2,23 @@
  * Utilitaires de formatage pour l'application
  */
 
+import CurrencyService from '@/lib/services/currencyService';
+
 /**
- * Formate un montant en euros
+ * Formate un montant selon la devise du tenant
  * @param amount Montant à formater
  * @param options Options de formatage
  * @returns Chaîne formatée
  */
 export const formatCurrency = (
   amount: number | string | undefined,
-  options: Intl.NumberFormatOptions = {}
+  options: {
+    showSymbol?: boolean;
+    decimalPlaces?: number;
+    useGrouping?: boolean;
+  } = {}
 ): string => {
-  if (amount === undefined || amount === null) {
-    return '0,00 €';
-  }
-
-  // Convertir en nombre si nécessaire
-  const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-
-  // Formater avec l'API Intl
-  return new Intl.NumberFormat('fr-MA', {
-    style: 'currency',
-    currency: 'MAD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-    ...options
-  }).format(numericAmount);
+  return CurrencyService.formatCurrency(amount, options);
 };
 
 /**

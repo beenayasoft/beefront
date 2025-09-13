@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { SupplierQuickCreateForm } from './SupplierQuickCreateForm';
 import { cn } from '@/lib/utils';
 
 import { useSupplierIntegration, useSupplierDetails } from '../hooks/useSupplierIntegration';
@@ -19,7 +20,6 @@ import {
   SUPPLIER_DEFAULTS,
   formatSupplierDisplay
 } from '../types/supplier-contracts';
-import { SupplierQuickCreateForm } from './SupplierQuickCreateForm';
 import { crmApi } from '@/features/crm/api/crm';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -131,8 +131,8 @@ export function SupplierSelector({
       // Transformer les données pour l'API CRM
       const tierData = {
         nom: supplierData.nom,
-        type: 'entreprise',
-        relation: 'fournisseur',
+        type: supplierData.type || 'entreprise', // Utiliser le type sélectionné
+        relation: 'fournisseur', // Toujours fournisseur
         siret: supplierData.siret,
         numero_tva: supplierData.numero_tva,
         email: supplierData.email,
@@ -141,10 +141,10 @@ export function SupplierSelector({
         notes: supplierData.notes,
         adresses: [{
           type: 'principale',
-          rue: supplierData.adresse.rue,
-          ville: supplierData.adresse.ville,
-          code_postal: supplierData.adresse.code_postal,
-          pays: supplierData.adresse.pays,
+          rue: supplierData.adresse?.rue || '',
+          ville: supplierData.adresse?.ville || '',
+          code_postal: supplierData.adresse?.code_postal || '',
+          pays: supplierData.adresse?.pays || 'France',
           est_principale: true
         }]
       };
@@ -377,23 +377,28 @@ export function SupplierSelector({
 
       {/* DIALOG CRÉATION FOURNISSEUR */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] w-[95vw] sm:w-full mx-auto my-auto rounded-2xl border bg-white">
-          <div className="max-h-[80vh] overflow-y-auto">
-            <DialogHeader className="px-6 pt-6 pb-4 border-b border-gray-100">
-              <DialogTitle>Créer un nouveau fournisseur</DialogTitle>
-              <DialogDescription>
-                Remplissez les informations ci-dessous pour créer un nouveau fournisseur.
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="p-6">
-              <SupplierQuickCreateForm
-                onSubmit={handleCreateSupplier}
-                onCancel={() => setShowCreateDialog(false)}
-                defaultName={searchQuery}
-              />
+        <DialogContent className="max-w-2xl max-h-[90vh] w-[95vw] sm:w-full mx-auto overflow-y-auto">
+          <DialogHeader className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-semibold">🏪</span>
+              </div>
+              <div className="flex-1">
+                <DialogTitle className="text-xl font-semibold">
+                  Créer un nouveau fournisseur
+                </DialogTitle>
+                <DialogDescription className="text-sm text-neutral-600 mt-1">
+                  {searchQuery ? `Créer "${searchQuery}" comme nouveau fournisseur` : 'Créez un nouveau fournisseur dans votre CRM'}
+                </DialogDescription>
+              </div>
             </div>
-          </div>
+          </DialogHeader>
+          
+          <SupplierQuickCreateForm
+            onSubmit={handleCreateSupplier}
+            onCancel={() => setShowCreateDialog(false)}
+            defaultName={searchQuery}
+          />
         </DialogContent>
       </Dialog>
     </div>

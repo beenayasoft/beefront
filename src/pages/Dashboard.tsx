@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   TrendingUp,
   DollarSign,
@@ -18,6 +19,9 @@ import { TierCreationDialog } from "@/features/crm/components/tiers/TierCreation
 import { OpportunityForm } from "@/features/crm/components/opportunities/OpportunityForm";
 import { toast } from "@/hooks/use-toast";
 import { crmApi } from "@/features/crm/api";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useCurrency } from "@/contexts/CurrencyContext";
+import { quotesApi } from "@/features/documents/api/quotes";
 
 // Simple metric card component
 const MetricCard = ({
@@ -27,7 +31,10 @@ const MetricCard = ({
   change,
   icon: Icon,
   changeType,
-}: any) => (
+}: any) => {
+  const { formatCurrency } = useCurrency();
+  
+  return (
   <div className="Beenaya-card">
     <div className="flex items-center justify-between">
       <div className="space-y-2">
@@ -36,13 +43,8 @@ const MetricCard = ({
         </p>
         <div className="flex items-baseline gap-1">
           <span className="text-2xl font-bold text-neutral-900 dark:text-white">
-            {value}
+            {currency ? formatCurrency(parseFloat(value) || 0) : value}
           </span>
-          {currency && (
-            <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">
-              {currency}
-            </span>
-          )}
         </div>
         {change && (
           <p
@@ -63,7 +65,8 @@ const MetricCard = ({
       </div>
     </div>
   </div>
-);
+  );
+};
 
 // Simple activity item
 const ActivityItem = ({
@@ -100,6 +103,8 @@ const ActivityItem = ({
 );
 
 export default function Dashboard() {
+  const { user, getUserDisplayName } = useAuth();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   
   // États pour les modales
@@ -111,24 +116,53 @@ export default function Dashboard() {
     message: string;
     icon: React.ReactNode;
   } | null>(null);
+  
+  // États pour les données réelles
+  const [clientsCount, setClientsCount] = useState<number>(0);
+  const [quotesCount, setQuotesCount] = useState<number>(0);
+  const [statsLoading, setStatsLoading] = useState(true);
 
-  // Simuler le chargement des données
+  // Charger les données réelles
+  const loadDashboardStats = async () => {
+    try {
+      setStatsLoading(true);
+      
+      // Charger le nombre de clients
+      const tiersResponse = await crmApi.tiers.getTiers(1, 1); // Une seule page pour obtenir le total
+      setClientsCount(tiersResponse.count);
+      
+      // Charger les statistiques de devis depuis le document-service
+      try {
+        const quotesStats = await quotesApi.getStats();
+        setQuotesCount(quotesStats.total_count || 0);
+      } catch (quotesError) {
+        console.warn('Impossible de charger les stats de devis, utilisation d\'une valeur par défaut:', quotesError);
+        setQuotesCount(0); // Valeur par défaut en cas d'erreur
+      }
+      
+    } catch (error) {
+      console.error('Erreur lors du chargement des stats:', error);
+      // Garder les valeurs par défaut en cas d'erreur
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  // Simuler le chargement des données + charger les stats
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1500); // 1.5s pour simuler le chargement
+
+    // Charger les stats réelles
+    loadDashboardStats();
 
     return () => clearTimeout(timer);
   }, []);
   
   // Gestionnaires d'actions
   const handleQuoteAction = () => {
-    setActionModalContent({
-      title: "Fonction de devis en développement",
-      message: "Cette fonctionnalité sera bientôt disponible ! Nous travaillons actuellement sur l'intégration complète des devis dans Beenaya. En attendant, vous pouvez créer des opportunités qui serviront de base pour vos futurs devis.",
-      icon: <FileText className="h-12 w-12 text-blue-500 mx-auto mb-4" />
-    });
-    setActionModalOpen(true);
+    navigate('/devis/nouveau');
   };
   
   const handleClientAction = () => {
@@ -188,7 +222,7 @@ export default function Dashboard() {
       <div className="Beenaya-card Beenaya-gradient text-white">
         <div className="space-y-4">
           <div>
-            <h1 className="text-3xl font-bold text-white">Bienvenue Jean 👋</h1>
+            <h1 className="text-3xl font-bold text-white">Bienvenue {getUserDisplayName()} 👋</h1>
             <p className="text-white/90 text-lg mt-2">
               Voici un aperçu de vos activités de construction
             </p>
@@ -213,8 +247,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           title="Chiffre d'affaires"
-          value="0,00"
-          currency="MAD"
+          value={0}
+          currency={true}
           change="+0% ce mois"
           changeType="neutral"
           icon={DollarSign}
@@ -228,16 +262,16 @@ export default function Dashboard() {
         />
         <MetricCard
           title="Clients"
-          value="0"
-          change="Aucun client"
+          value={statsLoading ? "..." : clientsCount.toString()}
+          change={statsLoading ? "Chargement..." : clientsCount === 0 ? "Aucun client" : `${clientsCount} client${clientsCount > 1 ? 's' : ''} enregistré${clientsCount > 1 ? 's' : ''}`}
           changeType="neutral"
           icon={Users}
         />
         <MetricCard
-          title="Devis en attente"
-          value="12"
-          change="+3 cette semaine"
-          changeType="positive"
+          title="Devis en cours"
+          value={statsLoading ? "..." : quotesCount.toString()}
+          change={statsLoading ? "Chargement..." : quotesCount === 0 ? "Aucun devis" : `${quotesCount} devis actif${quotesCount > 1 ? 's' : ''}`}
+          changeType={quotesCount > 0 ? "positive" : "neutral"}
           icon={FileText}
         />
       </div>

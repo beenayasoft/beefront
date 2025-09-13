@@ -3,7 +3,7 @@
  */
 import React, { useState } from 'react';
 import { CreateQuoteItemData, QuoteItemType, BTPUnits } from '@/features/documents/types';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { getQuoteItemTypeConfig, getDefaultUnit } from '@/lib/constants/quoteItemTypes';
 import QuoteItemRow from './QuoteItemRow';
 import ItemTypeSelector from './ItemTypeSelector';
@@ -21,6 +21,8 @@ export const SectionManager: React.FC<SectionManagerProps> = ({
   onItemsChange,
   isLoading = false
 }) => {
+  const { formatCurrency } = useCurrency();
+  
   const [newItemType, setNewItemType] = useState<QuoteItemType>(QuoteItemType.PRODUCT);
 
   // Créer un nouvel élément avec des valeurs par défaut

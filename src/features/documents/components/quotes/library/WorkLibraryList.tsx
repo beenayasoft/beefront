@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Work } from "@/features/library/types";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface WorkLibraryListProps {
   works: Work[];
@@ -37,6 +37,7 @@ export function WorkLibraryList({
   onDuplicate,
   onAddToQuote,
 }: WorkLibraryListProps) {
+  const { formatCurrency } = useCurrency();
   return (
     <div className="overflow-hidden border border-neutral-200 dark:border-neutral-700 rounded-lg">
       <Table className="Beenaya-table">
@@ -70,13 +71,13 @@ export function WorkLibraryList({
                   {work.name}
                 </TableCell>
                 <TableCell>{work.unit}</TableCell>
-                <TableCell>{formatCurrency(work.materialCost)} MAD</TableCell>
-                <TableCell>{formatCurrency(work.laborCost)} MAD</TableCell>
+                <TableCell>{formatCurrency(work.materialCost)}</TableCell>
+                <TableCell>{formatCurrency(work.laborCost)}</TableCell>
                 <TableCell className="font-medium">
-                  {formatCurrency(work.totalCost)} MAD
+                  {formatCurrency(work.totalCost)}
                 </TableCell>
                 <TableCell className="font-semibold">
-                  {formatCurrency(work.recommendedPrice)} MAD
+                  {formatCurrency(work.recommendedPrice)}
                 </TableCell>
                 <TableCell>
                   <Badge 

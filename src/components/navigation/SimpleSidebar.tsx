@@ -112,12 +112,7 @@ export function SimpleSidebar() {
 
   // Fonction pour gérer l'action nouveau devis
   const handleNewQuoteAction = () => {
-    setActionModalContent({
-      title: "Fonction de création de devis en développement",
-      message: "Cette fonctionnalité sera bientôt disponible ! Nous travaillons actuellement sur l'intégration complète des devis dans Beenaya. En attendant, vous pouvez créer des opportunités depuis la section CRM qui serviront de base pour vos futurs devis.",
-      icon: <FileText className="h-12 w-12 text-blue-500 mx-auto mb-4" />
-    });
-    setActionModalOpen(true);
+    navigate('/devis/nouveau');
   };
 
   return (

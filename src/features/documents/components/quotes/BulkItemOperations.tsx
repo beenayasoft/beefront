@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { QuoteItem, CreateQuoteItemData } from '../../types/quotes.types';
 import { quotesApi } from '../../api/quotes';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface BulkItemOperationsProps {
   quoteId: string;
@@ -34,6 +34,8 @@ export function BulkItemOperations({
   onSelectionChange,
   onClose
 }: BulkItemOperationsProps) {
+  const { formatCurrency } = useCurrency();
+  
   const [isProcessing, setIsProcessing] = useState(false);
   const [operation, setOperation] = useState<'delete' | 'update' | 'move'>('delete');
   const [bulkUpdateData, setBulkUpdateData] = useState<Partial<CreateQuoteItemData>>({});

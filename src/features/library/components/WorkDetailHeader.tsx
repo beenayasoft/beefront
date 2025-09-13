@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Work } from "@/features/library/types";
-import { LibraryItemForm } from "@/features/documents/components/quotes/library/LibraryItemForm";
+import { LibraryItemForm } from "@/features/library/components/LibraryItemForm";
 import { formatCurrency } from "@/lib/utils";
 
 interface WorkDetailHeaderProps {
@@ -71,7 +71,7 @@ export function WorkDetailHeader({
                 Modifier
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] w-[95vw] sm:w-full mx-auto overflow-y-auto">
               <LibraryItemForm
                 item={work}
                 type="work"

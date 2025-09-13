@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,12 +8,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Copy } from "lucide-react";
 import { Quote } from "../../types/quotes.types";
 import { quotesApi } from "../../api/quotes";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
+import { useModalState, createSafeSubmitHandler } from "@/hooks/useModalState";
 
 interface DuplicateQuoteModalProps {
   open: boolean;
@@ -28,47 +27,55 @@ export function DuplicateQuoteModal({
   quote, 
   onSuccess 
 }: DuplicateQuoteModalProps) {
-  const [loading, setLoading] = useState(false);
-  const [newQuoteNumber, setNewQuoteNumber] = useState(`${quote?.number || ''}-COPY`);
+  const modal = useModalState<Quote>();
 
-  // Mettre à jour le numéro quand le quote change
+  // Synchroniser seulement l'ouverture (pas la fermeture automatique)
   useEffect(() => {
-    if (quote?.number) {
-      setNewQuoteNumber(`${quote.number}-COPY`);
+    console.log('DuplicateQuoteModal useEffect:', { open, quote: quote?.id, modalIsOpen: modal.isOpen });
+    if (open && quote && !modal.isOpen) {
+      console.log('Opening modal with quote:', quote);
+      modal.actions.open(quote);
     }
-  }, [quote?.number]);
+  }, [open, quote, modal.actions, modal.isOpen]);
 
-  const handleDuplicate = async () => {
-    if (!quote?.id) {
-      console.error('Aucun devis sélectionné pour la duplication');
-      return;
-    }
-    
-    try {
-      setLoading(true);
+  // Gérer la fermeture manuellement
+  const handleClose = () => {
+    onOpenChange(false);
+  };
+
+  const handleDuplicate = createSafeSubmitHandler<Quote>(
+    modal,
+    async (quoteTouplicate) => {
+      // Utiliser directement le prop quote comme fallback
+      const currentQuote = quoteTouplicate || modal.data || quote;
+      console.log('handleDuplicate debug:', { quoteTouplicate, modalData: modal.data, propQuote: quote, currentQuote });
+      if (!currentQuote?.id) {
+        throw new Error('Aucun devis sélectionné pour la duplication');
+      }
       
-      const duplicatedQuote = await quotesApi.duplicateQuote(quote.id, {
-        quote_number: newQuoteNumber
-      });
-      
+      // La numérotation est maintenant automatique côté backend
+      const duplicatedQuote = await quotesApi.duplicateQuote(currentQuote.id);
+      return duplicatedQuote;
+    },
+    (duplicatedQuote) => {
       toast({
         title: "Succès",
         description: `Le devis a été dupliqué sous le numéro ${duplicatedQuote.number}`,
       });
-      
       onSuccess(duplicatedQuote);
+      // Fermer seulement après succès
       onOpenChange(false);
-    } catch (error) {
+    },
+    (error) => {
       console.error("Erreur lors de la duplication:", error);
       toast({
         title: "Erreur",
         description: "Impossible de dupliquer le devis",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
+      // Ne pas fermer en cas d'erreur
     }
-  };
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -111,20 +118,14 @@ export function DuplicateQuoteModal({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="newQuoteNumber">
-              Nouveau numéro de devis
-            </Label>
-            <Input
-              id="newQuoteNumber"
-              value={newQuoteNumber}
-              onChange={(e) => setNewQuoteNumber(e.target.value)}
-              placeholder="Entrez le nouveau numéro"
-            />
-          </div>
-
           <div className="p-3 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-800">
+              <strong>Numérotation automatique :</strong> Le nouveau devis recevra automatiquement le prochain numéro disponible selon votre configuration de numérotation.
+            </p>
+          </div>
+
+          <div className="p-3 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-700">
               Le nouveau devis sera créé avec le statut "Brouillon" et pourra être modifié.
             </p>
           </div>
@@ -133,16 +134,16 @@ export function DuplicateQuoteModal({
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={loading}
+            onClick={handleClose}
+            disabled={modal.isLoading}
           >
             Annuler
           </Button>
           <Button
             onClick={handleDuplicate}
-            disabled={loading || !newQuoteNumber.trim()}
+            disabled={modal.isLoading}
           >
-            {loading ? "Duplication..." : "Dupliquer"}
+            {modal.isLoading ? "Duplication..." : "Dupliquer"}
           </Button>
         </DialogFooter>
         </>

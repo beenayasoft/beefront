@@ -11,7 +11,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { MetricCard } from '@/components/dashboard/MetricCard';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 /**
  * Interface pour les props du composant QuoteStats
@@ -37,6 +37,8 @@ interface QuoteStatsProps {
  * Composant d'affichage des statistiques des devis
  */
 const QuoteStats: React.FC<QuoteStatsProps> = ({ stats }) => {
+  const { formatCurrency } = useCurrency();
+  
   const acceptanceRate = stats.total > 0 ? (stats.accepted / stats.total) * 100 : 0;
   
   return (

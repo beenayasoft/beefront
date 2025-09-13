@@ -200,8 +200,8 @@ export default function Factures() {
       new Date(invoice.createdAt).toLocaleDateString('fr-FR'),
       invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('fr-FR') : '',
       invoice.status,
-      invoice.totalHT?.toString() || '0',
-      invoice.totalTTC?.toString() || '0',
+      invoice.totalHt?.toString() || '0',
+      invoice.totalTtc?.toString() || '0',
       invoice.amountPaid?.toString() || '0'
     ]);
     

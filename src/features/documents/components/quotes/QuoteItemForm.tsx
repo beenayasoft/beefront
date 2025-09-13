@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calculator, Save, X } from 'lucide-react';
 import { QuoteItem, CreateQuoteItemData } from '@/features/documents/types';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { VatRateSelector } from '@/features/documents/components/VatRateSelector';
 
 interface QuoteItemFormProps {
@@ -31,6 +31,8 @@ interface FormData extends CreateQuoteItemData {
 }
 
 export function QuoteItemForm({ item, quoteId, onSave, onCancel, parentItem }: QuoteItemFormProps) {
+  const { formatCurrency } = useCurrency();
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [calculatedValues, setCalculatedValues] = useState({
     subtotal: 0,

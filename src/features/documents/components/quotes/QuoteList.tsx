@@ -3,12 +3,10 @@
  */
 import React, { useState, useEffect } from 'react';
 import {
-  Eye,
   Edit,
   Send,
   Download,
   Trash2,
-  Copy,
   FileText,
   CheckCircle,
   AlertTriangle,
@@ -33,8 +31,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Quote } from '../../types/quotes.types';
-import { formatCurrency } from '@/lib/utils';
 import { quotesApi } from '../../api/quotes';
+import { useCurrency } from '@/contexts/CurrencyContext';
 // Plus besoin de settingsApi - les numéros formatés viennent du backend
 
 /**
@@ -47,7 +45,6 @@ interface QuoteListProps {
   onEdit: (quote: Quote) => void;
   onSend: (quote: Quote) => void;
   onConvertToInvoice: (quote: Quote) => void;
-  onDuplicate: (quote: Quote) => void;
   onDelete: (quote: Quote) => void;
   onDownload: (quote: Quote) => void;
 }
@@ -62,10 +59,10 @@ const QuoteList: React.FC<QuoteListProps> = ({
   onEdit,
   onSend,
   onConvertToInvoice,
-  onDuplicate,
   onDelete,
   onDownload,
 }) => {
+  const { formatCurrency } = useCurrency();
   // Plus besoin de state pour les numéros formatés - le backend les fournit directement
 
   // Plus besoin d'initialisation - les numéros formatés viennent du backend
@@ -122,6 +119,13 @@ const QuoteList: React.FC<QuoteListProps> = ({
     }
   };
 
+  // Gestionnaire pour le clic sur une ligne
+  const handleRowClick = (quote: Quote) => {
+    if (onView) {
+      onView(quote);
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-3">
@@ -156,7 +160,11 @@ const QuoteList: React.FC<QuoteListProps> = ({
             </TableRow>
           ) : (
             quotes.map((quote) => (
-              <TableRow key={quote.id}>
+              <TableRow 
+                key={quote.id}
+                className={onView ? "cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800/50" : ""}
+                onClick={onView ? () => handleRowClick(quote) : undefined}
+              >
                 <TableCell>{getStatusBadge(quote.status)}</TableCell>
                 <TableCell className="font-medium">
                   {quote.number || 'Brouillon'}
@@ -168,9 +176,9 @@ const QuoteList: React.FC<QuoteListProps> = ({
                 </TableCell>
                 <TableCell>{new Date(quote.createdAt).toLocaleDateString('fr-FR')}</TableCell>
                 <TableCell className="font-semibold">
-                  {formatCurrency(quote.totalTtc || 0, 2, true)} EUR
+                  {formatCurrency(quote.totalTtc || 0)}
                 </TableCell>
-                <TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -193,11 +201,6 @@ const QuoteList: React.FC<QuoteListProps> = ({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="Beenaya-glass">
-                      <DropdownMenuItem onClick={() => onView && onView(quote)}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Voir
-                      </DropdownMenuItem>
-                      
                       {quote.status === 'draft' && (
                         <>
                           <DropdownMenuItem onClick={() => onEdit && onEdit(quote)}>
@@ -246,10 +249,6 @@ const QuoteList: React.FC<QuoteListProps> = ({
                         </DropdownMenuItem>
                       )}
                       
-                      <DropdownMenuItem onClick={() => onDuplicate && onDuplicate(quote)}>
-                        <Copy className="mr-2 h-4 w-4" />
-                        Dupliquer
-                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

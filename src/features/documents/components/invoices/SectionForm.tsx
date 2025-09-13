@@ -91,8 +91,8 @@ export function SectionForm({
         quantity: 1,
         unitPrice: 0,
         vatRate: 20,
-        totalHT: 0,
-        totalTTC: 0,
+        totalHt: 0,
+        totalTtc: 0,
         parentId: formData.parentId,
       };
       

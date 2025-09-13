@@ -104,9 +104,9 @@ export default function InvoiceEditor() {
     items: [],
     notes: "",
     termsAndConditions: "Paiement à 30 jours.",
-    totalHT: 0,
+    totalHt: 0,
     totalVAT: 0,
-    totalTTC: 0,
+    totalTtc: 0,
     paidAmount: 0,
     remainingAmount: 0,
     payments: [],
@@ -184,8 +184,8 @@ export default function InvoiceEditor() {
       
       invoice.items.forEach(item => {
         if (item.type !== 'chapter' && item.type !== 'section') {
-          totalHt += item.totalHT;
-          totalVat += item.totalHT * (parseFloat(item.vatRate) / 100);
+          totalHt += item.totalHt;
+          totalVat += item.totalHt * (parseFloat(item.vatRate) / 100);
         }
       });
       
@@ -193,17 +193,17 @@ export default function InvoiceEditor() {
       
       setInvoice(prev => ({
         ...prev,
-        totalHT: totalHt,
+        totalHt: totalHt,
         totalVAT: totalVat,
-        totalTTC: totalTtc,
+        totalTtc: totalTtc,
         remainingAmount: totalTtc,
       }));
     } else {
       setInvoice(prev => ({
         ...prev,
-        totalHT: 0,
+        totalHt: 0,
         totalVAT: 0,
-        totalTTC: 0,
+        totalTtc: 0,
         remainingAmount: 0,
       }));
     }
@@ -510,8 +510,8 @@ export default function InvoiceEditor() {
     // Sum up the totals
     sectionItems.forEach(item => {
       if (item.type !== 'chapter' && item.type !== 'section') {
-        totalHt += item.totalHT;
-        totalTtc += item.totalTTC;
+        totalHt += item.totalHt;
+        totalTtc += item.totalTtc;
       }
     });
     
@@ -637,11 +637,11 @@ export default function InvoiceEditor() {
                 </div>
               </TableCell>
               <TableCell className="text-right font-medium">
-                {formatCurrency(totalHt)} MAD
+                {formatCurrency(totalHt)}
               </TableCell>
               {showTaxIncluded && (
                 <TableCell className="text-right font-semibold">
-                  {formatCurrency(totalTtc)} MAD
+                  {formatCurrency(totalTtc)}
                 </TableCell>
               )}
               <TableCell>
@@ -1052,15 +1052,15 @@ export default function InvoiceEditor() {
                 <div className="w-full md:w-1/3 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Total HT:</span>
-                    <span className="font-medium">{formatCurrency(invoice.totalHT || 0)} MAD</span>
+                    <span className="font-medium">{formatCurrency(invoice.totalHt || 0)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Total TVA:</span>
-                    <span className="font-medium">{formatCurrency(invoice.totalVAT || 0)} MAD</span>
+                    <span className="font-medium">{formatCurrency(invoice.totalVAT || 0)}</span>
                   </div>
                   <div className="flex justify-between text-lg font-semibold border-t border-neutral-200 dark:border-neutral-700 pt-2">
                     <span>Total TTC:</span>
-                    <span>{formatCurrency(invoice.totalTTC || 0)} MAD</span>
+                    <span>{formatCurrency(invoice.totalTtc || 0)}</span>
                   </div>
                 </div>
               </div>
@@ -1232,7 +1232,7 @@ export default function InvoiceEditor() {
         onSubmit={itemFormModal.data ? handleUpdateItem : handleAddGlobalDiscount}
         item={itemFormModal.data}
         isEditing={!!itemFormModal.data}
-        invoiceTotal={invoice.totalHT || 0}
+        invoiceTotal={invoice.totalHt || 0}
       />
 
       {/* Modale de confirmation de suppression */}

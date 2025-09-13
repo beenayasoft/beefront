@@ -2,7 +2,6 @@
 export { QuoteStats } from './QuoteStats';
 export { QuoteFilters } from './QuoteFilters';
 export { QuoteList } from './QuoteList';
-export { default as QuotePreviewComponent } from './QuotePreview';
 export { default as QuoteForm } from './QuoteForm';
 
 // Composants d'édition (déjà existants dans /editor)
@@ -18,6 +17,7 @@ export * from './library';
 export { ConvertToInvoiceModal } from './ConvertToInvoiceModal';
 export { ValidateQuoteModal } from './ValidateQuoteModal';
 export { SendQuoteModal } from './SendQuoteModal';
+export { QuotePreviewModal } from './QuotePreviewModal';
 
 // PHASE 1 - Nouveaux composants de la fiche devis (types corrigés)
 export { QuoteDetailCard } from './QuoteDetailCard';

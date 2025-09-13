@@ -30,11 +30,19 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useTierUtils } from "../components/tiers/useTierUtils";
 import { tiersApi } from "../api";
 import { TierEntrepriseEditDialog } from "../components/tiers/TierEntrepriseEditDialog";
 import { TierParticulierEditDialog } from "../components/tiers/TierParticulierEditDialog";
-import type { Tier, Opportunity } from "../types/crm.types";
+import type { Tier, Opportunity, CreateOpportunityData } from "../types/crm.types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { 
   Pagination,
@@ -47,12 +55,16 @@ import {
 import { OpportunityForm } from "../components/opportunities/OpportunityForm";
 import { toast } from "@/hooks/use-toast";
 import { crmApi } from "../api";
-// import { quotesService } from "@/features/documents/services/quotesService";
-// import { Quote } from "@/features/documents/types/quotes.types";
+import { quotesService } from "@/features/documents/services/quotesService";
+import { Quote } from "@/features/documents/types/quotes.types";
+import { useFormatCurrency } from "@/contexts/CurrencyContext";
+import QuoteCreateWizard from "@/features/documents/components/quotes/modern/QuoteCreateWizard";
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { DeleteConfirmDialog } from "../components/tiers/DeleteConfirmDialog";
 import { ContactEditDialog, ContactCreateDialog } from "../components/contacts";
 import { AddressEditDialog, AddressCreateDialog } from "../components/addresses";
 import { useModalState } from "@/hooks/useModalState";
+import { forceCleanModalOrphans, debugModalState, isUIBlocked } from "@/utils/modalDebug";
 
 // Types pour les données détaillées du backend
 interface TierDetailData {
@@ -90,6 +102,8 @@ export default function TierDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getTypeBadge, getStatusBadge } = useTierUtils();
+  const formatCurrencyWithSymbol = useFormatCurrency();
+  const { formatCurrency } = useCurrency();
   
   // Fonctions utilitaires pour les badges et l'affichage
   const getBadgeVariant = (flag: string) => {
@@ -128,6 +142,9 @@ export default function TierDetail() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   
+  // Utilisation de useModalState pour éviter les freezes UI
+  const quoteModal = useModalState();
+  
   // MAD Idée de génie #2 : États pour chargement progressif et métriques
   const [opportunitiesLoading, setOpportunitiesLoading] = useState(false);
   const [opportunitiesError, setOpportunitiesError] = useState<string | null>(null);
@@ -139,17 +156,17 @@ export default function TierDetail() {
   } | null>(null);
   const [dataSource, setDataSource] = useState<'api' | 'mock' | null>(null);
 
-  // 🎯 États pour les devis (DÉSACTIVÉ - fonctionnalité en développement)
-  // const [quotes, setQuotes] = useState<Quote[]>([]);
-  // const [quotesLoading, setQuotesLoading] = useState(false);
-  // const [quotesError, setQuotesError] = useState<string | null>(null);
-  // const [quoteMetrics, setQuoteMetrics] = useState<{
-  //   total: number;
-  //   totalAmount: number;
-  //   avgAmount: number;
-  //   byStatus: Record<string, number>;
-  //   acceptanceRate: number;
-  // } | null>(null);
+  // 🎯 États pour les devis
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [quotesLoading, setQuotesLoading] = useState(false);
+  const [quotesError, setQuotesError] = useState<string | null>(null);
+  const [quoteMetrics, setQuoteMetrics] = useState<{
+    total: number;
+    totalAmount: number;
+    avgAmount: number;
+    byStatus: Record<string, number>;
+    acceptanceRate: number;
+  } | null>(null);
 
   // États pour les modales d'édition spécialisées
   const [editEntrepriseDialogOpen, setEditEntrepriseDialogOpen] = useState(false);
@@ -168,15 +185,15 @@ export default function TierDetail() {
   const [contactCreateModal, setContactCreateModal] = useState(false);
 
   // États pour la pagination
-  // const [quotesCurrentPage, setQuotesCurrentPage] = useState(1);
+  const [quotesCurrentPage, setQuotesCurrentPage] = useState(1);
   const [opportunitiesCurrentPage, setOpportunitiesCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
   // États pour la recherche et le filtrage
   const [opportunitiesSearchQuery, setOpportunitiesSearchQuery] = useState('');
   const [opportunitiesStatusFilter, setOpportunitiesStatusFilter] = useState<string>('all');
-  // const [quotesSearchQuery, setQuotesSearchQuery] = useState('');
-  // const [quotesStatusFilter, setQuotesStatusFilter] = useState<string>('all');
+  const [quotesSearchQuery, setQuotesSearchQuery] = useState('');
+  const [quotesStatusFilter, setQuotesStatusFilter] = useState<string>('all');
 
   // États pour les modales d'actions
   const [actionModalOpen, setActionModalOpen] = useState(false);
@@ -288,7 +305,7 @@ export default function TierDetail() {
         // MAD Chargement progressif intelligent des opportunités
         if (id) {
           loadOpportunitiesProgressively(id);
-          // Note: loadQuotesProgressively(id) désactivé - fonctionnalité en développement
+          loadQuotesProgressively(id);
         }
       } catch (err) {
         console.error("Erreur lors du chargement du tier:", err);
@@ -421,8 +438,7 @@ export default function TierDetail() {
     }
   };
 
-  // 🎯 Fonction de chargement des devis (DÉSACTIVÉE - fonctionnalité en développement)
-  /*
+  // 🎯 Fonction de chargement des devis
   const loadQuotesProgressively = async (tierId: string) => {
     console.log('🎯 [TierDetail] loadQuotesProgressively - tierId reçu:', tierId);
     
@@ -451,11 +467,11 @@ export default function TierDetail() {
         })),
       });
 
-      // Filtrage local de sécurité
-      const filteredQuotes = result.quotes.filter(quote => quote.tier === tierId);
-      console.log('🔍 [TierDetail] Devis après filtrage local:', filteredQuotes.length);
+      // Note: Pas besoin de filtrage local car le filtrage par tier se fait automatiquement
+      // au niveau backend via les schémas PostgreSQL multi-tenant
+      console.log('🔍 [TierDetail] Devis reçus depuis API:', result.quotes.length);
 
-      setQuotes(filteredQuotes);
+      setQuotes(result.quotes);
       setQuoteMetrics(result.metrics);
       setQuotesError(null);
       
@@ -471,7 +487,62 @@ export default function TierDetail() {
       setQuotesLoading(false);
     }
   };
-  */
+
+  // Gérer la création réussie d'un devis
+  const handleQuoteCreated = async (quoteId: string) => {
+    try {
+      console.log("✅ Devis créé avec succès, ID:", quoteId);
+      
+      // Afficher une notification de succès
+      toast({
+        title: "Devis créé",
+        description: "Le devis a été créé avec succès",
+      });
+      
+      // Fermer le formulaire avec useModalState
+      quoteModal.actions.close();
+      
+      // Recharger les devis de ce tier pour afficher le nouveau
+      if (id) {
+        try {
+          await loadQuotesProgressively(id);
+        } catch (refreshError) {
+          console.warn("⚠️ Erreur lors du rechargement des devis après création:", refreshError);
+        }
+      }
+      
+    } catch (error) {
+      console.error("❌ Erreur lors du traitement post-création:", error);
+    }
+  };
+
+  // Gérer l'annulation de la création de devis
+  const handleQuoteCancel = () => {
+    console.log('🚪 TierDetail.handleQuoteCancel appelé');
+    
+    // Diagnostic avant fermeture
+    const beforeState = debugModalState();
+    console.log('📊 État avant fermeture:', beforeState);
+    
+    // Utilisation de useModalState pour éviter les freezes
+    quoteModal.actions.close();
+    console.log('✅ TierDetail.quoteModal.actions.close() appelé');
+    
+    // Diagnostic après fermeture avec délai
+    setTimeout(() => {
+      const afterState = debugModalState();
+      console.log('📊 État après fermeture:', afterState);
+      
+      const blockStatus = isUIBlocked();
+      if (blockStatus.blocked) {
+        console.error('🚨 UI BLOQUÉE après fermeture!', blockStatus.details);
+        console.log('🧹 Nettoyage d\'urgence...');
+        forceCleanModalOrphans();
+      } else {
+        console.log('✅ UI libre après fermeture');
+      }
+    }, 500);
+  };
 
   // Gestionnaire pour l'édition selon le type
   const handleEdit = () => {
@@ -527,12 +598,7 @@ export default function TierDetail() {
   };
 
   const handleQuoteAction = () => {
-    setActionModalContent({
-      title: "Fonction de devis en développement",
-      message: "Cette fonctionnalité sera bientôt disponible ! Nous travaillons actuellement sur l'intégration complète des devis dans Beenaya. En attendant, vous pouvez créer des opportunités pour ce tiers qui serviront de base pour vos futurs devis.",
-      icon: <FileText className="h-12 w-12 text-blue-500 mx-auto mb-4" />
-    });
-    setActionModalOpen(true);
+    quoteModal.actions.open();
   };
 
   const handleMapAction = () => {
@@ -717,8 +783,23 @@ export default function TierDetail() {
     try {
       console.log("MAD Phase 3 : Création d'opportunité via service intelligent:", formData);
       
+      // Convertir les données camelCase vers snake_case pour l'API
+      const opportunityData: CreateOpportunityData = {
+        name: formData.name!,
+        tier: formData.tierId!,
+        stage: formData.stage!,
+        estimated_amount: formData.estimatedAmount!,
+        probability: formData.probability!,
+        expected_close_date: formData.expectedCloseDate!,
+        source: formData.source!,
+        description: formData.description,
+        assigned_to: formData.assignedTo || undefined,
+      };
+      
+      console.log("📤 Données converties vers snake_case:", opportunityData);
+      
       // Créer l'opportunité via le service intelligent
-      const createdOpportunity = await crmApi.opportunities.createOpportunity(formData);
+      const createdOpportunity = await crmApi.opportunities.createOpportunity(opportunityData);
       
       console.log("✅ Opportunité créée avec succès:", createdOpportunity);
       
@@ -845,8 +926,6 @@ export default function TierDetail() {
     return statusMap[status] || status;
   };
 
-  // Fonction désactivée - fonctionnalité devis en développement
-  /*
   const getQuoteStatusFrench = (status: string) => {
     const statusMap: Record<string, string> = {
       'draft': 'Brouillon',
@@ -858,7 +937,6 @@ export default function TierDetail() {
     };
     return statusMap[status] || status;
   };
-  */
 
   // Fonctions de filtrage
   const filterOpportunities = (opportunities: Opportunity[]) => {
@@ -875,8 +953,6 @@ export default function TierDetail() {
     });
   };
 
-  // Fonction désactivée - fonctionnalité devis en développement
-  /*
   const filterQuotes = (quotes: Quote[]) => {
     return quotes.filter(quote => {
       // Filtrage par recherche
@@ -890,12 +966,11 @@ export default function TierDetail() {
       return matchesSearch && matchesStatus;
     });
   };
-  */
 
   // Données filtrées et paginées
   const filteredOpportunities = filterOpportunities(opportunities);
-  // const filteredQuotes = filterQuotes(quotes);
-  // const paginatedQuotes = getPaginatedData(filteredQuotes, quotesCurrentPage);
+  const filteredQuotes = filterQuotes(quotes);
+  const paginatedQuotes = getPaginatedData(filteredQuotes, quotesCurrentPage);
   const paginatedOpportunities = getPaginatedData(filteredOpportunities, opportunitiesCurrentPage);
 
   // Réinitialiser les pages lors des changements de filtres
@@ -903,12 +978,22 @@ export default function TierDetail() {
     setOpportunitiesCurrentPage(1);
   }, [opportunitiesSearchQuery, opportunitiesStatusFilter]);
 
-  // useEffect désactivé - fonctionnalité devis en développement
-  /*
   useEffect(() => {
     setQuotesCurrentPage(1);
   }, [quotesSearchQuery, quotesStatusFilter]);
-  */
+
+  // Rendre les fonctions de débogage disponibles globalement
+  useEffect(() => {
+    (window as any).emergencyUnblockUI = () => {
+      console.log('🚨 Déblocage d\'urgence de l\'UI...');
+      forceCleanModalOrphans();
+      const status = isUIBlocked();
+      console.log('📊 État après déblocage:', status);
+    };
+    (window as any).debugModalState = debugModalState;
+    (window as any).isUIBlocked = isUIBlocked;
+    (window as any).forceCleanModalOrphans = forceCleanModalOrphans;
+  }, []);
 
   // Si en cours de chargement, afficher un spinner
   if (loading) {
@@ -1418,36 +1503,244 @@ export default function TierDetail() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <FileText className="h-5 w-5" />
-                      Gestion des devis
+                      Devis de {tierData.nom}
                     </CardTitle>
                   </CardHeader>
                   
                   <CardContent>
-                    <div className="text-center py-16">
-                      <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-full w-fit mx-auto mb-6">
-                        <FileText className="h-16 w-16 text-blue-500" />
+                    {/* État de chargement */}
+                    {quotesLoading && (
+                      <div className="flex items-center justify-center py-12 text-neutral-500">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mr-3"></div>
+                        <span>Chargement des devis...</span>
                       </div>
-                      <h3 className="text-xl font-semibold mb-4 text-neutral-900 dark:text-neutral-100">
-                        Module Devis en développement
-                      </h3>
-                      <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed max-w-lg mx-auto mb-8">
-                        Nous travaillons actuellement sur une intégration complète de la gestion des devis dans cette interface. Cette fonctionnalité permettra de visualiser, créer et gérer tous les devis associés à ce {tierData.type === 'entreprise' ? 'client' : 'contact'} directement depuis sa fiche.
-                      </p>
-                      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                        <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/20 px-4 py-2 rounded-lg">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                          Fonctionnalité disponible prochainement
+                    )}
+                    
+                    {/* Gestion d'erreurs */}
+                    {quotesError && (
+                      <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 p-4 rounded-lg mb-6">
+                        <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                          <AlertCircle className="h-5 w-5" />
+                          <span>⚠️ {quotesError}</span>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => id && loadQuotesProgressively(id)}
+                            className="ml-auto"
+                          >
+                            Réessayer
+                          </Button>
                         </div>
-                        <Button 
-                          variant="outline"
-                          onClick={() => navigate('/devis')}
-                          className="gap-2 hover:bg-blue-50 dark:hover:bg-blue-950/20 border-blue-200 dark:border-blue-700 text-blue-700 dark:text-blue-300"
-                        >
-                          <FileText className="h-4 w-4" />
-                          Accéder aux devis
-                        </Button>
                       </div>
-                    </div>
+                    )}
+
+                    {/* Barre de recherche et filtres pour les devis */}
+                    {!quotesLoading && !quotesError && quotes.length > 0 && (
+                      <div className="flex flex-col sm:flex-row gap-4 mb-6 p-4 bg-gradient-to-r from-blue-50/50 to-purple-50/50 dark:from-blue-950/10 dark:to-purple-950/10 rounded-lg">
+                        <div className="flex-1">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 h-4 w-4" />
+                            <Input
+                              placeholder="Rechercher par numéro ou projet..."
+                              value={quotesSearchQuery}
+                              onChange={(e) => setQuotesSearchQuery(e.target.value)}
+                              className="pl-10"
+                            />
+                          </div>
+                        </div>
+                        <div className="w-full sm:w-48">
+                          <Select value={quotesStatusFilter} onValueChange={setQuotesStatusFilter}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Tous les statuts" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">Tous les statuts</SelectItem>
+                              <SelectItem value="draft">Brouillon</SelectItem>
+                              <SelectItem value="sent">Envoyé</SelectItem>
+                              <SelectItem value="accepted">Accepté</SelectItem>
+                              <SelectItem value="rejected">Refusé</SelectItem>
+                              <SelectItem value="expired">Expiré</SelectItem>
+                              <SelectItem value="cancelled">Annulé</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Métriques des devis */}
+                    {quoteMetrics && (
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                            {quoteMetrics.total}
+                          </div>
+                          <div className="text-sm text-neutral-600 dark:text-neutral-400">
+                            Total devis
+                          </div>
+                        </div>
+                        <div className="text-center p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                          <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                            {formatCurrency(quoteMetrics.totalAmount)}
+                          </div>
+                          <div className="text-sm text-neutral-600 dark:text-neutral-400">
+                            Montant total
+                          </div>
+                        </div>
+                        <div className="text-center p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
+                          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                            {formatCurrency(quoteMetrics.avgAmount)}
+                          </div>
+                          <div className="text-sm text-neutral-600 dark:text-neutral-400">
+                            Montant moyen
+                          </div>
+                        </div>
+                        <div className="text-center p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
+                          <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                            {Math.round(quoteMetrics.acceptanceRate)}%
+                          </div>
+                          <div className="text-sm text-neutral-600 dark:text-neutral-400">
+                            Taux d'acceptation
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Tableau des devis */}
+                    {!quotesLoading && !quotesError && (
+                      <>
+                        {filteredQuotes.length > 0 ? (
+                          <>
+                            <div className="border rounded-lg overflow-hidden">
+                              <div className="overflow-x-auto">
+                                <table className="w-full">
+                                  <thead className="bg-neutral-50 dark:bg-neutral-800">
+                                    <tr>
+                                      <th className="px-4 py-3 text-left text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                                        Numéro / Projet
+                                      </th>
+                                      <th className="px-4 py-3 text-left text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                                        Statut
+                                      </th>
+                                      <th className="px-4 py-3 text-right text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                                        Montant TTC
+                                      </th>
+                                      <th className="px-4 py-3 text-left text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                                        Date création
+                                      </th>
+                                      <th className="px-4 py-3 text-center text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                                        Actions
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-neutral-200 dark:divide-neutral-700">
+                                    {paginatedQuotes.items.map((quote) => (
+                                      <tr key={quote.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
+                                        <td className="px-4 py-3">
+                                          <div className="font-medium text-neutral-900 dark:text-neutral-100">
+                                            {quote.number}
+                                          </div>
+                                          {quote.projectName && (
+                                            <div className="text-sm text-neutral-500 truncate max-w-xs">
+                                              {quote.projectName}
+                                            </div>
+                                          )}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                          <Badge variant={quote.status === 'accepted' ? 'default' : 'secondary'}>
+                                            {getQuoteStatusFrench(quote.status)}
+                                          </Badge>
+                                        </td>
+                                        <td className="px-4 py-3 text-right">
+                                          <div className="font-medium text-green-600 dark:text-green-400">
+                                            {formatCurrency(quote.totalTtc)}
+                                          </div>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                          <div className="text-sm text-neutral-500 dark:text-neutral-400">
+                                            {new Date(quote.issueDate || quote.createdAt).toLocaleDateString('fr-FR')}
+                                          </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                          <div className="flex items-center justify-center gap-2">
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={() => navigate(`/devis/${quote.id}`)}
+                                              className="h-8 w-8 p-0"
+                                            >
+                                              <Eye className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={() => navigate(`/devis/${quote.id}/edit`)}
+                                              className="h-8 w-8 p-0"
+                                            >
+                                              <Edit className="h-4 w-4" />
+                                            </Button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                            
+                            {/* Pagination */}
+                            {paginatedQuotes.totalPages > 1 && (
+                              <div className="border-t px-4 py-3 bg-neutral-50/50 dark:bg-neutral-800/50">
+                                <Pagination>
+                                  <PaginationContent>
+                                    <PaginationItem>
+                                      <PaginationPrevious 
+                                        onClick={() => setQuotesCurrentPage(Math.max(1, quotesCurrentPage - 1))}
+                                        className={!paginatedQuotes.hasPrev ? 'pointer-events-none opacity-50' : ''}
+                                      />
+                                    </PaginationItem>
+                                    
+                                    {Array.from({ length: paginatedQuotes.totalPages }, (_, i) => (
+                                      <PaginationItem key={i + 1}>
+                                        <PaginationLink
+                                          onClick={() => setQuotesCurrentPage(i + 1)}
+                                          isActive={quotesCurrentPage === i + 1}
+                                        >
+                                          {i + 1}
+                                        </PaginationLink>
+                                      </PaginationItem>
+                                    ))}
+                                    
+                                    <PaginationItem>
+                                      <PaginationNext 
+                                        onClick={() => setQuotesCurrentPage(Math.min(paginatedQuotes.totalPages, quotesCurrentPage + 1))}
+                                        className={!paginatedQuotes.hasNext ? 'pointer-events-none opacity-50' : ''}
+                                      />
+                                    </PaginationItem>
+                                  </PaginationContent>
+                                </Pagination>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="text-center py-12">
+                            <FileText className="h-16 w-16 text-neutral-400 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-neutral-900 dark:text-neutral-100 mb-2">
+                              Aucun devis trouvé
+                            </h3>
+                            <p className="text-neutral-600 dark:text-neutral-400 mb-4">
+                              {quotesSearchQuery || quotesStatusFilter !== 'all' 
+                                ? 'Aucun devis ne correspond aux critères de recherche.'
+                                : `Aucun devis n'a encore été créé pour ${tierData.nom}.`
+                              }
+                            </p>
+                            <Button onClick={handleQuoteAction} className="gap-2">
+                              <Plus className="h-4 w-4" />
+                              Créer le premier devis
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -1483,21 +1776,23 @@ export default function TierDetail() {
                         </div>
                         <div className="text-center">
                           <div className="text-2xl font-bold text-green-600">
-                            {(opportunitiesSearchQuery || opportunitiesStatusFilter !== 'all' 
-                              ? filteredOpportunities.reduce((sum, opp) => sum + opp.estimatedAmount, 0)
-                              : opportunityMetrics.totalAmount
-                            ).toLocaleString('fr-FR')} MAD
+                            {formatCurrencyWithSymbol(
+                              opportunitiesSearchQuery || opportunitiesStatusFilter !== 'all' 
+                                ? filteredOpportunities.reduce((sum, opp) => sum + opp.estimatedAmount, 0)
+                                : opportunityMetrics.totalAmount
+                            , { showSymbol: true })}
                           </div>
                           <div className="text-sm text-neutral-500">Montant total</div>
                         </div>
                         <div className="text-center">
                           <div className="text-2xl font-bold text-purple-600">
-                            {(opportunitiesSearchQuery || opportunitiesStatusFilter !== 'all' 
-                              ? (filteredOpportunities.length > 0 
-                                  ? Math.round(filteredOpportunities.reduce((sum, opp) => sum + opp.estimatedAmount, 0) / filteredOpportunities.length)
-                                  : 0)
-                              : Math.round(opportunityMetrics.avgAmount)
-                            ).toLocaleString('fr-FR')} MAD
+                            {formatCurrencyWithSymbol(
+                              opportunitiesSearchQuery || opportunitiesStatusFilter !== 'all' 
+                                ? (filteredOpportunities.length > 0 
+                                    ? Math.round(filteredOpportunities.reduce((sum, opp) => sum + opp.estimatedAmount, 0) / filteredOpportunities.length)
+                                    : 0)
+                                : Math.round(opportunityMetrics.avgAmount)
+                            , { showSymbol: true })}
                           </div>
                           <div className="text-sm text-neutral-500">Montant moyen</div>
                         </div>
@@ -1634,7 +1929,7 @@ export default function TierDetail() {
                                         </td>
                                         <td className="px-4 py-3 text-right">
                                           <div className="font-medium">
-                                            {opportunity.estimatedAmount.toLocaleString('fr-FR')} MAD
+                                            {formatCurrencyWithSymbol(opportunity.estimatedAmount, { showSymbol: true })}
                                           </div>
                                         </td>
                                         <td className="px-4 py-3">
@@ -1875,7 +2170,7 @@ export default function TierDetail() {
 
       {/* Formulaire de création d'opportunité */}
       <Dialog open={formDialogOpen} onOpenChange={setFormDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="max-w-2xl max-h-[90vh] w-[95vw] sm:w-full mx-auto overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Nouvelle opportunité</DialogTitle>
             <DialogDescription>
@@ -1884,15 +2179,31 @@ export default function TierDetail() {
           </DialogHeader>
           
           <OpportunityForm
-            opportunity={{
-              tierId: tierData.id,
-              tierName: tierData.nom,
-              tierType: [tierData.relation],
-            }}
             onSubmit={handleFormSubmit}
             onCancel={() => setFormDialogOpen(false)}
             isEditing={false}
             preselectedTierId={tierData.id}
+            disableTierSelection={true}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Modale de création de devis */}
+      <Dialog open={quoteModal.isOpen} onOpenChange={(open) => !open && quoteModal.actions.close()}>
+        <DialogContent className="max-w-7xl max-h-[95vh] w-[98vw] sm:w-full mx-auto overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nouveau devis pour {tierData.nom}</DialogTitle>
+            <DialogDescription>
+              Assistant de création de devis étape par étape
+            </DialogDescription>
+          </DialogHeader>
+          
+          <QuoteCreateWizard
+            onQuoteCreated={handleQuoteCreated}
+            onCancel={handleQuoteCancel}
+            initialData={{
+              preselectedTierId: tierData.id
+            }}
           />
         </DialogContent>
       </Dialog>

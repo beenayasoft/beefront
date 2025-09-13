@@ -3,15 +3,18 @@ import { DashboardCard } from "@/components/DashboardCard";
 import { Chart } from "@/components/Chart";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 
 export default function Index() {
+  const { getUserDisplayName } = useAuth();
+  
   return (
     <div className="space-y-8">
       {/* Welcome Header */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold text-neo-gray-900 dark:text-white">
-            Bienvenue Jean 👋
+            Bienvenue {getUserDisplayName()} 👋
           </h1>
           <p className="text-neo-gray-600 dark:text-neo-gray-400">
             Voici un aperçu de vos activités de construction

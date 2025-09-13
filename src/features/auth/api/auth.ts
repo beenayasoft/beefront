@@ -101,6 +101,41 @@ export const authApi = {
     const response = await apiClient.post('/auth/password-reset/confirm/', data);
     return response.data;
   },
+
+  // Upload d'avatar
+  uploadAvatar: async (file: File): Promise<{ message: string; avatar_url: string }> => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    
+    const response = await apiClient.post('/auth/avatar/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // Supprimer l'avatar (via PATCH profile avec avatar null)
+  deleteAvatar: async (): Promise<{ message: string }> => {
+    const response = await apiClient.patch('/auth/profile/', {
+      avatar: null
+    });
+    return {
+      message: 'Avatar supprimé avec succès'
+    };
+  },
+
+  // Récupérer les informations utilisateur (alias de getCurrentUser)
+  getUserInfo: async (): Promise<AuthResponse['user']> => {
+    const response = await apiClient.get('/auth/me/');
+    return response.data;
+  },
+
+  // Mettre à jour les informations utilisateur (alias de updateProfile)
+  updateUserInfo: async (data: Partial<RegisterData>): Promise<AuthResponse['user']> => {
+    const response = await apiClient.patch('/auth/profile/', data);
+    return response.data;
+  },
 };
 
 export default authApi;

@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Calendar } from "lucide-react";
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Dialog,
   DialogContent,
@@ -46,9 +46,10 @@ export function ConvertToInvoiceModal({
   onConvert,
   loading = false,
 }: ConvertToInvoiceModalProps) {
+  const { formatCurrency } = useCurrency();
   const [formData, setFormData] = useState({
-    issueDate: new Date().toISOString().split('T')[0],
-    dueDate: "",
+    issueDate: new Date(),
+    dueDate: undefined as Date | undefined,
     paymentTerms: "30",
     notes: "",
     copyItems: true,
@@ -63,11 +64,10 @@ export function ConvertToInvoiceModal({
   };
 
   // Calculer la date d'échéance basée sur les conditions de paiement
-  const calculateDueDate = (issueDate: string, termsDays: string) => {
-    const issue = new Date(issueDate);
-    const due = new Date(issue);
-    due.setDate(issue.getDate() + parseInt(termsDays));
-    return due.toISOString().split('T')[0];
+  const calculateDueDate = (issueDate: Date, termsDays: string) => {
+    const due = new Date(issueDate);
+    due.setDate(issueDate.getDate() + parseInt(termsDays));
+    return due;
   };
 
   // Mettre à jour la date d'échéance quand les conditions changent
@@ -80,18 +80,29 @@ export function ConvertToInvoiceModal({
   };
 
   // Mettre à jour la date d'échéance quand la date d'émission change
-  const handleIssueDateChange = (value: string) => {
+  const handleIssueDateChange = (date: Date | undefined) => {
+    if (!date) return;
+    
     setFormData(prev => ({
       ...prev,
-      issueDate: value,
-      dueDate: calculateDueDate(value, prev.paymentTerms),
+      issueDate: date,
+      dueDate: calculateDueDate(date, prev.paymentTerms),
     }));
   };
 
   // Gérer la soumission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onConvert(formData);
+    if (!formData.dueDate) return;
+    
+    // Convertir les dates en format ISO string pour l'API
+    onConvert({
+      issueDate: formData.issueDate.toISOString().split('T')[0],
+      dueDate: formData.dueDate.toISOString().split('T')[0],
+      paymentTerms: formData.paymentTerms,
+      notes: formData.notes,
+      copyItems: formData.copyItems,
+    });
   };
 
   // Ne pas rendre la modale si les données du devis ne sont pas disponibles
@@ -120,7 +131,7 @@ export function ConvertToInvoiceModal({
 
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-600 dark:text-neutral-400">Montant TTC:</span>
-                <span className="font-semibold">{formatTotalTtc(quote.totalTtc).toFixed(2)} MAD</span>
+                <span className="font-semibold">{formatCurrency(quote.totalTtc || 0)}</span>
               </div>
             </div>
           </div>
@@ -128,13 +139,10 @@ export function ConvertToInvoiceModal({
           {/* Date d'émission */}
           <div className="space-y-2">
             <Label htmlFor="issueDate">Date d'émission</Label>
-            <Input
-              id="issueDate"
-              name="issueDate"
-              type="date"
+            <DatePicker
               value={formData.issueDate}
-              onChange={(e) => handleIssueDateChange(e.target.value)}
-              required
+              onChange={handleIssueDateChange}
+              placeholder="Sélectionner la date d'émission"
             />
           </div>
 
@@ -159,13 +167,10 @@ export function ConvertToInvoiceModal({
           {/* Date d'échéance (calculée automatiquement) */}
           <div className="space-y-2">
             <Label htmlFor="dueDate">Date d'échéance</Label>
-            <Input
-              id="dueDate"
-              name="dueDate"
-              type="date"
+            <DatePicker
               value={formData.dueDate}
-              onChange={(e) => setFormData(prev => ({ ...prev, dueDate: e.target.value }))}
-              required
+              onChange={(date) => setFormData(prev => ({ ...prev, dueDate: date }))}
+              placeholder="Sélectionner la date d'échéance"
             />
           </div>
 

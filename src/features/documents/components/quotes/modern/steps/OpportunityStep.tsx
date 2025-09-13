@@ -16,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { UseQuoteWizard } from '../../../hooks/useQuoteWizard';
 import { useOpportunityFlow } from '../../../../hooks/useOpportunityFlow';
 import { OpportunityOption } from '@/features/crm/types/crm.types';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { OpportunityQuickCreateForm } from '../forms/OpportunityQuickCreateForm';
 import { crmApi } from '@/features/crm/api/crm';
 
@@ -43,6 +43,8 @@ const STAGE_COLORS = {
 } as const;
 
 export const OpportunityStep: React.FC<OpportunityStepProps> = ({ wizard }) => {
+  const { formatCurrency } = useCurrency();
+  
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   

@@ -26,6 +26,8 @@ import { usersService } from "@/lib/services/usersService";
 import { User } from "@/lib/api/users";
 import { formatCurrency, cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { ClientSearchItem } from "@/features/crm/hooks/useClientSearchForOpportunities";
+import { useCurrencyInfo, useFormatCurrency } from "@/contexts/CurrencyContext";
 
 interface OpportunityFormProps {
   opportunity?: Partial<Opportunity>;
@@ -45,6 +47,8 @@ export function OpportunityForm({
   disableTierSelection,
 }: OpportunityFormProps) {
   const { toast } = useToast();
+  const { currencyCode, currencySymbol } = useCurrencyInfo();
+  const formatCurrencyWithSymbol = useFormatCurrency();
   
   const [formData, setFormData] = useState<Partial<Opportunity>>(
     opportunity || {
@@ -58,7 +62,7 @@ export function OpportunityForm({
       expectedCloseDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       source: "website",
       description: "",
-      assignedTo: "", // Changer null à chaîne vide pour éviter les erreurs de validation
+      assignedTo: "",
     }
   );
 
@@ -248,7 +252,7 @@ export function OpportunityForm({
         ...prev,
         tierId: client.id,
         tierName: client.name,
-        tierType: client.type,
+        tierType: [client.type],
       }));
     }
   };
@@ -311,7 +315,22 @@ export function OpportunityForm({
         console.log(`   ${key}:`, typeof value, Array.isArray(value) ? '(ARRAY!)' : '', value);
       });
       
-      onSubmit(formData);
+      // Nettoyer les données avant envoi pour éviter les arrays indésirables
+      const cleanedData = {
+        ...formData,
+        // S'assurer que tierId est une string
+        tierId: Array.isArray(formData.tierId) ? formData.tierId[0] : formData.tierId,
+        // S'assurer que estimatedAmount est un number
+        estimatedAmount: Array.isArray(formData.estimatedAmount) ? Number(formData.estimatedAmount[0]) : formData.estimatedAmount,
+        // S'assurer que expectedCloseDate est une string
+        expectedCloseDate: Array.isArray(formData.expectedCloseDate) ? formData.expectedCloseDate[0] : formData.expectedCloseDate,
+        // tierType doit rester un array
+        tierType: Array.isArray(formData.tierType) ? formData.tierType : [formData.tierType]
+      };
+      
+      console.log('🧹 Données nettoyées:', cleanedData);
+      
+      onSubmit(cleanedData);
     }
   };
 
@@ -604,7 +623,7 @@ export function OpportunityForm({
                   <Label htmlFor="estimatedAmount" className={`text-sm font-medium ${
                     errors.estimatedAmount ? "text-red-600" : "text-neutral-700"
                   }`}>
-                    Montant estimé (MAD) <span className="text-red-500">*</span>
+                    Montant estimé ({currencyCode}) <span className="text-red-500">*</span>
                   </Label>
                   <div className="relative">
                     <Input
@@ -620,7 +639,7 @@ export function OpportunityForm({
                       placeholder="0"
                     />
                     <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-neutral-500 text-sm">
-                      MAD
+                      {currencySymbol}
                     </div>
                   </div>
                   {errors.estimatedAmount && (
@@ -759,7 +778,7 @@ export function OpportunityForm({
             <div className="flex justify-between items-center">
               <span className="text-neutral-700">Montant pondéré:</span>
               <span className="font-semibold text-lg">
-                {formatCurrency((formData.estimatedAmount || 0) * (formData.probability || 0) / 100)} MAD
+                {formatCurrencyWithSymbol((formData.estimatedAmount || 0) * (formData.probability || 0) / 100, { showSymbol: true })}
               </span>
             </div>
             <p className="text-xs text-neutral-500 mt-1">

@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 import { UseQuoteWizard } from '../../../hooks/useQuoteWizard';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { quotesApi } from '@/features/documents/api/quotes';
 import { settingsApi } from '@/features/settings/api/settings';
 import { formatNumberWithSettings, getDocumentFormat, getNextSequentialNumber } from '@/features/documents/utils/numberFormatting';
@@ -21,6 +21,8 @@ interface ReviewStepProps {
 }
 
 export const ReviewStep: React.FC<ReviewStepProps> = ({ wizard }) => {
+  const { formatCurrency } = useCurrency();
+  
   const [nextQuoteNumber, setNextQuoteNumber] = useState<string>('');
   const [isLoadingNumber, setIsLoadingNumber] = useState(true);
 
@@ -83,16 +85,16 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ wizard }) => {
       
       const baseTotal = quantity * unitPrice;
       const discountAmount = baseTotal * discount / 100;
-      const totalHT = baseTotal - discountAmount;
-      const vatAmount = totalHT * vatRate / 100;
-      const totalTtc = totalHT + vatAmount;
+      const totalHt = baseTotal - discountAmount;
+      const vatAmount = totalHt * vatRate / 100;
+      const totalTtc = totalHt + vatAmount;
       
       return {
-        totalHT: acc.totalHT + totalHT,
+        totalHt: acc.totalHt + totalHt,
         totalVAT: acc.totalVAT + vatAmount,
         totalTtc: acc.totalTtc + totalTtc
       };
-    }, { totalHT: 0, totalVAT: 0, totalTtc: 0 });
+    }, { totalHt: 0, totalVAT: 0, totalTtc: 0 });
   };
   
   const totals = calculateTotals();
@@ -279,7 +281,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ wizard }) => {
             <div className="text-center">
               <p className="text-sm text-gray-600">Total HT</p>
               <p className="text-2xl font-bold text-gray-900">
-                {formatCurrency(totals.totalHT)}
+                {formatCurrency(totals.totalHt)}
               </p>
             </div>
             

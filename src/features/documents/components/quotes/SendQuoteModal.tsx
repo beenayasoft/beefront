@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { Send, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,7 @@ export function SendQuoteModal({
   onSend,
   loading = false,
 }: SendQuoteModalProps) {
+  const { formatCurrency } = useCurrency();
   const [formData, setFormData] = useState({
     recipient_email: "",
     message: "",
@@ -98,7 +100,7 @@ export function SendQuoteModal({
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-600 dark:text-neutral-400">Montant TTC:</span>
-                <span className="font-semibold">{formatTotalTtc(quote.totalTtc).toFixed(2)} MAD</span>
+                <span className="font-semibold">{formatCurrency(quote.totalTtc || 0)}</span>
               </div>
             </div>
           </div>

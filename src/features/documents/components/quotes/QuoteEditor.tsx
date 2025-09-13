@@ -10,7 +10,7 @@ import { QuoteItemForm } from './QuoteItemForm';
 import { BulkItemOperations } from './BulkItemOperations';
 import { quotesApi } from '@/features/documents/api/quotes';
 import { Quote, QuoteItem, CreateQuoteItemData } from '@/features/documents/types/quotes.types';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface QuoteEditorProps {
   quote: Quote;
@@ -19,6 +19,8 @@ interface QuoteEditorProps {
 }
 
 export function QuoteEditor({ quote, onQuoteChange, readonly = false }: QuoteEditorProps) {
+  const { formatCurrency } = useCurrency();
+  
   const [items, setItems] = useState<QuoteItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);

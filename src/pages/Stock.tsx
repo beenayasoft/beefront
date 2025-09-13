@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCurrency } from '@/contexts/CurrencyContext';
 import {
   Plus,
   Search,
@@ -135,6 +136,7 @@ const categories = [
 export default function Stock() {
   const [activeTab, setActiveTab] = useState("tous");
   const [searchQuery, setSearchQuery] = useState("");
+  const { formatCurrency } = useCurrency();
 
   const getStatusBadge = (status: StockStatus) => {
     switch (status) {
@@ -231,7 +233,7 @@ export default function Stock() {
         </div>
         <div className="Beenaya-card text-center">
           <div className="text-2xl font-bold text-green-600">
-            {getTotalValue().toLocaleString("fr-FR")} MAD
+            {formatCurrency(getTotalValue())}
           </div>
           <div className="text-sm text-neutral-600 dark:text-neutral-400">
             Valeur totale
@@ -387,10 +389,10 @@ export default function Stock() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {item.unitPrice.toLocaleString("fr-FR")} MAD
+                    {formatCurrency(item.unitPrice)}
                   </TableCell>
                   <TableCell className="font-semibold">
-                    {item.totalValue.toLocaleString("fr-FR")} MAD
+                    {formatCurrency(item.totalValue)}
                   </TableCell>
                   <TableCell>
                     <Badge className="Beenaya-badge-primary text-xs">

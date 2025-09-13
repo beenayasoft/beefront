@@ -20,7 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { InvoiceItem } from "../../../../types/invoices.types";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { Work, Material, Labor } from "@/features/library/types";
 import { mockMaterials, mockLabor, mockWorks } from "@/lib/mock/workLibrary";
 import { VatRateSelector } from '@/features/documents/components/VatRateSelector';
@@ -40,6 +40,8 @@ export function InvoiceItemForm({
   item,
   isEditing = false,
 }: InvoiceItemFormProps) {
+  const { formatCurrency } = useCurrency();
+  
   const [formData, setFormData] = useState<Partial<InvoiceItem>>({
     designation: "",
     description: "",
@@ -102,13 +104,13 @@ export function InvoiceItemForm({
       const discountedUnitPrice = unitPrice * (1 - discount / 100);
       
       // Calculer les totaux
-      const totalHT = quantity * discountedUnitPrice;
-      const totalTTC = totalHT * (1 + vatRate / 100);
+      const totalHt = quantity * discountedUnitPrice;
+      const totalTtc = totalHt * (1 + vatRate / 100);
       
       setFormData(prev => ({
         ...prev,
-        totalHT,
-        totalTTC,
+        totalHt,
+        totalTtc,
       }));
     }
   }, [formData.quantity, formData.unitPrice, formData.vatRate, formData.discount]);
@@ -164,8 +166,8 @@ export function InvoiceItemForm({
         unitPrice: formData.unitPrice || 0,
         discount: formData.discount,
         vatRate: formData.vatRate || 0,
-        totalHT: formData.totalHT || 0,
-        totalTTC: formData.totalTTC || 0,
+        totalHt: formData.totalHt || 0,
+        totalTtc: formData.totalTtc || 0,
         workId: formData.workId,
       };
       
@@ -288,7 +290,7 @@ export function InvoiceItemForm({
                               <span>{item.unit}</span>
                               <span>•</span>
                               <span>
-                                {formatCurrency("recommendedPrice" in item ? item.recommendedPrice : item.unitPrice)} MAD
+                                {formatCurrency("recommendedPrice" in item ? item.recommendedPrice : item.unitPrice)}
                               </span>
                             </div>
                           </div>
@@ -493,21 +495,21 @@ export function InvoiceItemForm({
           <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg space-y-2">
             <div className="flex justify-between">
               <span className="text-neutral-600 dark:text-neutral-400">Total HT:</span>
-              <span className="font-medium">{formatCurrency(formData.totalHT || 0)} MAD</span>
+              <span className="font-medium">{formatCurrency(formData.totalHt || 0)}</span>
             </div>
             {formData.discount && formData.discount > 0 && (
               <div className="flex justify-between text-red-600 dark:text-red-400">
                 <span>Remise ({formData.discount}%):</span>
-                <span>-{formatCurrency((formData.quantity || 0) * (formData.unitPrice || 0) * (formData.discount / 100))} MAD</span>
+                <span>-{formatCurrency((formData.quantity || 0) * (formData.unitPrice || 0) * (formData.discount / 100))}</span>
               </div>
             )}
             <div className="flex justify-between">
               <span className="text-neutral-600 dark:text-neutral-400">TVA ({formData.vatRate}%):</span>
-              <span className="font-medium">{formatCurrency((formData.totalHT || 0) * ((formData.vatRate || 0) / 100))} MAD</span>
+              <span className="font-medium">{formatCurrency((formData.totalHt || 0) * ((formData.vatRate || 0) / 100))}</span>
             </div>
             <div className="flex justify-between font-semibold border-t border-neutral-200 dark:border-neutral-700 pt-2">
               <span>Total TTC:</span>
-              <span>{formatCurrency(formData.totalTTC || 0)} MAD</span>
+              <span>{formatCurrency(formData.totalTtc || 0)}</span>
             </div>
           </div>
         </div>

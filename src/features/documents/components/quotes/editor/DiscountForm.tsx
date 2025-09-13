@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EditorQuoteItem } from "../../../types/quotes.types";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface DiscountFormProps {
   open: boolean;
@@ -38,6 +38,7 @@ export function DiscountForm({
   isEditing = false,
   quoteTotal,
 }: DiscountFormProps) {
+  const { formatCurrency } = useCurrency();
   const [formData, setFormData] = useState<{
     designation: string;
     discountType: "percentage" | "fixed";
@@ -59,7 +60,7 @@ export function DiscountForm({
         const isPercentage = item.designation?.includes('%');
         const value = isPercentage 
           ? parseFloat(item.designation?.split('(')[1]?.split('%')[0] || "0") 
-          : Math.abs(item.totalHT || 0);
+          : Math.abs(item.totalHt || 0);
         
         setFormData({
           designation: item.designation || "Remise globale",
@@ -136,7 +137,7 @@ export function DiscountForm({
         quantity: 1,
         unitPrice: -calculatedAmount, // Montant négatif
         vatRate: 20, // Même taux que le reste du devis
-        totalHT: -calculatedAmount, // Montant négatif
+        totalHt: -calculatedAmount, // Montant négatif
         totalTtc: -calculatedAmount * 1.2, // Montant négatif avec TVA
       };
       
@@ -232,16 +233,16 @@ export function DiscountForm({
               <div className="flex justify-between font-semibold">
                 <span>Montant de la remise:</span>
                 <span className="text-red-600 dark:text-red-400">
-                  -{formatCurrency(calculatedAmount)} MAD
+                  -{formatCurrency(calculatedAmount)}
                 </span>
               </div>
               <div className="flex justify-between text-sm mt-2">
                 <span>Total avant remise:</span>
-                <span>{formatCurrency(quoteTotal)} MAD</span>
+                <span>{formatCurrency(quoteTotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Total après remise:</span>
-                <span>{formatCurrency(quoteTotal - calculatedAmount)} MAD</span>
+                <span>{formatCurrency(quoteTotal - calculatedAmount)}</span>
               </div>
             </div>
           </div>

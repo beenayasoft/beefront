@@ -12,13 +12,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 import { UseInvoiceWizard } from '../../../hooks/useInvoiceWizard';
 import { InvoiceItemForm } from '../../InvoiceItemForm';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface ItemsStepProps {
   wizard: UseInvoiceWizard;
 }
 
 export const ItemsStep: React.FC<ItemsStepProps> = ({ wizard }) => {
+  const { formatCurrency } = useCurrency();
+  
   const [showItemForm, setShowItemForm] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   
@@ -31,16 +33,16 @@ export const ItemsStep: React.FC<ItemsStepProps> = ({ wizard }) => {
     
     const subtotal = quantity * unitPrice;
     const discountAmount = (subtotal * discount) / 100;
-    const totalHT = subtotal - discountAmount;
-    const vatAmount = (totalHT * vatRate) / 100;
-    const totalTTC = totalHT + vatAmount;
+    const totalHt = subtotal - discountAmount;
+    const vatAmount = (totalHt * vatRate) / 100;
+    const totalTtc = totalHt + vatAmount;
     
-    acc.totalHT += totalHT;
+    acc.totalHt += totalHt;
     acc.totalVAT += vatAmount;
-    acc.totalTTC += totalTTC;
+    acc.totalTtc += totalTtc;
     
     return acc;
-  }, { totalHT: 0, totalVAT: 0, totalTTC: 0 });
+  }, { totalHt: 0, totalVAT: 0, totalTtc: 0 });
   
   const handleAddItem = () => {
     setEditingIndex(null);
@@ -116,7 +118,7 @@ export const ItemsStep: React.FC<ItemsStepProps> = ({ wizard }) => {
                   const discount = parseFloat(item.discount) || 0;
                   const subtotal = quantity * unitPrice;
                   const discountAmount = (subtotal * discount) / 100;
-                  const totalHT = subtotal - discountAmount;
+                  const totalHt = subtotal - discountAmount;
                   
                   return (
                     <TableRow key={index}>
@@ -144,7 +146,7 @@ export const ItemsStep: React.FC<ItemsStepProps> = ({ wizard }) => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        {formatCurrency(totalHT)}
+                        {formatCurrency(totalHt)}
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-center gap-1">
@@ -199,7 +201,7 @@ export const ItemsStep: React.FC<ItemsStepProps> = ({ wizard }) => {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Total HT :</span>
-                <span className="font-medium">{formatCurrency(totals.totalHT)}</span>
+                <span className="font-medium">{formatCurrency(totals.totalHt)}</span>
               </div>
               <div className="flex justify-between">
                 <span>TVA :</span>
@@ -208,7 +210,7 @@ export const ItemsStep: React.FC<ItemsStepProps> = ({ wizard }) => {
               <div className="border-t pt-2 mt-2">
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total TTC :</span>
-                  <span>{formatCurrency(totals.totalTTC)}</span>
+                  <span>{formatCurrency(totals.totalTtc)}</span>
                 </div>
               </div>
             </div>

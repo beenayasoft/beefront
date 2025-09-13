@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Material } from "@/features/library/types";
-import { LibraryItemForm } from "@/features/documents/components/quotes/library/LibraryItemForm";
+import { LibraryItemForm } from "@/features/library/components/LibraryItemForm";
 import { formatCurrency } from "@/lib/utils";
 
 interface MaterialDetailHeaderProps {
@@ -66,15 +66,13 @@ export function MaterialDetailHeader({
                 Modifier
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] w-[95vw] sm:w-full mx-auto my-auto rounded-2xl border bg-white overflow-hidden">
-              <div className="max-h-[80vh] overflow-y-auto p-6">
-                <LibraryItemForm
-                  item={material}
-                  type="material"
-                  onSave={onEdit}
-                  onCancel={() => setShowEditDialog(false)}
-                />
-              </div>
+            <DialogContent className="max-w-2xl max-h-[90vh] w-[95vw] sm:w-full mx-auto overflow-y-auto">
+              <LibraryItemForm
+                item={material}
+                type="material"
+                onSave={onEdit}
+                onCancel={() => setShowEditDialog(false)}
+              />
             </DialogContent>
           </Dialog>
           

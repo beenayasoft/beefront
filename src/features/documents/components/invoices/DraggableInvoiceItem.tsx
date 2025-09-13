@@ -3,7 +3,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InvoiceItem } from "../../../../types/invoices.types";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface DraggableInvoiceItemProps {
   item: InvoiceItem;
@@ -20,6 +20,8 @@ export function DraggableInvoiceItem({
   indentLevel = 0,
   showTaxIncluded = true
 }: DraggableInvoiceItemProps) {
+  const { formatCurrency } = useCurrency();
+  
   const {
     attributes,
     listeners,
@@ -73,7 +75,7 @@ export function DraggableInvoiceItem({
             {item.quantity} {item.unit}
           </td>
           <td className="py-3 px-4 text-right border-b border-neutral-200 dark:border-neutral-700">
-            {formatCurrency(Math.abs(item.unitPrice))} MAD
+            {formatCurrency(Math.abs(item.unitPrice))}
           </td>
           <td className="py-3 px-4 text-right border-b border-neutral-200 dark:border-neutral-700">
             {item.vatRate}%
@@ -83,13 +85,13 @@ export function DraggableInvoiceItem({
           </td>
           <td className="py-3 px-4 text-right border-b border-neutral-200 dark:border-neutral-700">
             <span className={isDiscount ? "text-red-600 dark:text-red-400 font-medium" : "font-medium"}>
-              {formatCurrency(Math.abs(item.totalHT))} {isDiscount && "-"} MAD
+              {isDiscount && "-"} {formatCurrency(Math.abs(item.totalHt))}
             </span>
           </td>
           {showTaxIncluded && (
             <td className="py-3 px-4 text-right font-semibold border-b border-neutral-200 dark:border-neutral-700">
               <span className={isDiscount ? "text-red-600 dark:text-red-400" : ""}>
-                {formatCurrency(Math.abs(item.totalTTC))} {isDiscount && "-"} MAD
+                {isDiscount && "-"} {formatCurrency(Math.abs(item.totalTtc))}
               </span>
             </td>
           )}

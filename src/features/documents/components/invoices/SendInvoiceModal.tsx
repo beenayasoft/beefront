@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +25,7 @@ interface SendInvoiceModalProps {
     id: string;
     number: string;
     clientName: string;
-    totalTTC: number;
+    totalTtc: number;
   };
   onSend: (data: { recipient_email: string; message?: string }) => void;
   loading?: boolean;
@@ -38,6 +38,8 @@ export function SendInvoiceModal({
   onSend,
   loading = false,
 }: SendInvoiceModalProps) {
+  const { formatCurrency } = useCurrency();
+  
   const [formData, setFormData] = useState({
     recipient_email: "",
     message: "",
@@ -74,7 +76,7 @@ export function SendInvoiceModal({
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-600 dark:text-neutral-400">Montant TTC:</span>
-                <span className="font-semibold">{formatCurrency(invoice.totalTTC)} MAD</span>
+                <span className="font-semibold">{formatCurrency(invoice.totalTtc)}</span>
               </div>
             </div>
           </div>

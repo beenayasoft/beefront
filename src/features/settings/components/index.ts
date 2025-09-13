@@ -1,5 +1,5 @@
 export { CompanyIdentityForm } from './CompanyIdentityForm';
-export { DocumentAppearanceForm } from './DocumentAppearanceForm';
+// export { DocumentAppearanceForm } from './DocumentAppearanceForm';  // SUPPRIMÉ
 export { LegalFinancialForm } from './LegalFinancialForm';
 export { NumberingFormatForm } from './NumberingFormatForm';
 export { NumberingFormatFormAdvanced } from './NumberingFormatFormAdvanced';

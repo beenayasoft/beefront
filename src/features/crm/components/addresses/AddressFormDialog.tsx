@@ -13,9 +13,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Form,
   FormControl,
@@ -26,16 +23,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { 
-  Loader2, 
+  Loader2,
   Home, 
   MapPin, 
-  Building2, 
-  CheckCircle2, 
-  AlertCircle, 
-  Crown,
-  Plus,
-  Sparkles,
-  Mail,
+  Building2,
   Globe
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
@@ -138,12 +129,7 @@ export function AddressFormDialog({
     },
   });
 
-  const { handleSubmit, formState: { isSubmitting, errors }, reset, watch } = form;
-  
-  // Surveiller les changements pour calculer la progression
-  const watchedValues = watch();
-  const formProgress = calculateFormProgress(watchedValues);
-  const isFacturationAddress = watchedValues.is_facturation;
+  const { handleSubmit, formState: { isSubmitting }, reset } = form;
   
   // Suggestions de libellés selon le type d'entité
   const libelleSuggestions = getLibelleSuggestions(tierType);
@@ -155,9 +141,6 @@ export function AddressFormDialog({
     description: isEditing 
       ? `Adresse de ${tierName}` 
       : `Ajouter une adresse à ${tierName}`,
-    icon: isEditing ? MapPin : Plus,
-    iconColor: isEditing ? "text-blue-600" : "text-green-600",
-    iconBg: isEditing ? "bg-blue-50 dark:bg-blue-950/20" : "bg-green-50 dark:bg-green-950/20",
     submitText: isEditing ? "Sauvegarder" : "Créer l'adresse",
     loadingText: isEditing ? "Sauvegarde..." : "Création...",
     successTitle: isEditing ? "✅ Adresse modifiée avec succès" : "✅ Adresse créée avec succès",
@@ -256,374 +239,187 @@ export function AddressFormDialog({
     form.setValue('libelle', suggestion, { shouldValidate: true });
   };
 
-  const getAddressTypeDisplay = () => {
-    if (isFacturationAddress) {
-      return (
-        <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 animate-pulse">
-          <Mail className="w-3 h-3 mr-1" />
-          Adresse de facturation
-        </Badge>
-      );
-    }
-    return (
-      <Badge variant="outline" className="text-gray-600">
-        <Home className="w-3 h-3 mr-1" />
-        Adresse standard
-      </Badge>
-    );
-  };
-
-  const IconComponent = dialogConfig.icon;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[95vh] overflow-hidden flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`flex items-center justify-center w-10 h-10 ${dialogConfig.iconBg} rounded-full`}>
-                <IconComponent className={`h-5 w-5 ${dialogConfig.iconColor}`} />
-              </div>
-              <div>
-                <DialogTitle className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  {dialogConfig.title}
-                  {!isEditing && <Sparkles className="inline ml-2 h-4 w-4 text-yellow-500" />}
-                </DialogTitle>
-                <DialogDescription className="text-sm text-muted-foreground">
-                  {dialogConfig.description}
-                </DialogDescription>
-              </div>
-            </div>
-            
-            {/* Progression et statut */}
-            <div className="flex items-center gap-3">
-              {getAddressTypeDisplay()}
-              <div className="flex items-center gap-2">
-                <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full transition-all duration-500 ${
-                      formProgress === 100 ? 'bg-green-500' : (isEditing ? 'bg-blue-600' : 'bg-green-600')
-                    }`}
-                    style={{ width: `${formProgress}%` }}
-                  />
-                </div>
-                <span className="text-xs font-medium text-muted-foreground min-w-[3ch]">
-                  {formProgress}%
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Message contextuel pour la création */}
-          {!isEditing && (
-            <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/10 mt-4">
-              <MapPin className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-blue-800 dark:text-blue-200">
-                <strong>Astuce :</strong> Une adresse de facturation est automatiquement utilisée pour l'envoi des factures.
-              </AlertDescription>
-            </Alert>
-          )}
+      <DialogContent className="max-w-2xl max-h-[90vh] w-[95vw] sm:w-full mx-auto overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{dialogConfig.title}</DialogTitle>
+          <DialogDescription>
+            {dialogConfig.description}
+          </DialogDescription>
         </DialogHeader>
-
-        {/* Erreurs globales */}
-        {Object.keys(errors).length > 0 && (
-          <Alert variant="destructive" className="flex-shrink-0">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Veuillez corriger les erreurs ci-dessous avant de continuer.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Formulaire avec scroll */}
-        <div className="flex-1 overflow-y-auto pr-2">
-          <Form {...form}>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 py-2">
-              
-              {/* Section Libellé avec suggestions */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Home className="h-4 w-4 text-purple-600" />
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    Type d'adresse
-                  </h3>
-                  <Separator className="flex-1" />
-                </div>
-                
-                <FormField
-                  control={form.control}
-                  name="libelle"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-1">
-                        Libellé
-                        <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Ex: Siège social, Domicile..."
-                          disabled={isSubmitting}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Suggestions de libellés */}
-                <div className="flex flex-wrap gap-2">
-                  {libelleSuggestions.map((suggestion) => {
-                    const SuggestionIcon = suggestion.icon;
-                    return (
-                      <Button
-                        key={suggestion.value}
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleLibelleSuggestionClick(suggestion.value)}
-                        className={`gap-1 text-xs hover:border-current ${suggestion.color} hover:bg-current/5`}
-                        disabled={isSubmitting}
-                      >
-                        <SuggestionIcon className="w-3 h-3" />
-                        {suggestion.value}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Section Adresse */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-blue-600" />
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    Localisation
-                  </h3>
-                  <Separator className="flex-1" />
-                </div>
-                
-                <FormField
-                  control={form.control}
-                  name="rue"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-1">
-                        Adresse
-                        <span className="text-red-500">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="123 rue de la République"
-                          disabled={isSubmitting}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="code_postal"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-1">
-                          Code postal
-                          <span className="text-red-500">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="75001"
-                            maxLength={5}
-                            disabled={isSubmitting}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription className="text-xs">
-                          5 chiffres uniquement
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="ville"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="flex items-center gap-1">
-                          Ville
-                          <span className="text-red-500">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Paris"
-                            disabled={isSubmitting}
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="pays"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Globe className="h-4 w-4 text-blue-600" />
-                        Pays
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Ex: France, Gabon, Maroc..."
-                          disabled={isSubmitting}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription className="text-xs">
-                        Saisissez le nom du pays
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Section Statut */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Crown className="h-4 w-4 text-green-600" />
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                    Utilisation
-                  </h3>
-                  <Separator className="flex-1" />
-                </div>
-                
-                <FormField
-                  control={form.control}
-                  name="is_facturation"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-col space-y-3 rounded-lg border p-4 hover:bg-accent/5 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-green-600" />
-                          <FormLabel className="text-sm font-medium cursor-pointer">
-                            Adresse de facturation
-                          </FormLabel>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={isSubmitting}
-                          />
-                        </FormControl>
-                      </div>
-                      <FormDescription className="text-xs text-muted-foreground">
-                        Cette adresse sera utilisée pour l'envoi des factures. Une seule adresse de facturation par tier.
-                      </FormDescription>
-                    </FormItem>
-                  )}
-                />
-
-                {isFacturationAddress && (
-                  <Alert className="border-green-200 bg-green-50 dark:bg-green-950/10">
-                    <Crown className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-800 dark:text-green-200">
-                      Cette adresse sera automatiquement utilisée pour la facturation.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            </form>
-          </Form>
-        </div>
-
-        {/* Actions fixes en bas */}
-        <DialogFooter className="flex-shrink-0 border-t pt-4">
-          <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {formProgress === 100 ? (
-                <>
-                  <CheckCircle2 className="w-4 h-4 text-green-500" />
-                  <span className="text-green-600 font-medium">
-                    Prêt à {isEditing ? 'sauvegarder' : 'créer'}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="w-4 h-4 text-amber-500" />
-                  <span>Informations complétées</span>
-                </>
+        <Form {...form}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="libelle"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Libellé <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Ex: Siège social, Domicile..."
+                      disabled={isSubmitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
+            />
+
+            {/* Suggestions de libellés */}
+            <div className="flex flex-wrap gap-2">
+              {libelleSuggestions.map((suggestion) => {
+                const SuggestionIcon = suggestion.icon;
+                return (
+                  <Button
+                    key={suggestion.value}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleLibelleSuggestionClick(suggestion.value)}
+                    className="gap-1 text-xs"
+                    disabled={isSubmitting}
+                  >
+                    <SuggestionIcon className="w-3 h-3" />
+                    {suggestion.value}
+                  </Button>
+                );
+              })}
             </div>
             
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={isSubmitting}
-              >
-                Annuler
-              </Button>
-              <Button
-                onClick={handleSubmit(onSubmit)}
-                disabled={isSubmitting || Object.keys(errors).length > 0}
-                className={`gap-2 min-w-[140px] ${
-                  !isEditing ? 'bg-green-600 hover:bg-green-700' : ''
-                }`}
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    {dialogConfig.loadingText}
-                  </>
-                ) : (
-                  <>
-                    {isEditing ? (
-                      <CheckCircle2 className="w-4 h-4" />
-                    ) : (
-                      <Plus className="w-4 h-4" />
-                    )}
-                    {dialogConfig.submitText}
-                  </>
+            <FormField
+              control={form.control}
+              name="rue"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    Adresse <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="123 rue de la République"
+                      disabled={isSubmitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="code_postal"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Code postal <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="20000"
+                        maxLength={5}
+                        disabled={isSubmitting}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
-              </Button>
+              />
+
+              <FormField
+                control={form.control}
+                name="ville"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Ville <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Casablanca"
+                        disabled={isSubmitting}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-          </div>
+
+            <FormField
+              control={form.control}
+              name="pays"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Pays</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Maroc"
+                      disabled={isSubmitting}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="is_facturation"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">Adresse de facturation</FormLabel>
+                    <FormDescription>
+                      Utilisée pour l'envoi des factures
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={isSubmitting}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </form>
+        </Form>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isSubmitting}
+          >
+            Annuler
+          </Button>
+          <Button
+            onClick={handleSubmit(onSubmit)}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                {dialogConfig.loadingText}
+              </>
+            ) : (
+              dialogConfig.submitText
+            )}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-}
-
-// Helper function to calculate form completion percentage
-function calculateFormProgress(values: AddressFormValues): number {
-  const requiredFields = ['libelle', 'rue', 'code_postal', 'ville'];
-  const optionalFields = ['pays'];
-  
-  const filledRequired = requiredFields.filter(field => {
-    const value = values[field as keyof AddressFormValues];
-    return typeof value === 'string' && value.trim() !== '';
-  });
-  
-  const filledOptional = optionalFields.filter(field => {
-    const value = values[field as keyof AddressFormValues];
-    return typeof value === 'string' && value.trim() !== '';
-  });
-  
-  const baseProgress = (filledRequired.length / requiredFields.length) * 80;
-  const optionalProgress = (filledOptional.length / optionalFields.length) * 10;
-  const statusProgress = values.is_facturation ? 10 : 0;
-  
-  return Math.round(baseProgress + optionalProgress + statusProgress);
 }

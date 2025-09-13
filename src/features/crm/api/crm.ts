@@ -383,7 +383,6 @@ const opportunitiesApi = {
         tierId: data.tier, // tier → tierId
         stage: data.stage,
         estimatedAmount: data.estimated_amount, // estimated_amount → estimatedAmount  
-        probability: data.probability,
         expectedCloseDate: data.expected_close_date, // expected_close_date → expectedCloseDate
         source: data.source,
         description: data.description,
@@ -472,6 +471,21 @@ const opportunitiesApi = {
     } catch (error) {
       console.error(`Erreur lors de la suppression de l'opportunité ${id}:`, error);
       return false;
+    }
+  },
+
+  /**
+   * Récupère les statistiques des opportunités
+   */
+  getOpportunityStats: async (signal?: AbortSignal): Promise<any> => {
+    try {
+      const response = await apiClient.get('/api/opportunities/stats/', { 
+        signal
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des statistiques des opportunités:', error);
+      throw error;
     }
   }
 };

@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { QuoteItemsTable } from './QuoteItemsTable';
 import { QuoteStatusBadge } from './QuoteStatusBadge';
 import { QuoteActions } from './QuoteActions';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface QuoteDetailCardProps {
   quote: Quote;
@@ -24,12 +25,6 @@ interface QuoteDetailCardProps {
   className?: string;
 }
 
-/**
- * Formate un montant en MAD
- */
-const formatAmount = (amount: number): string => {
-  return `${amount.toFixed(2)} MAD`;
-};
 
 /**
  * Formate une date pour l'affichage
@@ -65,6 +60,8 @@ export const QuoteDetailCard: React.FC<QuoteDetailCardProps> = ({
   onDownloadPdf,
   className
 }) => {
+  const { formatCurrency } = useCurrency();
+  
   return (
     <div className={cn("space-y-6", className)}>
       {/* En-tête avec numéro, statut et total */}
@@ -92,7 +89,7 @@ export const QuoteDetailCard: React.FC<QuoteDetailCardProps> = ({
             
             <div className="text-right">
               <p className="text-sm text-slate-300">Total TTC</p>
-              <p className="text-2xl font-bold">{formatAmount(quote.totalTtc)}</p>
+              <p className="text-2xl font-bold">{formatCurrency(quote.totalTtc)}</p>
             </div>
           </div>
           
@@ -221,16 +218,16 @@ export const QuoteDetailCard: React.FC<QuoteDetailCardProps> = ({
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="font-medium">Total HT:</span>
-                      <span>{formatAmount(quote.totalHt)}</span>
+                      <span>{formatCurrency(quote.totalHt)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">Total TVA:</span>
-                      <span>{formatAmount(quote.totalVat)}</span>
+                      <span>{formatCurrency(quote.totalVat)}</span>
                     </div>
                     <Separator />
                     <div className="flex justify-between text-lg font-bold">
                       <span>Total TTC:</span>
-                      <span>{formatAmount(quote.totalTtc)}</span>
+                      <span>{formatCurrency(quote.totalTtc)}</span>
                     </div>
                   </div>
                 </div>
@@ -255,15 +252,15 @@ export const QuoteDetailCard: React.FC<QuoteDetailCardProps> = ({
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Total HT:</span>
-                  <span>{formatAmount(quote.totalHt)}</span>
+                  <span>{formatCurrency(quote.totalHt)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>TVA:</span>
-                  <span>{formatAmount(quote.totalVat)}</span>
+                  <span>{formatCurrency(quote.totalVat)}</span>
                 </div>
                 <div className="flex justify-between font-medium">
                   <span>Total TTC:</span>
-                  <span className="text-lg">{formatAmount(quote.totalTtc)}</span>
+                  <span className="text-lg">{formatCurrency(quote.totalTtc)}</span>
                 </div>
               </div>
 

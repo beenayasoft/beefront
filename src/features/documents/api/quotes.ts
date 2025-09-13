@@ -62,7 +62,7 @@ const transformQuote = (quote: any): Quote => {
     clientName: quote.clientName,
     client_name: quote.client_name,
     totalHt: quote.totalHt,
-    totalHT: quote.totalHT,
+    totalHt: quote.totalHt,
     total_ht: quote.total_ht,
     totalVat: quote.totalVat,
     total_vat: quote.total_vat,
@@ -95,9 +95,9 @@ const transformQuote = (quote: any): Quote => {
     opportunityId: quote.opportunityId || quote.opportunity_id,
     margin: quote.margin,
     // Gérer les différentes variantes de nommage pour les totaux
-    totalHt: quote.totalHt || quote.totalHT || quote.total_ht || 0,
+    totalHt: quote.totalHt || quote.totalHt || quote.total_ht || 0,
     totalVat: quote.totalVat || quote.totalVAT || quote.total_vat || 0,
-    totalTtc: quote.totalTtc || quote.totalTTC || quote.total_ttc || 0,
+    totalTtc: quote.totalTtc || quote.totalTtc || quote.total_ttc || 0,
     itemsCount: quote.itemsCount || quote.items_count || quote.items?.length || 0,
     vatBreakdown: quote.vatBreakdown || quote.vat_breakdown,
     items: quote.items?.map(transformQuoteItem) || [],
@@ -607,17 +607,17 @@ const quotesApi = {
         itemsCount: quoteDetails.items?.length
       });
       
-      // Récupérer les paramètres d'apparence si pas fournis
+      // Récupérer les paramètres d'apparence si pas fournis - DÉSACTIVÉ
       let requestData = data || {};
-      if (!requestData.appearance_settings) {
-        try {
-          const { documentAppearanceAPI } = await import('@/lib/api/documentAppearance');
-          requestData.appearance_settings = await documentAppearanceAPI.getAppearanceSettings();
-          console.log('🎨 Paramètres d\'apparence récupérés pour generatePDF:', requestData.appearance_settings);
-        } catch (settingsError) {
-          console.warn('⚠️ Impossible de récupérer les paramètres d\'apparence:', settingsError);
-        }
-      }
+      // if (!requestData.appearance_settings) {
+      //   try {
+      //     const { documentAppearanceAPI } = await import('@/lib/api/documentAppearance');
+      //     requestData.appearance_settings = await documentAppearanceAPI.getAppearanceSettings();
+      //     console.log('🎨 Paramètres d\'apparence récupérés pour generatePDF:', requestData.appearance_settings);
+      //   } catch (settingsError) {
+      //     console.warn('⚠️ Impossible de récupérer les paramètres d\'apparence:', settingsError);
+      //   }
+      // }
       
       const response = await apiClient.post(`/quotes/${id}/pdf/`, requestData, {
         responseType: 'blob'
@@ -712,6 +712,17 @@ const quotesApi = {
       return response.data;
     } catch (error) {
       console.error(`Erreur lors des opérations en lot sur les éléments du devis ${quoteId}:`, error);
+      throw error;
+    }
+  },
+
+  // Statistiques des devis
+  getStats: async (): Promise<any> => {
+    try {
+      const response = await apiClient.get('/quotes/stats/');
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des statistiques de devis:', error);
       throw error;
     }
   }

@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { useModalState } from '@/hooks/useModalState';
 import { quotesApi } from '../../api/quotes';
 import { QuoteItem } from '../../types/quotes.types';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface QuoteItemsListProps {
   quoteId: string;
@@ -23,6 +23,8 @@ interface QuoteItemsListProps {
 }
 
 export function QuoteItemsList({ quoteId, items, onItemsChange, readonly = false }: QuoteItemsListProps) {
+  const { formatCurrency } = useCurrency();
+  
   const [localItems, setLocalItems] = useState<QuoteItem[]>(items);
   const [isReordering, setIsReordering] = useState(false);
 

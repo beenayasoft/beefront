@@ -242,7 +242,7 @@ export function LibraryItemForm({
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="name" className={`text-sm font-medium ${errors.name ? "text-red-600" : "text-neutral-700 dark:text-neutral-300"}`}>
+                <Label htmlFor="name" className={`text-sm ${errors.name ? "text-red-600" : "text-neutral-700 dark:text-neutral-300"}`}>
                   Nom <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -262,7 +262,7 @@ export function LibraryItemForm({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                <Label htmlFor="description" className="text-sm text-neutral-700 dark:text-neutral-300">
                   Description
                 </Label>
                 <Textarea
@@ -293,7 +293,7 @@ export function LibraryItemForm({
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="unit" className={`text-sm font-medium ${errors.unit ? "text-red-600" : "text-neutral-700 dark:text-neutral-300"}`}>
+                <Label htmlFor="unit" className={`text-sm ${errors.unit ? "text-red-600" : "text-neutral-700 dark:text-neutral-300"}`}>
                   Unité <span className="text-red-500">*</span>
                 </Label>
                 <Select
@@ -333,7 +333,7 @@ export function LibraryItemForm({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="unitPrice" className={`text-sm font-medium ${errors.unitPrice ? "text-red-600" : "text-neutral-700 dark:text-neutral-300"}`}>
+                <Label htmlFor="unitPrice" className={`text-sm ${errors.unitPrice ? "text-red-600" : "text-neutral-700 dark:text-neutral-300"}`}>
                   Prix unitaire <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
@@ -405,6 +405,9 @@ export function LibraryItemForm({
                 </div>
 
                 <div className="space-y-2">
+                  <Label className="text-sm text-neutral-700 dark:text-neutral-300">
+                    Fournisseur
+                  </Label>
                   <SupplierSelector
                     value={(formData as any).supplier_id || null}
                     onChange={(supplierId, supplierData) => {
@@ -422,7 +425,7 @@ export function LibraryItemForm({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="reference" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  <Label htmlFor="reference" className="text-sm text-neutral-700 dark:text-neutral-300">
                     Référence
                   </Label>
                   <Input
@@ -436,7 +439,7 @@ export function LibraryItemForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="code" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  <Label htmlFor="code" className="text-sm text-neutral-700 dark:text-neutral-300">
                     Code
                   </Label>
                   <Input
@@ -450,22 +453,27 @@ export function LibraryItemForm({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="wasteFactor" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                  Facteur de perte (%)
-                </Label>
-                <Input
-                  id="wasteFactor"
-                  name="wasteFactor"
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="100"
-                  value={(formData as Partial<Material>).wasteFactor || ""}
-                  onChange={handleChange}
-                  placeholder="0.0"
-                  className="Beenaya-input"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="wasteFactor" className="text-sm text-neutral-700 dark:text-neutral-300">
+                    Facteur de perte (%)
+                  </Label>
+                  <Input
+                    id="wasteFactor"
+                    name="wasteFactor"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={(formData as Partial<Material>).wasteFactor || ""}
+                    onChange={handleChange}
+                    placeholder="0.0"
+                    className="Beenaya-input"
+                  />
+                </div>
+                <div className="space-y-2">
+                  {/* Espace réservé pour un futur champ */}
+                </div>
               </div>
               </CardContent>
             </Card>
@@ -487,7 +495,7 @@ export function LibraryItemForm({
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="skillLevel" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  <Label htmlFor="skillLevel" className="text-sm text-neutral-700 dark:text-neutral-300">
                     Niveau de qualification
                   </Label>
                   <Select
@@ -507,7 +515,7 @@ export function LibraryItemForm({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="productivityFactor" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  <Label htmlFor="productivityFactor" className="text-sm text-neutral-700 dark:text-neutral-300">
                     Facteur de productivité
                   </Label>
                   <Input

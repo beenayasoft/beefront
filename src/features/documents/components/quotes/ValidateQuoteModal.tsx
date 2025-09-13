@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -37,6 +38,7 @@ export function ValidateQuoteModal({
   onValidate,
   loading = false,
 }: ValidateQuoteModalProps) {
+  const { formatCurrency } = useCurrency();
   const [notes, setNotes] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -80,7 +82,7 @@ export function ValidateQuoteModal({
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-600 dark:text-neutral-400">Montant TTC:</span>
-                <span className="font-semibold">{formatTotalTtc(quote.totalTtc).toFixed(2)} MAD</span>
+                <span className="font-semibold">{formatCurrency(quote.totalTtc || 0)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-neutral-600 dark:text-neutral-400">Statut actuel:</span>

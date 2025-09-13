@@ -185,7 +185,7 @@ export function InvoiceFilters({
             <DropdownMenuItem onClick={() => onSortChange && onSortChange('dueDate', 'desc')}>
               Date d'échéance
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onSortChange && onSortChange('totalTTC', 'desc')}>
+            <DropdownMenuItem onClick={() => onSortChange && onSortChange('totalTtc', 'desc')}>
               Montant
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onSortChange && onSortChange('clientName', 'asc')}>

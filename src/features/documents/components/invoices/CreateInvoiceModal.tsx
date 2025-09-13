@@ -25,7 +25,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createInvoice, CreateInvoiceRequest } from "../../api/invoices";
 import { Invoice } from "../../types/invoices.types";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { InvoiceClientSelector } from "./InvoiceClientSelector";
 import { cn } from "@/lib/utils";
@@ -44,6 +44,8 @@ interface ClientSearchResult {
 }
 
 export function CreateInvoiceModal({ open, onOpenChange, onSuccess }: CreateInvoiceModalProps) {
+  const { formatCurrency } = useCurrency();
+  
   // États du formulaire
   const [selectedClient, setSelectedClient] = useState<ClientSearchResult | null>(null);
   const [error, setError] = useState<string | null>(null);

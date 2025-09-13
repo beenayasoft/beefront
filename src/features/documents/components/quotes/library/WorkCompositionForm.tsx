@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Work, WorkComponent, Material, Labor } from "@/features/library/types";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface WorkCompositionFormProps {
   work?: Work;
@@ -62,6 +62,8 @@ export function WorkCompositionForm({
   onCancel,
   isLoading = false,
 }: WorkCompositionFormProps) {
+  const { formatCurrency } = useCurrency();
+  
   const isEditing = !!work;
   const [formData, setFormData] = useState<Partial<Work>>(
     work || {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Settings as SettingsIcon, User, Building, Mail, Bell, Shield, Palette, Database, DollarSign, Calendar, FileText, Users, Printer, Cloud, Globe, Eye, EyeOff, Save, CreditCard, Receipt, Hash, FileText as FileText2, ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ import { LegalFinancialForm } from "@/features/settings/components/LegalFinancia
 import { VatRatesManagement } from "@/features/settings/components/VatRatesManagement";
 import { PaymentTermsManagement } from "@/features/settings/components/PaymentTermsManagement";
 import { NumberingFormatForm } from "@/features/settings/components/NumberingFormatForm";
-import { DocumentAppearanceForm } from "@/features/settings/components/DocumentAppearanceForm";
+import { DocumentAppearanceSettings } from "@/features/settings/components/DocumentAppearanceSettings";
 import { PaymentMethodsManagement } from "@/features/payment-methods/components/PaymentMethodsManagement";
 
 // Import settings API and types
@@ -61,7 +61,7 @@ const settingsSections = [
   },
   {
     id: "documents",
-    label: "Apparence des documents",
+    label: "Apparence des documents", 
     icon: FileText2,
     description: "Personnalisation des devis et factures",
   },
@@ -107,6 +107,9 @@ export default function Settings() {
   });
   
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Ref pour DocumentAppearanceSettings
+  const documentAppearanceRef = useRef<{ saveConfig: () => Promise<void>; hasUnsavedChanges: boolean }>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -203,6 +206,21 @@ export default function Settings() {
     setIsInSubSection(false);
     setSubSectionTitle("");
   };
+  
+  // Surveiller les changements dans DocumentAppearanceSettings
+  useEffect(() => {
+    if (activeSection === 'documents' && documentAppearanceRef.current) {
+      const checkForChanges = () => {
+        const hasDocumentChanges = documentAppearanceRef.current?.hasUnsavedChanges || false;
+        setHasChanges(hasDocumentChanges);
+      };
+      
+      // Vérifier périodiquement les changements (solution temporaire)
+      const interval = setInterval(checkForChanges, 500);
+      
+      return () => clearInterval(interval);
+    }
+  }, [activeSection]);
 
   // Fonction pour toggle l'état de la navigation
   const toggleNavCollapse = () => {
@@ -228,6 +246,14 @@ export default function Settings() {
           title: "Profil mis à jour",
           description: "Vos informations personnelles ont été mises à jour avec succès.",
         });
+      } else if (activeSection === 'documents') {
+        // Section apparence des documents - utiliser la ref pour déclencher la sauvegarde
+        if (documentAppearanceRef.current) {
+          await documentAppearanceRef.current.saveConfig();
+          // Le toast est géré par le composant DocumentAppearanceSettings
+        } else {
+          throw new Error("Composant d'apparence des documents non disponible");
+        }
       } else {
         // Pour les autres sections, sauvegarder les données du tenant
         await settingsApi.updateCurrentTenant(tenantData);
@@ -437,13 +463,7 @@ export default function Settings() {
 
   const renderDocumentAppearanceSettings = () => (
     <div className="space-y-6">
-      <div className="Beenaya-card">
-        <h3 className="font-medium text-lg mb-4">Apparence des documents</h3>
-        <DocumentAppearanceForm
-          appearanceSettings={tenantData.document_appearance}
-          onChange={(appearanceSettings) => handleTenantDataUpdate({ document_appearance: appearanceSettings })}
-        />
-      </div>
+      <DocumentAppearanceSettings ref={documentAppearanceRef} />
     </div>
   );
 
@@ -908,9 +928,7 @@ export default function Settings() {
       {isInSubSection ? (
         /* Layout pour sous-sections - pleine largeur */
         <div className="w-full">
-          {activeSection === "documents" && (
-            <DocumentAppearanceForm />
-          )}
+          {activeSection === "documents" && renderDocumentAppearanceSettings()}
         </div>
       ) : (
         /* Layout normal avec navigation */
@@ -939,75 +957,75 @@ export default function Settings() {
               </div>
               
               <nav className="space-y-1">
-              {settingsSections.map((section) => {
-                const Icon = section.icon;
-                return (
-                  <button
-                    key={section.id}
-                    onClick={() => handleSectionChange(section.id)}
-                    className={cn(
-                      "w-full flex items-center rounded-lg transition-all duration-200 relative group",
-                      isNavCollapsed ? "justify-center p-2" : "gap-3 px-3 py-2 text-left",
-                      activeSection === section.id
-                        ? "bg-Beenaya-900 text-white"
-                        : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800",
-                    )}
-                    title={isNavCollapsed ? section.label : undefined}
+                {settingsSections.map((section) => {
+                  const Icon = section.icon;
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => handleSectionChange(section.id)}
+                      className={cn(
+                        "w-full flex items-center rounded-lg transition-all duration-200 relative group",
+                        isNavCollapsed ? "justify-center p-2" : "gap-3 px-3 py-2 text-left",
+                        activeSection === section.id
+                          ? "bg-Beenaya-900 text-white"
+                          : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800",
+                      )}
+                      title={isNavCollapsed ? section.label : undefined}
+                    >
+                      <Icon className={cn("w-4 h-4", isNavCollapsed ? "flex-shrink-0" : "")} />
+                      
+                      {!isNavCollapsed && (
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{section.label}</div>
+                          <div
+                            className={cn(
+                              "text-xs",
+                              activeSection === section.id
+                                ? "text-white/80"
+                                : "text-neutral-500 dark:text-neutral-400",
+                            )}
+                          >
+                            {section.description}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Tooltip pour mode réduit */}
+                      {isNavCollapsed && (
+                        <div className="absolute left-full ml-2 px-3 py-1.5 bg-neutral-900 text-white text-xs rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
+                          <div className="flex items-center gap-1">
+                            <span>{section.label}</span>
+                          </div>
+                          <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-neutral-900 rotate-45"></div>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+          </div>
+
+          {/* Settings Content */}
+          <div className={`transition-all duration-300 ${isNavCollapsed ? 'lg:col-span-1' : 'lg:col-span-1'}`}>
+            <div className="space-y-6">
+              {renderSectionContent()}
+
+              {/* Save Button */}
+              {hasChanges && (
+                <div className="fixed bottom-6 right-6 z-50">
+                  <Button 
+                    className="Beenaya-button-primary shadow-lg"
+                    onClick={handleSave}
+                    disabled={isSaving}
                   >
-                    <Icon className={cn("w-4 h-4", isNavCollapsed ? "flex-shrink-0" : "")} />
-                    
-                    {!isNavCollapsed && (
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{section.label}</div>
-                        <div
-                          className={cn(
-                            "text-xs",
-                            activeSection === section.id
-                              ? "text-white/80"
-                              : "text-neutral-500 dark:text-neutral-400",
-                          )}
-                        >
-                          {section.description}
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Tooltip pour mode réduit */}
-                    {isNavCollapsed && (
-                      <div className="absolute left-full ml-2 px-3 py-1.5 bg-neutral-900 text-white text-xs rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 pointer-events-none">
-                        <div className="flex items-center gap-1">
-                          <span>{section.label}</span>
-                        </div>
-                        <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-neutral-900 rotate-45"></div>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </nav>
+                    <Save className="w-4 h-4 mr-2" />
+                    {isSaving ? "Enregistrement..." : "Enregistrer les modifications"}
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-
-        {/* Settings Content */}
-        <div className={`transition-all duration-300 ${isNavCollapsed ? 'lg:col-span-1' : 'lg:col-span-1'}`}>
-          <div className="space-y-6">
-            {renderSectionContent()}
-
-            {/* Save Button */}
-            {hasChanges && (
-              <div className="fixed bottom-6 right-6 z-50">
-                <Button 
-                  className="Beenaya-button-primary shadow-lg"
-                  onClick={handleSave}
-                  disabled={isSaving}
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  {isSaving ? "Enregistrement..." : "Enregistrer les modifications"}
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
         </div>
       )}
     </div>

@@ -6,7 +6,7 @@ import { Quote, QuoteItem, CreateQuoteData, CreateQuoteItemData } from '../../ty
 import { ClientOption, OpportunityOption } from '@/features/crm/types/crm.types';
 import { crmApi } from '@/features/crm/api';
 import { quotesApi } from '@/features/documents/api';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import SectionManager from './SectionManager';
 
 interface QuoteFormProps {
@@ -27,6 +27,8 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
   error = null,
   vatRates = []
 }) => {
+  const { formatCurrency } = useCurrency();
+  
   // États pour les données CRM
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [opportunities, setOpportunities] = useState<OpportunityOption[]>([]);

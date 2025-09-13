@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Eye, Edit, Trash2, Send, CheckCircle, XCircle, Download, AlertCircle, Clock } from "lucide-react";
+import { Edit, Trash2, Send, CheckCircle, XCircle, Download, AlertCircle, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Invoice, InvoiceStatus } from "../../../../types/invoices.types";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface InvoiceListProps {
   invoices: Invoice[];
@@ -43,6 +43,14 @@ export function InvoiceList({
   onCreateCreditNote,
   onDownload,
 }: InvoiceListProps) {
+  const { formatCurrency } = useCurrency();
+  // Gestionnaire pour le clic sur une ligne
+  const handleRowClick = (invoice: Invoice) => {
+    if (onView) {
+      onView(invoice);
+    }
+  };
+
   const getStatusBadge = (status: InvoiceStatus) => {
     switch (status) {
       case "draft":
@@ -133,7 +141,11 @@ export function InvoiceList({
             </TableRow>
           ) : (
             invoices.map((invoice) => (
-              <TableRow key={invoice.id}>
+              <TableRow 
+                key={invoice.id}
+                className={onView ? "cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-800/50" : ""}
+                onClick={onView ? () => handleRowClick(invoice) : undefined}
+              >
                 <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                 <TableCell className="font-medium">{invoice.number}</TableCell>
                 <TableCell>
@@ -152,12 +164,12 @@ export function InvoiceList({
                   </div>
                 </TableCell>
                 <TableCell className="font-semibold">
-                  {formatCurrency(invoice.totalTTC)} MAD
+                  {formatCurrency(invoice.totalTtc)}
                 </TableCell>
                 <TableCell className="font-semibold">
-                  {formatCurrency(invoice.remainingAmount)} MAD
+                  {formatCurrency(invoice.remainingAmount)}
                 </TableCell>
-                <TableCell>
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -180,11 +192,6 @@ export function InvoiceList({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="Beenaya-glass">
-                      <DropdownMenuItem onClick={() => onView && onView(invoice)}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        Voir
-                      </DropdownMenuItem>
-                      
                       {invoice.status === "draft" && (
                         <>
                           <DropdownMenuItem onClick={() => onEdit && onEdit(invoice)}>

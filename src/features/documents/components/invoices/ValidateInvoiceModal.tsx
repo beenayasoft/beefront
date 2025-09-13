@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { validateInvoice } from "../../api/invoices";
 import { Invoice } from "../../types/invoices.types";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 
 interface ValidateInvoiceModalProps {
@@ -31,6 +31,8 @@ export function ValidateInvoiceModal({
   invoice, 
   onSuccess 
 }: ValidateInvoiceModalProps) {
+  const { formatCurrency } = useCurrency();
+  
   const [formData, setFormData] = useState({
     issueDate: new Date().toISOString().split('T')[0]
   });
@@ -44,9 +46,9 @@ export function ValidateInvoiceModal({
     status: invoice.status,
     clientName: invoice.clientName,
     projectName: invoice.projectName,
-    totalHT: invoice.totalHT,
+    totalHt: invoice.totalHt,
     totalVAT: invoice.totalVAT,
-    totalTTC: invoice.totalTTC,
+    totalTtc: invoice.totalTtc,
     itemsCount: invoice.items?.length,
     items: invoice.items
   });
@@ -61,7 +63,7 @@ export function ValidateInvoiceModal({
       return { valid: false, reason: "La facture doit contenir au moins un élément" };
     }
     
-    if (invoice.totalTTC <= 0) {
+    if (invoice.totalTtc <= 0) {
       return { valid: false, reason: "Le montant total doit être supérieur à zéro" };
     }
     
@@ -174,12 +176,12 @@ export function ValidateInvoiceModal({
                   
                   <div className="flex flex-col space-y-1">
                     <span className="text-xs font-medium text-neutral-500 uppercase tracking-wide">Montant HT</span>
-                    <span className="text-lg font-semibold text-neutral-700">{formatCurrency(invoice.totalHT || 0)} MAD</span>
+                    <span className="text-lg font-semibold text-neutral-700">{formatCurrency(invoice.totalHt || 0)}</span>
                   </div>
                   
                   <div className="flex flex-col space-y-1">
                     <span className="text-xs font-medium text-neutral-500 uppercase tracking-wide">Total TTC</span>
-                    <span className="text-2xl font-bold text-Beenaya-600">{formatCurrency(invoice.totalTTC || 0)} MAD</span>
+                    <span className="text-2xl font-bold text-Beenaya-600">{formatCurrency(invoice.totalTtc || 0)}</span>
                   </div>
                 </div>
               </div>
@@ -189,7 +191,7 @@ export function ValidateInvoiceModal({
                 <div className="pt-3 border-t border-neutral-100">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-neutral-600">TVA totale</span>
-                    <span className="font-medium text-neutral-900">{formatCurrency(invoice.totalVAT)} MAD</span>
+                    <span className="font-medium text-neutral-900">{formatCurrency(invoice.totalVAT)}</span>
                   </div>
                 </div>
               )}

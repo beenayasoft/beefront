@@ -50,7 +50,7 @@ import {
   getBulkActionConstraints 
 } from "../../api/invoices";
 import { Invoice, InvoiceStatus } from "../../types/invoices.types";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -91,6 +91,8 @@ export function BulkInvoiceActionsModal({
   selectedInvoices,
   onSuccess
 }: BulkInvoiceActionsModalProps) {
+  const { formatCurrency } = useCurrency();
+  
   // États pour l'action sélectionnée
   const [selectedAction, setSelectedAction] = useState<BulkAction>('validate');
   const [loading, setLoading] = useState(false);
@@ -507,7 +509,7 @@ export function BulkInvoiceActionsModal({
                           <TableCell>{invoice.clientName}</TableCell>
                           <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                           <TableCell className="text-right">
-                            {formatCurrency(invoice.totalTTC)} MAD
+                            {formatCurrency(invoice.totalTtc)}
                           </TableCell>
                         </TableRow>
                       ))}

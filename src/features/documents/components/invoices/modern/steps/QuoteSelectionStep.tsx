@@ -15,13 +15,15 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { quotesApi } from '../../../../api/quotes';
 import { Quote } from '../../../../types/quotes.types';
 import { UseInvoiceWizard } from '../../../../hooks/useInvoiceWizard';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface QuoteSelectionStepProps {
   wizard: UseInvoiceWizard;
 }
 
 export const QuoteSelectionStep: React.FC<QuoteSelectionStepProps> = ({ wizard }) => {
+  const { formatCurrency } = useCurrency();
+  
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingQuoteDetails, setLoadingQuoteDetails] = useState(false);
@@ -222,7 +224,7 @@ export const QuoteSelectionStep: React.FC<QuoteSelectionStepProps> = ({ wizard }
                     {getStatusBadge(quote.status)}
                   </div>
                   <span className="text-lg font-bold text-green-600">
-                    {formatCurrency(quote.totalTtc, 2, true)} EUR
+                    {formatCurrency(quote.totalTtc || 0)}
                   </span>
                 </div>
 

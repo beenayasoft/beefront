@@ -1,9 +1,9 @@
 /**
  * Composant d'aperçu d'une facture pour l'affichage dans les formulaires et paramètres
- * Format unifié avec QuotePreview
+ * Format unifié avec DocumentPreview
  */
 import React from 'react';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { formatDate } from '@/lib/utils/formatters';
 
 // Type pour les props du composant
@@ -31,14 +31,14 @@ interface InvoicePreviewProps {
       quantity: number;
       unitPrice: number;
       vatRate: number;
-      totalHT: number;
-      totalTTC: number;
+      totalHt: number;
+      totalTtc: number;
     }[];
     notes?: string;
     termsAndConditions?: string;
-    totalHT: number;
+    totalHt: number;
     totalVAT: number;
-    totalTTC: number;
+    totalTtc: number;
     // Informations d'entreprise
     companyName?: string;
     companyAddress?: string;
@@ -126,6 +126,8 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     paymentMethodsStyle: "modern",
   }
 }) => {
+  const { formatCurrency } = useCurrency();
+  
   return (
     <div className="w-[210mm] bg-white shadow-lg mx-auto border border-gray-200">
       <div className="p-[20mm] text-[11px] leading-tight min-h-[297mm]">
@@ -252,7 +254,7 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
               <td className="px-2 py-1 text-right">{item.quantity} {item.unit}</td>
               <td className="px-2 py-1 text-right">{formatCurrency(item.unitPrice)}</td>
               <td className="px-2 py-1 text-right">{item.vatRate}%</td>
-              <td className="px-2 py-1 text-right font-medium">{formatCurrency(item.totalHT)}</td>
+              <td className="px-2 py-1 text-right font-medium">{formatCurrency(item.totalHt)}</td>
             </tr>
           ))}
         </tbody>
@@ -263,7 +265,7 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
         <div className="w-48">
           <div className="flex justify-between py-1 text-xs">
             <span>Total HT</span>
-            <span className="font-medium">{formatCurrency(invoice.totalHT)}</span>
+            <span className="font-medium">{formatCurrency(invoice.totalHt)}</span>
           </div>
           <div className="flex justify-between py-1 text-xs">
             <span>TVA</span>
@@ -271,7 +273,7 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
           </div>
           <div className="flex justify-between py-1 border-t border-gray-200 font-bold text-xs">
             <span>Total TTC</span>
-            <span>{formatCurrency(invoice.totalTTC)}</span>
+            <span>{formatCurrency(invoice.totalTtc)}</span>
           </div>
         </div>
       </div>

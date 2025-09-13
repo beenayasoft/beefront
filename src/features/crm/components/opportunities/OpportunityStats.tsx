@@ -9,12 +9,14 @@ import {
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { formatCurrency } from "@/lib/utils";
 import { OpportunityStats as OpportunityStatsType } from "../../types/opportunity";
+import { useFormatCurrency } from "@/contexts/CurrencyContext";
 
 interface OpportunityStatsProps {
   stats: OpportunityStatsType;
 }
 
 export function OpportunityStats({ stats }: OpportunityStatsProps) {
+  const formatCurrencyWithSymbol = useFormatCurrency();
   // Log pour débogage
   console.log('📊 OpportunityStats - Données reçues:', stats);
   
@@ -75,14 +77,14 @@ export function OpportunityStats({ stats }: OpportunityStatsProps) {
       <MetricCard
         title="En cours"
         value={inProgressCount.toString()}
-        change={formatCurrency(adaptedStats.weightedAmount || 0, 2, true) + " MAD"}
+        change={formatCurrencyWithSymbol(adaptedStats.weightedAmount || 0, { showSymbol: true })}
         changeType="neutral"
         icon={<Clock className="h-5 w-5 text-Beenaya-600" />}
       />
       <MetricCard
         title="Gagnées"
         value={(adaptedStats.byStage?.won || 0).toString()}
-        change={formatCurrency(adaptedStats.wonAmount || 0, 2, true) + " MAD"}
+        change={formatCurrencyWithSymbol(adaptedStats.wonAmount || 0, { showSymbol: true })}
         changeType="positive"
         icon={<CheckCircle className="h-5 w-5 text-green-600" />}
       />

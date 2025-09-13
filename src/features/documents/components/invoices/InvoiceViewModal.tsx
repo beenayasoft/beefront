@@ -36,7 +36,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { exportInvoicePdf, getInvoicePayments } from "../../api/invoices";
 import { Invoice, InvoiceItem, Payment } from "../../types/invoices.types";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -61,6 +61,8 @@ export function InvoiceViewModal({
   onRecordPayment,
   onCreateCreditNote
 }: InvoiceViewModalProps) {
+  const { formatCurrency } = useCurrency();
+  
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
@@ -342,25 +344,25 @@ export function InvoiceViewModal({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-neutral-900">
-                      {formatCurrency(invoice.totalHT)} MAD
+                      {formatCurrency(invoice.totalHt)}
                     </div>
                     <div className="text-sm text-neutral-600">Total HT</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-neutral-900">
-                      {formatCurrency(invoice.totalVAT)} MAD
+                      {formatCurrency(invoice.totalVAT)}
                     </div>
                     <div className="text-sm text-neutral-600">TVA</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-Beenaya-600">
-                      {formatCurrency(invoice.totalTTC)} MAD
+                      {formatCurrency(invoice.totalTtc)}
                     </div>
                     <div className="text-sm text-neutral-600">Total TTC</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">
-                      {formatCurrency(invoice.paidAmount)} MAD
+                      {formatCurrency(invoice.paidAmount)}
                     </div>
                     <div className="text-sm text-neutral-600">Payé</div>
                   </div>
@@ -369,7 +371,7 @@ export function InvoiceViewModal({
                   <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                     <div className="text-center">
                       <div className="text-xl font-bold text-orange-700">
-                        {formatCurrency(invoice.remainingAmount)} MAD
+                        {formatCurrency(invoice.remainingAmount)}
                       </div>
                       <div className="text-sm text-orange-600">Reste à payer</div>
                     </div>
@@ -442,16 +444,16 @@ export function InvoiceViewModal({
                             {item.quantity} {item.unit && <span className="text-neutral-500">{item.unit}</span>}
                           </TableCell>
                           <TableCell className="text-right">
-                            {formatCurrency(item.unitPrice)} MAD
+                            {formatCurrency(item.unitPrice)}
                           </TableCell>
                           <TableCell className="text-center">
                             {item.vatRate}%
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {formatCurrency(item.totalHT)} MAD
+                            {formatCurrency(item.totalHt)}
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {formatCurrency(item.totalTTC)} MAD
+                            {formatCurrency(item.totalTtc)}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -487,7 +489,7 @@ export function InvoiceViewModal({
                       <div key={payment.id} className="p-4 border rounded-lg">
                         <div className="flex justify-between items-start">
                           <div>
-                            <div className="font-medium">{formatCurrency(payment.amount)} MAD</div>
+                            <div className="font-medium">{formatCurrency(payment.amount)}</div>
                             <div className="text-sm text-neutral-600">
                               {new Date(payment.date).toLocaleDateString('fr-FR')}
                             </div>

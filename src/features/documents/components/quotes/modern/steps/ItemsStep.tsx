@@ -18,7 +18,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { UseQuoteWizard } from '../../../hooks/useQuoteWizard';
 import { VatRateSelector } from '../../../VatRateSelector';
 import { CreateQuoteItemData } from '../../../types/quotes.types';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { LibraryModal } from '@/features/library/components/LibraryModal';
 import { EditorQuoteItem } from '../../../types/quotes.types';
 
@@ -55,6 +55,11 @@ const UNITS = [
 ];
 
 export const ItemsStep: React.FC<ItemsStepProps> = ({ wizard }) => {
+  const { formatCurrency } = useCurrency();
+  
+  console.log('🔧 ItemsStep - Nombre d\'items affichés:', wizard.items?.length || 0);
+  console.log('🔧 ItemsStep - Items détail:', wizard.items);
+  
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showLibraryModal, setShowLibraryModal] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -79,22 +84,22 @@ export const ItemsStep: React.FC<ItemsStepProps> = ({ wizard }) => {
     
     const baseTotal = quantity * unitPrice;
     const discountAmount = baseTotal * discount / 100;
-    const totalHT = baseTotal - discountAmount;
-    const vatAmount = totalHT * vatRate / 100;
-    const totalTtc = totalHT + vatAmount;
+    const totalHt = baseTotal - discountAmount;
+    const vatAmount = totalHt * vatRate / 100;
+    const totalTtc = totalHt + vatAmount;
     
-    return { totalHT, vatAmount, totalTtc };
+    return { totalHt, vatAmount, totalTtc };
   };
   
   const calculateGlobalTotals = () => {
     return wizard.items.reduce((acc, item) => {
-      const { totalHT, vatAmount, totalTtc } = calculateItemTotal(item);
+      const { totalHt, vatAmount, totalTtc } = calculateItemTotal(item);
       return {
-        totalHT: acc.totalHT + totalHT,
+        totalHt: acc.totalHt + totalHt,
         totalVAT: acc.totalVAT + vatAmount,
         totalTtc: acc.totalTtc + totalTtc
       };
-    }, { totalHT: 0, totalVAT: 0, totalTtc: 0 });
+    }, { totalHt: 0, totalVAT: 0, totalTtc: 0 });
   };
   
   // Gestion du formulaire
@@ -407,7 +412,7 @@ export const ItemsStep: React.FC<ItemsStepProps> = ({ wizard }) => {
               </TableHeader>
               <TableBody>
                 {wizard.items.map((item, index) => {
-                  const { totalHT } = calculateItemTotal(item);
+                  const { totalHt } = calculateItemTotal(item);
                   const ItemIcon = ITEM_TYPES[item.type || 'material']?.icon || Package;
                   
                   return (
@@ -435,7 +440,7 @@ export const ItemsStep: React.FC<ItemsStepProps> = ({ wizard }) => {
                       </TableCell>
                       <TableCell>{item.vatRate}%</TableCell>
                       <TableCell className="font-medium">
-                        {formatCurrency(totalHT)}
+                        {formatCurrency(totalHt)}
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
@@ -479,7 +484,7 @@ export const ItemsStep: React.FC<ItemsStepProps> = ({ wizard }) => {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Total HT :</span>
-                <span className="font-medium">{formatCurrency(totals.totalHT)}</span>
+                <span className="font-medium">{formatCurrency(totals.totalHt)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Total TVA :</span>

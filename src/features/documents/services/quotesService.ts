@@ -24,16 +24,29 @@ export const quotesService = {
     options: QuoteServiceOptions = {}
   ): Promise<QuoteServiceResponse> {
     try {
+      console.log('📤 [quotesService] Requête API pour tierId:', tierId);
+      
+      // D'abord récupérer les infos du tier pour obtenir son nom
+      const tierResponse = await apiClient.get(`/api/tiers/${tierId}/`);
+      const tierName = tierResponse.data.nom;
+      console.log('👤 [quotesService] Nom du tier:', tierName);
+      
+      // Ensuite chercher les devis par nom de client
+      console.log('📤 [quotesService] URL:', `/quotes/`);
+      console.log('📤 [quotesService] Params:', { client_name: tierName });
+      
       const response = await apiClient.get(`/quotes/`, {
-        params: { tier_id: tierId }
+        params: { client_name: tierName }
       });
 
+      console.log('📥 [quotesService] Réponse brute:', response.data);
       const quotes = response.data.results || [];
+      console.log('📋 [quotesService] Devis extraits:', quotes);
 
       // Calculer les métriques si demandé
       let metrics;
       if (options.includeMetrics) {
-        const totalAmount = quotes.reduce((sum: number, quote: Quote) => sum + quote.total_ttc, 0);
+        const totalAmount = quotes.reduce((sum: number, quote: Quote) => sum + quote.totalTtc, 0);
         const acceptedQuotes = quotes.filter(quote => quote.status === 'accepted').length;
         
         metrics = {

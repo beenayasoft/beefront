@@ -38,7 +38,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { createCreditNote, getCreditNotePreview } from "@/features/documents/api";
 import { Invoice, InvoiceItem } from "@/features/documents/types";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -57,9 +57,9 @@ interface CreditNoteFormData {
 }
 
 interface CreditNotePreview {
-  totalHT: number;
+  totalHt: number;
   totalVAT: number;
-  totalTTC: number;
+  totalTtc: number;
   impact: string;
   selected_items_details: {
     id: string;
@@ -91,6 +91,8 @@ export function CreateCreditNoteModal({
   invoice,
   onSuccess
 }: CreateCreditNoteModalProps) {
+  const { formatCurrency } = useCurrency();
+  
   // État du formulaire
   const [formData, setFormData] = useState<CreditNoteFormData>({
     reason: 'error',
@@ -332,7 +334,7 @@ export function CreateCreditNoteModal({
                   </div>
                   <div>
                     <span className="text-neutral-600 text-sm">Montant TTC:</span>
-                    <div className="font-medium">{formatCurrency(invoice.totalTTC)} MAD</div>
+                    <div className="font-medium">{formatCurrency(invoice.totalTtc)}</div>
                   </div>
                 </div>
               </CardContent>
@@ -499,9 +501,9 @@ export function CreateCreditNoteModal({
                                 )}
                               </div>
                               <div className="text-right space-y-1">
-                                <div className="font-medium">{formatCurrency(item.totalTtc)} MAD</div>
+                                <div className="font-medium">{formatCurrency(item.totalTtc)}</div>
                                 <div className="text-sm text-neutral-600">
-                                  {item.quantity} {item.unit} × {formatCurrency(item.unitPrice)} MAD
+                                  {item.quantity} {item.unit} × {formatCurrency(item.unitPrice)}
                                 </div>
                                 <Badge variant="secondary" className="text-xs">
                                   TVA {item.vatRate}%
@@ -539,19 +541,19 @@ export function CreateCreditNoteModal({
                     <div className="grid grid-cols-3 gap-4">
                       <div className="text-center p-4 bg-neutral-50 rounded-lg">
                         <div className="text-lg font-bold text-neutral-900">
-                          {formatCurrency(creditPreview.totalHT)} MAD
+                          {formatCurrency(creditPreview.totalHt)}
                         </div>
                         <div className="text-sm text-neutral-600">Total HT</div>
                       </div>
                       <div className="text-center p-4 bg-neutral-50 rounded-lg">
                         <div className="text-lg font-bold text-neutral-900">
-                          {formatCurrency(creditPreview.totalVAT)} MAD
+                          {formatCurrency(creditPreview.totalVAT)}
                         </div>
                         <div className="text-sm text-neutral-600">TVA</div>
                       </div>
                       <div className="text-center p-4 bg-red-50 border border-red-200 rounded-lg">
                         <div className="text-lg font-bold text-red-600">
-                          -{formatCurrency(creditPreview.totalTTC)} MAD
+                          -{formatCurrency(creditPreview.totalTtc)}
                         </div>
                         <div className="text-sm text-red-700">Total TTC</div>
                       </div>
@@ -597,11 +599,11 @@ export function CreateCreditNoteModal({
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <span className="text-blue-700">Restant dû actuel:</span>
-                          <div className="font-medium">{formatCurrency(creditPreview.original_remaining_amount)} MAD</div>
+                          <div className="font-medium">{formatCurrency(creditPreview.original_remaining_amount)}</div>
                         </div>
                         <div>
                           <span className="text-blue-700">Nouveau restant dû:</span>
-                          <div className="font-medium">{formatCurrency(creditPreview.new_remaining_amount)} MAD</div>
+                          <div className="font-medium">{formatCurrency(creditPreview.new_remaining_amount)}</div>
                         </div>
                       </div>
                     </div>
@@ -616,11 +618,11 @@ export function CreateCreditNoteModal({
                               <div className="flex-1">
                                 <div className="font-medium">{item.designation}</div>
                                 <div className="text-neutral-600">
-                                  {item.quantity} × {formatCurrency(item.unit_price)} MAD (TVA {item.vat_rate}%)
+                                  {item.quantity} × {formatCurrency(item.unit_price)} (TVA {item.vat_rate}%)
                                 </div>
                               </div>
                               <div className="text-right font-medium">
-                                -{formatCurrency(item.total_ttc)} MAD
+                                -{formatCurrency(item.total_ttc)}
                               </div>
                             </div>
                           ))}
@@ -652,7 +654,7 @@ export function CreateCreditNoteModal({
               )}
               {creditPreview && (
                 <Badge variant="secondary" className="text-red-600">
-                  -{formatCurrency(creditPreview.totalTTC)} MAD
+                  -{formatCurrency(creditPreview.totalTtc)}
                 </Badge>
               )}
             </div>

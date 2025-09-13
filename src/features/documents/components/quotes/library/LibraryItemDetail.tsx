@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Work, Material, Labor, WorkComponent } from "@/features/library/types";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface LibraryItemDetailProps {
   item: Work | Material | Labor;
@@ -56,6 +56,8 @@ export function LibraryItemDetail({
   onEdit,
   onDelete,
 }: LibraryItemDetailProps) {
+  const { formatCurrency } = useCurrency();
+  
   const [expandedComponents, setExpandedComponents] = useState<Set<string>>(new Set());
 
   const isWork = "components" in item;

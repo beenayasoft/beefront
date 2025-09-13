@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 import { UseInvoiceWizard } from '../../../hooks/useInvoiceWizard';
-import { formatCurrency } from '@/lib/utils';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { invoicesApi } from '@/features/documents/api/invoices';
 import { settingsApi } from '@/features/settings/api/settings';
 import { formatNumberWithSettings, getDocumentFormat, getNextSequentialNumber } from '@/features/documents/utils/numberFormatting';
@@ -21,6 +21,8 @@ interface ReviewStepProps {
 }
 
 export const ReviewStep: React.FC<ReviewStepProps> = ({ wizard }) => {
+  const { formatCurrency } = useCurrency();
+  
   const [nextInvoiceNumber, setNextInvoiceNumber] = useState<string>('');
   const [isLoadingNumber, setIsLoadingNumber] = useState(true);
 
@@ -132,16 +134,16 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ wizard }) => {
     
     const subtotal = quantity * unitPrice;
     const discountAmount = (subtotal * discount) / 100;
-    const totalHT = subtotal - discountAmount;
-    const vatAmount = (totalHT * vatRate) / 100;
-    const totalTTC = totalHT + vatAmount;
+    const totalHt = subtotal - discountAmount;
+    const vatAmount = (totalHt * vatRate) / 100;
+    const totalTtc = totalHt + vatAmount;
     
-    acc.totalHT += totalHT;
+    acc.totalHt += totalHt;
     acc.totalVAT += vatAmount;
-    acc.totalTTC += totalTTC;
+    acc.totalTtc += totalTtc;
     
     return acc;
-  }, { totalHT: 0, totalVAT: 0, totalTTC: 0 });
+  }, { totalHt: 0, totalVAT: 0, totalTtc: 0 });
   
   // Calcul des jours jusqu'à échéance
   const daysToDue = wizard.invoiceDetails.dueDate ? 
@@ -389,7 +391,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ wizard }) => {
                   const discount = parseFloat(item.discount) || 0;
                   const subtotal = quantity * unitPrice;
                   const discountAmount = (subtotal * discount) / 100;
-                  const totalHT = subtotal - discountAmount;
+                  const totalHt = subtotal - discountAmount;
                   
                   return (
                     <TableRow key={index}>
@@ -416,7 +418,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ wizard }) => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        {formatCurrency(totalHT)}
+                        {formatCurrency(totalHt)}
                       </TableCell>
                     </TableRow>
                   );
@@ -431,7 +433,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ wizard }) => {
               <div className="w-80 space-y-2">
                 <div className="flex justify-between">
                   <span>Total HT :</span>
-                  <span className="font-medium">{formatCurrency(totals.totalHT)}</span>
+                  <span className="font-medium">{formatCurrency(totals.totalHt)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>TVA :</span>
@@ -440,7 +442,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ wizard }) => {
                 <Separator />
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total TTC :</span>
-                  <span>{formatCurrency(totals.totalTTC)}</span>
+                  <span>{formatCurrency(totals.totalTtc)}</span>
                 </div>
               </div>
             </div>

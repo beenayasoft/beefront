@@ -326,6 +326,7 @@ export const useQuoteWizard = (initialData?: InitialData): QuoteWizardState & Qu
   }, [updateValidation]);
   
   const updateItems = useCallback((items: CreateQuoteItemData[]) => {
+    console.log('🔧 useQuoteWizard.updateItems - Mise à jour items:', items.length);
     setState(prev => updateValidation({ 
       ...prev, 
       items,
@@ -334,11 +335,17 @@ export const useQuoteWizard = (initialData?: InitialData): QuoteWizardState & Qu
   }, [updateValidation]);
   
   const addItem = useCallback((item: CreateQuoteItemData) => {
-    setState(prev => updateValidation({ 
-      ...prev, 
-      items: [...prev.items, { ...item, position: prev.items.length }],
-      isDirty: true 
-    }));
+    console.log('🔧 useQuoteWizard.addItem - Ajout item:', item);
+    setState(prev => {
+      const newItems = [...prev.items, { ...item, position: prev.items.length }];
+      console.log('🔧 useQuoteWizard.addItem - Items avant:', prev.items.length);
+      console.log('🔧 useQuoteWizard.addItem - Items après:', newItems.length);
+      return updateValidation({ 
+        ...prev, 
+        items: newItems,
+        isDirty: true 
+      });
+    });
   }, [updateValidation]);
   
   const removeItem = useCallback((index: number) => {
@@ -359,6 +366,9 @@ export const useQuoteWizard = (initialData?: InitialData): QuoteWizardState & Qu
   
   // Génération des données finales
   const generateQuoteData = useCallback(async (): Promise<CreateQuoteData> => {
+    console.log('🔧 useQuoteWizard.generateQuoteData - État actuel items:', state.items.length);
+    console.log('🔧 useQuoteWizard.generateQuoteData - Items détail:', state.items);
+    
     if (!state.client || !state.opportunity) {
       throw new Error('Client et opportunité requis pour générer le devis');
     }
@@ -393,7 +403,7 @@ export const useQuoteWizard = (initialData?: InitialData): QuoteWizardState & Qu
       client_name: state.client.name,
       client_address: state.client.adressePrincipale ? 
         `${state.client.adressePrincipale.rue}, ${state.client.adressePrincipale.codePostal} ${state.client.adressePrincipale.ville}` : 
-        '',
+        state.client.address || '',
       project_name: state.projectDetails.name,
       project_address: state.projectDetails.address,
       project_reference: state.projectDetails.reference,

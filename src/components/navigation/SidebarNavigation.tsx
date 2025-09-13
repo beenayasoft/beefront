@@ -43,7 +43,9 @@ const mainNavigation = [
 
 export function SidebarNavigation({ isCollapsed }: SidebarNavigationProps) {
   const location = useLocation();
-  const { stats, isLoading } = useSidebarStats();
+  const { stats, loading, error } = useSidebarStats();
+  
+  console.log('🎯 Sidebar stats reçues:', { stats, loading, error });
 
   // Navigation commerciale avec vraies statistiques
 const salesNavigation = [
@@ -51,25 +53,25 @@ const salesNavigation = [
       name: "Opportunités",
       href: "/opportunities",
       icon: Target,
-      badge: isLoading ? "..." : (stats?.opportunities.new && stats.opportunities.new > 0 ? stats.opportunities.new.toString() : null),
+      badge: loading ? "..." : (stats?.opportunities && stats.opportunities > 0 ? stats.opportunities.toString() : null),
     },
   {
     name: "Devis",
     href: "/devis",
     icon: FileText,
-      badge: isLoading ? "..." : (stats?.devis.draft && stats.devis.draft > 0 ? stats.devis.draft.toString() : null),
+      badge: loading ? "..." : (stats?.devis && stats.devis > 0 ? stats.devis.toString() : null),
   },
   {
     name: "Factures",
     href: "/factures",
     icon: Receipt,
-      badge: isLoading ? "..." : (stats?.factures.pending && stats.factures.pending > 0 ? stats.factures.pending.toString() : null),
+      badge: loading ? "..." : (stats?.factures && stats.factures > 0 ? stats.factures.toString() : null),
   },
   {
     name: "Clients",
     href: "/clients",
     icon: Users,
-    badge: null,
+    badge: loading ? "..." : (stats?.tiers && stats.tiers > 0 ? stats.tiers.toString() : null),
   },
   {
     name: "Bibliothèque",
