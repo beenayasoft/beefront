@@ -62,9 +62,9 @@ export function SupplierDisplay({
         email: details.email,
         telephone: details.telephone,
         adresse: details.adresse,
-        code_postal: details.code_postal,
-        ville: details.ville,
-        pays: details.pays,
+        code_postal: details.adresse?.code_postal || details.code_postal,
+        ville: details.adresse?.ville || details.ville,
+        pays: details.adresse?.pays || details.pays,
         site_web: details.site_web,
         id: details.id
       };
@@ -223,7 +223,11 @@ export function SupplierDisplay({
                 <div className="flex items-start gap-2 text-sm">
                   <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
                   <div className="flex flex-col">
-                    {displayData.adresse && <span>{displayData.adresse}</span>}
+                    {displayData.adresse && typeof displayData.adresse === 'object' ? (
+                      <span>{displayData.adresse.rue}</span>
+                    ) : displayData.adresse && typeof displayData.adresse === 'string' ? (
+                      <span>{displayData.adresse}</span>
+                    ) : null}
                     <div className="flex gap-1">
                       {displayData.code_postal && <span>{displayData.code_postal}</span>}
                       {displayData.ville && <span>{displayData.ville}</span>}
