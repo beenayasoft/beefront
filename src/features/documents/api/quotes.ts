@@ -62,7 +62,6 @@ const transformQuote = (quote: any): Quote => {
     clientName: quote.clientName,
     client_name: quote.client_name,
     totalHt: quote.totalHt,
-    totalHt: quote.totalHt,
     total_ht: quote.total_ht,
     totalVat: quote.totalVat,
     total_vat: quote.total_vat,
